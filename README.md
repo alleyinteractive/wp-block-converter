@@ -36,15 +36,14 @@ Filter the generated block for a specific node.
 ```php
 use Alley\WP\Block_Converter\Block;
 
-add_filter(
-	'wp_block_converter_block',
-	function ( Block $block, \DOMElement $node ): ?Block {
-		// ...
-		return $block;
-	},
-	10,
-	2,
-);
+add_filter( 'wp_block_converter_block', function ( Block $block, \DOMElement $node ): ?Block {
+	// Modify the block before it is serialized.
+	$block->content = '...';
+	$block->blockName = '...';
+	$block->attributes = [ ... ];
+
+	return $block;
+}, 10, 2 );
 ```
 
 #### `wp_block_converter_html_content`
