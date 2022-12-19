@@ -18,7 +18,7 @@ composer require alleyinteractive/wp-block-converter
 Use this package like so to convert HTML into Gutenberg Blocks:
 
 ```php
-use use Alley\WP\Block_Converter\Block_Converter;
+use Alley\WP\Block_Converter\Block_Converter;
 
 $converter = new Block_Converter();
 
