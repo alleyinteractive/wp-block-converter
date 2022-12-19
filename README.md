@@ -15,11 +15,39 @@ composer require alleyinteractive/wp-block-converter
 
 ## Usage
 
-Use this package like so:
+Use this package like so to convert HTML into Gutenberg Blocks:
 
 ```php
-$package = Alley\\Block_Converter\WP_Block_Converter\WP_Block_Converter();
-$package->perform_magic();
+use use Alley\WP\Block_Converter\Block_Converter;
+
+$converter = new Block_Converter();
+
+$blocks = $converter->convert( '<p>Some HTML</p>' );
+```
+
+### Filtering the Blocks
+
+The blocks can be filtered on a tag-by-tag basis or for an entire HTML body.
+
+#### `wp_block_converter_html_tag`
+
+Filter the generated block for a specific HTML tag.
+
+```php
+add_filter( 'wp_block_converter_html_tag', function( $block, $node ) {
+	return $block;
+}, 10, 4 );
+```
+
+#### `wp_block_converter_html_content`
+
+Filter the generated blocks for an entire HTML body.
+
+```php
+add_filter( 'wp_block_converter_html_content', function( $blocks, $html ) {
+	// ...
+	return $blocks;
+}, 10, 2 );
 ```
 
 ## Changelog

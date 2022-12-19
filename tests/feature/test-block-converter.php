@@ -7,6 +7,7 @@
 
 namespace Alley\WP\Block_Block_Converter\Tests\Feature;
 
+use Alley\WP\Block_Converter\Block;
 use Alley\WP\Block_Converter\Block_Converter;
 use Alley\WP\Block_Converter\Tests\Test_Case;
 
@@ -22,13 +23,11 @@ class Test_Block_Block_Converter extends Test_Case {
         $block     = $converter->convert();
 
         $this->assertNotEmpty( $block );
-        $this->assertSame(
-            $block,
-'<!-- wp:paragraph -->
-<p>Content to migrate</p>
-<!-- /wp:paragraph --><!-- wp:heading {"level":1} -->
-<h1>Heading 01</h1>
-<!-- /wp:heading -->'
+        $this->assertEquals(
+'<!-- wp:paragraph --><p>Content to migrate</p><!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":1} --><h1>Heading 01</h1><!-- /wp:heading -->',
+			$block,
         );
     }
 
@@ -39,10 +38,8 @@ class Test_Block_Block_Converter extends Test_Case {
 
         $this->assertNotEmpty( $block );
         $this->assertSame(
+			'<!-- wp:heading {"level":1} -->' . $html . '<!-- /wp:heading -->',
             $block,
-'<!-- wp:heading {"level":1} -->
-' . $html . '
-<!-- /wp:heading -->'
         );
     }
 
@@ -53,10 +50,8 @@ class Test_Block_Block_Converter extends Test_Case {
 
         $this->assertNotEmpty( $block );
         $this->assertSame(
-            $block,
-'<!-- wp:heading {"level":2} -->
-' . $html . '
-<!-- /wp:heading -->'
+			'<!-- wp:heading {"level":2} -->' . $html . '<!-- /wp:heading -->',
+			$block,
         );
     }
 
@@ -67,11 +62,9 @@ class Test_Block_Block_Converter extends Test_Case {
 
         $this->assertNotEmpty( $block );
         $this->assertSame(
-            $block,
-'<!-- wp:list {"ordered":true} -->
-' . $html . '
-<!-- /wp:list -->'
-        );
+			'<!-- wp:list {"ordered":true} -->' . $html . '<!-- /wp:list -->',
+			$block,
+		);
     }
 
     public function test_convert_ul_to_block() {
@@ -81,10 +74,8 @@ class Test_Block_Block_Converter extends Test_Case {
 
         $this->assertNotEmpty( $block );
         $this->assertSame(
-            $block,
-"<!-- wp:list -->
-{$html}
-<!-- /wp:list -->"
+			"<!-- wp:list -->{$html}<!-- /wp:list -->",
+			$block,
         );
     }
 
@@ -94,10 +85,8 @@ class Test_Block_Block_Converter extends Test_Case {
 
         $this->assertNotEmpty( $block );
         $this->assertSame(
-            $block,
-'<!-- wp:paragraph -->
-<p>bar</p>
-<!-- /wp:paragraph -->'
+			'<!-- wp:paragraph --><p>bar</p><!-- /wp:paragraph -->',
+			$block,
         );
     }
 
@@ -107,10 +96,8 @@ class Test_Block_Block_Converter extends Test_Case {
 
         $this->assertNotEmpty( $block );
         $this->assertSame(
-            $block,
-'<!-- wp:paragraph -->
-<p>bar</p>
-<!-- /wp:paragraph -->'
+            '<!-- wp:paragraph --><p>bar</p><!-- /wp:paragraph -->',
+			$block,
         );
     }
 
@@ -123,24 +110,24 @@ class Test_Block_Block_Converter extends Test_Case {
 
         $this->assertNotEmpty( $block );
         $this->assertSame(
-'<!-- wp:paragraph -->
-<p>bar</p>
-<!-- /wp:paragraph -->',
-            $block
+			$block,
+			'<!-- wp:paragraph --><p>bar</p><!-- /wp:paragraph -->',
         );
     }
 
 	public function test_convert_with_filter_override_single_tag() {
-		$this->expectApplied( 'wp_block_converter_html_content' )->once();
+		$this->expectApplied( 'wp_block_converter_document_html' )->once();
 
 		$html = '<p>Content to migrate</p><h1>Heading 01</h1>';
 
 		add_filter(
-			'wp_block_converter_html_tag',
-			function () {
-				remove_all_filters( 'wp_block_converter_html_tag' );
+			'wp_block_converter_block',
+			function ( Block $block ) {
+				remove_all_filters( 'wp_block_converter_block' );
 
-				return '<p>The overridden paragraph</p>';
+				$block->content = 'Override content';
+
+				return $block;
 			}
 		);
 
@@ -150,20 +137,20 @@ class Test_Block_Block_Converter extends Test_Case {
 
 
 		$this->assertSame(
-'<p>The overridden paragraph</p><!-- wp:heading {"level":1} -->
-<h1>Heading 01</h1>
-<!-- /wp:heading -->',
-			$block
+			'<!-- wp:paragraph -->Override content<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":1} --><h1>Heading 01</h1><!-- /wp:heading -->',
+			$block,
 		);
 	}
 
 	public function test_convert_with_filter_override_entire_content() {
-		$this->expectApplied( 'wp_block_converter_html_tag' )->twice();
-		$this->expectApplied( 'wp_block_converter_html_content' )->once();
+		$this->expectApplied( 'wp_block_converter_block' )->twice();
+		$this->expectApplied( 'wp_block_converter_document_html' )->once();
 
 		$html = '<p>Content to migrate</p><h1>Heading 01</h1>';
 
-		add_filter( 'wp_block_converter_html_content', fn () => 'Override' );
+		add_filter( 'wp_block_converter_document_html', fn () => 'Override' );
 
 		$converter = new Block_Converter( $html );
 		$block     = $converter->convert();

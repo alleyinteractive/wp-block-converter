@@ -1,7 +1,7 @@
 # Changelog
 
-All notable changes to `Create PHP Package` will be documented in this file.
+All notable changes to `WP Block Converter` will be documented in this file.
 
-## 0.1.0 - 202X-XX-XX
+## 1.0.0 - 2022-12-19
 
 - Initial release
