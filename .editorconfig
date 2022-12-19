@@ -1,0 +1,23 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+trim_trailing_whitespace = true
+insert_final_newline = true
+indent_style = tab
+indent_size = 4
+
+[*.{js,jsx,scss,css,json,yaml,yml,feature,xml}]
+indent_style = space
+indent_size = 2
+
+# Composer File
+[composer.{json,lock}]
+indent_style = space
+indent_size = 4
+
+# Dotfiles
+[.*]
+indent_style = space
+indent_size = 2

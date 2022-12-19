@@ -1,0 +1,55 @@
+{
+    "name": "alleyinteractive/create-php-package",
+    "description": "A skeleton PHP package geared for WordPress Development",
+    "type": "library",
+    "keywords": [
+        "alleyinteractive",
+        "create-php-package"
+    ],
+    "homepage": "https://github.com/alleyinteractive/create-php-package",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "author_name",
+            "email": "email@domain.com"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "alleyinteractive/composer-wordpress-autoloader": "^1.0"
+    },
+    "require-dev": {
+        "alleyinteractive/alley-coding-standards": "^0.3 || ^0.4 || ^1.0",
+        "mantle-framework/testkit": "^0.9",
+        "nunomaduro/collision": "^5.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "alleyinteractive/composer-wordpress-autoloader": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "pestphp/pest-plugin": true
+        },
+        "sort-packages": true
+    },
+    "extra": {
+        "wordpress-autoloader": {
+            "autoload": {
+                "Create_PHP_Package\\": "src"
+            },
+            "autoload-dev": {
+                "Create_PHP_Package\\Tests\\": "tests"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "scripts": {
+        "phpcbf": "phpcbf .",
+        "phpcs": "phpcs .",
+        "phpunit": "phpunit",
+        "test": [
+            "@phpcs",
+            "@phpunit"
+        ]
+    }
+}

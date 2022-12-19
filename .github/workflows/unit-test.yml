@@ -1,0 +1,13 @@
+name: Testing Suite
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  unit-tests:
+    uses: alleyinteractive/.github/.github/workflows/php-tests.yml@main

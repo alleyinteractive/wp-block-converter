@@ -1,0 +1,13 @@
+name: Coding Standards
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  coding-standards:
+    uses: alleyinteractive/.github/.github/workflows/php-coding-standards.yml@main
