@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="create-php-package" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/squizlabs/PHP_CodeSniffer/master/phpcs.xsd">
-  <description>PHP_CodeSniffer standard for create-php-package.</description>
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="wp-block-converter" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/squizlabs/PHP_CodeSniffer/master/phpcs.xsd">
+  <description>PHP_CodeSniffer standard for wp-block-converter.</description>
 
   <!-- Include Alley Rules -->
   <rule ref="Alley-Interactive" />
@@ -37,8 +37,7 @@
   <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
     <properties>
       <property name="prefixes" type="array">
-        <element value="vendor_name" />
-        <element value="Create_PHP_Package" />
+        <element value="alley" />
       </property>
     </properties>
   </rule>

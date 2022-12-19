@@ -1,5 +1,5 @@
 <?php
-namespace Create_PHP_Package\Tests\Unit;
+namespace Alley\WP\Block_Converter\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 
