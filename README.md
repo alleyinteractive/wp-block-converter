@@ -27,16 +27,24 @@ $blocks = $converter->convert( '<p>Some HTML</p>' );
 
 ### Filtering the Blocks
 
-The blocks can be filtered on a tag-by-tag basis or for an entire HTML body.
+The blocks can be filtered on a block-by-block basis or for an entire HTML body.
 
-#### `wp_block_converter_html_tag`
+#### `wp_block_converter_block`
 
-Filter the generated block for a specific HTML tag.
+Filter the generated block for a specific node.
 
 ```php
-add_filter( 'wp_block_converter_html_tag', function( $block, $node ) {
-	return $block;
-}, 10, 4 );
+use Alley\WP\Block_Converter\Block;
+
+add_filter(
+	'wp_block_converter_block',
+	function ( Block $block, \DOMElement $node ): ?Block {
+		// ...
+		return $block;
+	},
+	10,
+	2,
+);
 ```
 
 #### `wp_block_converter_html_content`
@@ -44,7 +52,7 @@ add_filter( 'wp_block_converter_html_tag', function( $block, $node ) {
 Filter the generated blocks for an entire HTML body.
 
 ```php
-add_filter( 'wp_block_converter_html_content', function( $blocks, $html ) {
+add_filter( 'wp_block_converter_document_html', function( string $blocks, \DOMNodeList $content ): string {
 	// ...
 	return $blocks;
 }, 10, 2 );
