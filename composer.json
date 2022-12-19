@@ -31,6 +31,11 @@
         },
         "sort-packages": true
     },
+    "autoload": {
+        "files": [
+            "src/helpers.php"
+        ]
+    },
     "extra": {
         "wordpress-autoloader": {
             "autoload": {

@@ -11,8 +11,5 @@
 		<testsuite name="Feature">
 			<directory prefix="test-" suffix=".php">tests/feature</directory>
 		</testsuite>
-		<testsuite name="Unit">
-			<directory prefix="test-" suffix=".php">tests/unit</directory>
-		</testsuite>
 	</testsuites>
 </phpunit>

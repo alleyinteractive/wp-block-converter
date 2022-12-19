@@ -38,6 +38,7 @@
     <properties>
       <property name="prefixes" type="array">
         <element value="alley" />
+        <element value="wp_block_converter" />
       </property>
     </properties>
   </rule>
