@@ -15,11 +15,46 @@ composer require alleyinteractive/wp-block-converter
 
 ## Usage
 
-Use this package like so:
+Use this package like so to convert HTML into Gutenberg Blocks:
 
 ```php
-$package = Alley\\Block_Converter\WP_Block_Converter\WP_Block_Converter();
-$package->perform_magic();
+use Alley\WP\Block_Converter\Block_Converter;
+
+$converter = new Block_Converter();
+
+$blocks = $converter->convert( '<p>Some HTML</p>' );
+```
+
+### Filtering the Blocks
+
+The blocks can be filtered on a block-by-block basis or for an entire HTML body.
+
+#### `wp_block_converter_block`
+
+Filter the generated block for a specific node.
+
+```php
+use Alley\WP\Block_Converter\Block;
+
+add_filter( 'wp_block_converter_block', function ( Block $block, \DOMElement $node ): ?Block {
+	// Modify the block before it is serialized.
+	$block->content = '...';
+	$block->blockName = '...';
+	$block->attributes = [ ... ];
+
+	return $block;
+}, 10, 2 );
+```
+
+#### `wp_block_converter_html_content`
+
+Filter the generated blocks for an entire HTML body.
+
+```php
+add_filter( 'wp_block_converter_document_html', function( string $blocks, \DOMNodeList $content ): string {
+	// ...
+	return $blocks;
+}, 10, 2 );
 ```
 
 ## Changelog
@@ -30,7 +65,7 @@ Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed re
 
 This project is actively maintained by [Alley
 Interactive](https://github.com/alleyinteractive). Like what you see? [Come work
-with us](https://alley.co/careers/).
+with us](https://alley.com/careers/).
 
 - [Sean Fisher](https://github.com/srtfisher)
 - [All Contributors](../../contributors)
