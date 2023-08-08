@@ -46,7 +46,7 @@ add_filter( 'wp_block_converter_block', function ( Block $block, \DOMElement $no
 }, 10, 2 );
 ```
 
-#### `wp_block_converter_html_content`
+#### `wp_block_converter_document_html`
 
 Filter the generated blocks for an entire HTML body.
 
