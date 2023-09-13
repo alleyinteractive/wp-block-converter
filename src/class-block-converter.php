@@ -199,8 +199,11 @@ class Block_Converter {
 		if ( empty( $image_src ) && ! empty( $element->getAttribute( 'src' ) ) ) {
 			$image_src = $element->getAttribute( 'src' );
 		}
-
-		$image_src = $this->upload_image( $image_src, $alt ?? '' );
+		try {
+			$image_src = $this->upload_image( $image_src, $alt ?? '' );
+		} catch ( \Exception $e ) {
+			return null;
+		}
 
 		return new Block(
 			block_name: 'image',
@@ -323,7 +326,7 @@ class Block_Converter {
 	 *
 	 * @param string $src Image url.
 	 * @param string $alt Image alt.
-	 * @return string
+	 * @return int|WP_Error
 	 */
 	public function upload_image( string $src, string $alt ): string {
 		// Remove all image arguments.
