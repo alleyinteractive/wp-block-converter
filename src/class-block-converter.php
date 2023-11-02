@@ -318,7 +318,16 @@ class Block_Converter {
 		// Split url.
 		$url_parts = wp_parse_url( $url );
 
-		return $url_parts['scheme'] . '://' . $url_parts['host'] . $url_parts['path'];
+		if ( isset( $url_parts['query'] ) ) {
+			$url = str_replace( '?' . $url_parts['query'], '', $url );
+		}
+		if ( isset( $url_parts['fragment'] ) ) {
+			$url = str_replace( '#' . $url_parts['fragment'], '', $url );
+		}
+		if ( str_starts_with( $url, '//' ) ) {
+			$url = str_replace( '//', 'https://', $url );
+		}
+		return $url;
 	}
 
 	/**
