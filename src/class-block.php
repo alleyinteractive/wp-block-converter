@@ -14,7 +14,7 @@ class Block {
 	/**
 	 * Constructor.
 	 *
-	 * @param string|null      $block_name The block name.
+	 * @param string|null $block_name The block name.
 	 * @param array       $attributes The block attributes.
 	 * @param string|null $content    The block content.
 	 */
