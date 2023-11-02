@@ -1,13 +1,14 @@
 name: Coding Standards
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
+    branches:
+      - develop
+    types: [opened, synchronize, reopened, ready_for_review]
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 6 * * 0' # Run once per week at 6am UTC on Sundays.
 
 jobs:
   coding-standards:
+    if: github.event.pull_request.draft == false
     uses: alleyinteractive/.github/.github/workflows/php-coding-standards.yml@main
