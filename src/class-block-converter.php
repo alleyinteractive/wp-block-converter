@@ -325,7 +325,7 @@ class Block_Converter {
 			$url = str_replace( '#' . $url_parts['fragment'], '', $url );
 		}
 		if ( str_starts_with( $url, '//' ) ) {
-			$url = str_replace( '//', 'https://', $url );
+			$url = preg_replace( '#^//#', 'https://', $url );
 		}
 		return $url;
 	}
