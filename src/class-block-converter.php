@@ -349,7 +349,7 @@ class Block_Converter {
 	 * @param string $src Image url.
 	 * @param string $alt Image alt.
 	 * 
-  	 * @throws Exception If the image was not able to be created.
+	 * @throws Exception If the image was not able to be created.
 	 *
 	 * @return string The WordPress image URL.
 	 */
