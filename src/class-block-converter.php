@@ -11,6 +11,7 @@ namespace Alley\WP\Block_Converter;
 
 use DOMElement;
 use DOMNode;
+use Exception;
 
 /**
  * Converts a DOMDocument to Gutenberg block HTML.
@@ -172,7 +173,7 @@ class Block_Converter {
 	/**
 	 * Create ul blocks.
 	 *
-	 * @param DOMNode $node The node. 
+	 * @param DOMNode $node The node.
 	 * @return Block
 	 */
 	protected function ul( DOMNode $node ): Block {
@@ -199,9 +200,10 @@ class Block_Converter {
 		if ( empty( $image_src ) && ! empty( $element->getAttribute( 'src' ) ) ) {
 			$image_src = $element->getAttribute( 'src' );
 		}
+
 		try {
 			$image_src = $this->upload_image( $image_src, $alt ?? '' );
-		} catch ( \Exception $e ) {
+		} catch ( Exception $e ) {
 			return null;
 		}
 
@@ -324,7 +326,7 @@ class Block_Converter {
 			$home = get_option( 'home' );
 			if ( ! empty( $home ) && is_string( $home ) ) {
 				$home_url_parts = wp_parse_url( $home );
-				$scheme = $home_url_parts['scheme'] ?? '';
+				$scheme         = $home_url_parts['scheme'] ?? '';
 			}
 		}
 
@@ -346,7 +348,10 @@ class Block_Converter {
 	 *
 	 * @param string $src Image url.
 	 * @param string $alt Image alt.
-	 * @return int|WP_Error
+	 * 
+  	 * @throws Exception If the image was not able to be created.
+	 *
+	 * @return string The WordPress image URL.
 	 */
 	public function upload_image( string $src, string $alt ): string {
 		// Remove all image arguments.
