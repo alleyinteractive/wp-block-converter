@@ -172,7 +172,7 @@ class Block_Converter {
 	/**
 	 * Create ul blocks.
 	 *
-	 * @param DOMNode $node The node.
+	 * @param DOMNode $node The node. 
 	 * @return Block
 	 */
 	protected function ul( DOMNode $node ): Block {
@@ -318,16 +318,27 @@ class Block_Converter {
 		// Split url.
 		$url_parts = wp_parse_url( $url );
 
-		if ( isset( $url_parts['query'] ) ) {
-			$url = str_replace( '?' . $url_parts['query'], '', $url );
+		// Negotiate scheme.
+		$scheme = $url_parts['scheme'] ?? '';
+		if ( empty( $scheme ) ) {
+			$home = get_option( 'home' );
+			if ( ! empty( $home ) && is_string( $home ) ) {
+				$home_url_parts = wp_parse_url( $home );
+				$scheme = $home_url_parts['scheme'] ?? '';
+			}
 		}
-		if ( isset( $url_parts['fragment'] ) ) {
-			$url = str_replace( '#' . $url_parts['fragment'], '', $url );
+
+		// Negotiate other properties.
+		$host = $url_parts['host'] ?? '';
+		$port = ! empty( $url_parts['port'] ) ? ':' . $url_parts['port'] : '';
+		$path = $url_parts['path'] ?? '';
+
+		// Ensure we have enough parts to construct a valid URL.
+		if ( empty( $scheme ) || empty( $host ) || empty( $path ) ) {
+			return '';
 		}
-		if ( str_starts_with( $url, '//' ) ) {
-			$url = preg_replace( '#^//#', 'https://', $url );
-		}
-		return $url;
+
+		return sprintf( '%s://%s%s%s', $scheme, $host, $port, $path );
 	}
 
 	/**
