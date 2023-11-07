@@ -62,7 +62,9 @@ function create_or_get_attachment_from_url( string $src, array $args = [], strin
 	$attachment_id = media_sideload_image( $src, $args['parent_post_id'] ?? 0, $args['description'] ?? '', 'id' );
 
 	if ( is_wp_error( $attachment_id ) ) {
-		throw new Exception( 'media_sideload_image failed for URL ' . esc_html( $src ) );
+		// translators: 1: URL, 2: Error message.
+		$message = sprintf( __( 'media_sideload_image failed for URL %1$s; error message: %2$s', 'wp-block-converter' ), $src, $attachment_id->get_error_message() );
+		throw new Exception( esc_html( $message ) );
 	}
 
 	// Store the original URL for future reference.
