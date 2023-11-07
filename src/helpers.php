@@ -36,7 +36,7 @@ use WP_Error;
  *
  * @return int Attachment ID.
  */
-function create_or_get_attachment_from_url( string $src, array $args = [], string $meta_key = 'original_url' ): int|WP_Error {
+function create_or_get_attachment_from_url( string $src, array $args = [], string $meta_key = 'original_url' ): int {
 	$attachment_ids = get_posts( // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts
 		[
 			'fields'           => 'ids',
