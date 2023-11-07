@@ -11,6 +11,7 @@ namespace Alley\WP\Block_Converter;
 
 use DOMElement;
 use DOMNode;
+use Exception;
 
 /**
  * Converts a DOMDocument to Gutenberg block HTML.
@@ -200,14 +201,22 @@ class Block_Converter {
 			$image_src = $element->getAttribute( 'src' );
 		}
 
-		$image_src = $this->upload_image( $image_src, $alt ?? '' );
+		try {
+			$image_src = $this->upload_image( $image_src, $alt );
+		} catch ( Exception $e ) {
+			return null;
+		}
+
+		if ( empty( $image_src ) ) {
+			return null;
+		}
 
 		return new Block(
 			block_name: 'image',
 			content: sprintf(
 				'<figure class="wp-block-image"><img src="%s" alt="%s"/></figure>',
-				esc_url( $image_src ?? '' ),
-				esc_attr( $alt ?? '' ),
+				esc_url( $image_src ),
+				esc_attr( $alt ),
 			),
 		);
 	}
@@ -309,13 +318,29 @@ class Block_Converter {
 	 * Quick way to remove all URL arguments.
 	 *
 	 * @param string $url URL.
-	 * @return string
+	 *
+	 * @return string A reconstructed image URL containing only the scheme, host, port, and path.
 	 */
 	public function remove_image_args( $url ): string {
-		// Split url.
 		$url_parts = wp_parse_url( $url );
+		$scheme    = $url_parts['scheme'] ?? 'https';
+		$host      = $url_parts['host'] ?? '';
+		$port      = ! empty( $url_parts['port'] ) ? ':' . $url_parts['port'] : '';
+		$path      = $url_parts['path'] ?? '';
 
-		return $url_parts['scheme'] . '://' . $url_parts['host'] . $url_parts['path'];
+		// Ensure we have enough parts to construct a valid URL.
+		$sanitized_url = '';
+		if ( ! empty( $scheme ) && ! empty( $host ) && ! empty( $path ) ) {
+			$sanitized_url = sprintf( '%s://%s%s%s', $scheme, $host, $port, $path );
+		}
+
+		/**
+		 * Allow the reconstructed URL to be filtered before being returned.
+		 *
+		 * @param string $sanitized_url The reconstructed URL.
+		 * @param string $original_url  The original URL before sanitization was applied.
+		 */
+		return apply_filters( 'wp_block_converter_sanitized_image_url', $sanitized_url, $url );
 	}
 
 	/**
@@ -323,13 +348,16 @@ class Block_Converter {
 	 *
 	 * @param string $src Image url.
 	 * @param string $alt Image alt.
-	 * @return string
+	 *
+	 * @throws Exception If the image was not able to be created.
+	 *
+	 * @return string The WordPress image URL.
 	 */
 	public function upload_image( string $src, string $alt ): string {
 		// Remove all image arguments.
 		$src = $this->remove_image_args( $src );
 
-		return create_or_get_attachment_from_url( $src, [ 'alt' => $alt ] );
+		return (string) wp_get_attachment_url( create_or_get_attachment_from_url( $src, [ 'alt' => $alt ] ) );
 	}
 
 	/**
