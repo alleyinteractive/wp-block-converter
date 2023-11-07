@@ -357,7 +357,7 @@ class Block_Converter {
 		// Remove all image arguments.
 		$src = $this->remove_image_args( $src );
 
-		return wp_get_attachment_url( create_or_get_attachment_from_url( $src, [ 'alt' => $alt ] ) );
+		return (string) wp_get_attachment_url( create_or_get_attachment_from_url( $src, [ 'alt' => $alt ] ) );
 	}
 
 	/**
