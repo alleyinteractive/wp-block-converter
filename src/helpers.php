@@ -7,6 +7,7 @@
 
 namespace Alley\WP\Block_Converter;
 
+use Exception;
 use WP_Error;
 
 /**
@@ -30,7 +31,10 @@ use WP_Error;
  *                                          sanitized filename.
  * }
  * @param string $meta_key Meta key to store the original URL.
- * @return int|WP_Error Attachment URL/ID, WP_Error otherwise.
+ *
+ * @throws Exception If the image was not able to be uploaded.
+ *
+ * @return int Attachment ID.
  */
 function create_or_get_attachment_from_url( string $src, array $args = [], string $meta_key = 'original_url' ): int|WP_Error {
 	$attachment_ids = get_posts( // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts
@@ -58,7 +62,9 @@ function create_or_get_attachment_from_url( string $src, array $args = [], strin
 	$attachment_id = media_sideload_image( $src, $args['parent_post_id'] ?? 0, $args['description'] ?? '', 'id' );
 
 	if ( is_wp_error( $attachment_id ) ) {
-		return $attachment_id;
+		// translators: 1: URL, 2: Error message.
+		$message = sprintf( __( 'media_sideload_image failed for URL %1$s; error message: %2$s', 'wp-block-converter' ), $src, $attachment_id->get_error_message() );
+		throw new Exception( esc_html( $message ) );
 	}
 
 	// Store the original URL for future reference.
