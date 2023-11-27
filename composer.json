@@ -21,7 +21,7 @@
     "require-dev": {
         "alleyinteractive/alley-coding-standards": "^2.0",
         "mantle-framework/testkit": "^0.12",
-        "nunomaduro/collision": "^6.0"
+        "nunomaduro/collision": "^6.0 || ^7.0"
     },
     "config": {
         "allow-plugins": {
