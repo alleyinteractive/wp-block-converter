@@ -97,6 +97,7 @@ class Block_Converter {
 			'h1', 'h2', 'h3', 'h4', 'h5', 'h6' => $this->h( $arguments[0] ),
 			'p', 'a', 'abbr', 'b', 'code', 'em', 'i', 'strong', 'sub', 'sup', 'span', 'u' => $this->p( $arguments[0] ),
 			'br', 'cite', 'source' => null,
+			'hr' => $this->separator( $arguments[0] ),
 			default => $this->html( $arguments[0] ),
 		};
 	}
@@ -234,6 +235,19 @@ class Block_Converter {
 				'ordered' => true,
 			],
 			content: static::get_node_html( $node ),
+		);
+	}
+
+	/**
+	 * Create separator blocks.
+	 *
+	 * @param DOMNode $node The node.
+	 * @return Block
+	 */
+	protected function separator( DOMNode $node ): Block {
+		return new Block(
+			block_name: 'separator',
+			content: '<hr class="wp-block-separator has-alpha-channel-opacity"/>'
 		);
 	}
 
