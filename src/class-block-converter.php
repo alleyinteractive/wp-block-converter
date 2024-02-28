@@ -12,11 +12,16 @@ namespace Alley\WP\Block_Converter;
 use DOMElement;
 use DOMNode;
 use Exception;
+use Mantle\Support\Traits\Macroable;
 
 /**
  * Converts a DOMDocument to Gutenberg block HTML.
  */
 class Block_Converter {
+	use Macroable {
+		__call as macro_call;
+	}
+
 	/**
 	 * Setup the class.
 	 *
@@ -89,6 +94,10 @@ class Block_Converter {
 	 * @return Block|null
 	 */
 	public function __call( $name, $arguments ): ?Block {
+		if ( static::has_macro( $name ) ) {
+			return static::macro_call( $name, $arguments );
+		}
+
 		return match ( $name ) {
 			'ul' => $this->ul( $arguments[0] ),
 			'ol' => $this->ol( $arguments[0] ),
