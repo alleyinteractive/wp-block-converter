@@ -10,6 +10,7 @@ namespace Alley\WP\Block_Block_Converter\Tests\Feature;
 use Alley\WP\Block_Converter\Block;
 use Alley\WP\Block_Converter\Block_Converter;
 use Alley\WP\Block_Converter\Tests\Test_Case;
+use DOMNode;
 
 /**
  * Test case for Block Block_Converter Module.
@@ -156,5 +157,21 @@ class Test_Block_Block_Converter extends Test_Case {
 		$block     = $converter->convert();
 
 		$this->assertSame( 'Override', $block );
+	}
+
+	public function test_macroable() {
+		Block_Converter::macro(
+			'special-tag',
+			function (DOMNode $node) {
+				return new Block( 'paragraph', [ 'attribute' => '123' ], Block_Converter::get_node_html( $node ) );
+			},
+		);
+
+		$block = ( new Block_Converter( '<special-tag>content here</special-tag>' ) )->convert();
+
+		$this->assertEquals(
+			'<!-- wp:paragraph {"attribute":"123"} --><special-tag>content here</special-tag><!-- /wp:paragraph -->',
+			$block,
+		);
 	}
 }

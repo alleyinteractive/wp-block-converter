@@ -57,6 +57,42 @@ add_filter( 'wp_block_converter_document_html', function( string $blocks, \DOMNo
 }, 10, 2 );
 ```
 
+### Extending the Converter with Macros
+
+You can extend the converter with macros to add custom tags that are not yet
+supported by the converter.
+
+```php
+use Alley\WP\Block_Converter\Block_Converter;
+use Alley\WP\Block_Converter\Block;
+
+Block_Converter::macro( 'special-tag', function ( \DOMNode $node ) {
+	return new Block( 'core/paragraph', [], $node->textContent );
+} );
+
+// You can also use the raw HTML with a helper method from Block Converter:
+Block_Converter::macro( 'special-tag', function ( \DOMNode $node ) {
+	return new Block( 'core/paragraph', [], Block_Converter::get_node_html( $node ) );
+} );
+```
+
+Macros can also completely override the default behavior of the converter. This
+is useful when you need to make one-off changes to the way the converter works
+for a specific tag.
+
+```php
+use Alley\WP\Block_Converter\Block_Converter;
+use Alley\WP\Block_Converter\Block;
+
+Block_Converter::macro( 'p', function ( \DOMNode $node ) {
+	if (special_condition()) {
+		return new Block( 'core/paragraph', [ 'attribute' => 123 ], 'This is a paragraph' );
+	}
+
+	return Block_Converter::p( $node );
+} );
+```
+
 ## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
