@@ -97,6 +97,7 @@ class Block_Converter {
 			'h1', 'h2', 'h3', 'h4', 'h5', 'h6' => $this->h( $arguments[0] ),
 			'p', 'a', 'abbr', 'b', 'code', 'em', 'i', 'strong', 'sub', 'sup', 'span', 'u' => $this->p( $arguments[0] ),
 			'br', 'cite', 'source' => null,
+			'hr' => $this->separator(),
 			default => $this->html( $arguments[0] ),
 		};
 	}
@@ -288,6 +289,18 @@ class Block_Converter {
 				$aspect_ratio ? ' ' . $aspect_ratio : '',
 				$url
 			),
+		);
+	}
+
+	/**
+	 * Create separator blocks.
+	 *
+	 * @return Block
+	 */
+	protected function separator(): Block {
+		return new Block(
+			block_name: 'separator',
+			content: '<hr class="wp-block-separator has-alpha-channel-opacity"/>'
 		);
 	}
 
