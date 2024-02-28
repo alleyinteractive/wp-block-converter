@@ -250,6 +250,7 @@ class Block_Converter {
 	 * @return Block
 	 */
 	protected function embed( string $url ): Block {
+		// This would probably be better as an internal request to /wp-json/oembed/1.0/proxy?url=...
 		$data = _wp_oembed_get_object()->get_data( $url, [] );
 
 		$aspect_ratio = '';
