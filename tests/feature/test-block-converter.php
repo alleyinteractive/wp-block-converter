@@ -188,4 +188,26 @@ class Test_Block_Block_Converter extends Test_Case {
         );
     }
 
+    public function test_instagram_url_to_embed() {
+        $converter = new Block_Converter( '<p>https://www.instagram.com/p/CSpmSvAphdf/</p>' );
+        $block     = $converter->convert();
+
+        $this->assertNotEmpty( $block );
+        $this->assertSame(
+            '<!-- wp:embed {"url":"https://www.instagram.com/p/CSpmSvAphdf/","type":"rich","providerNameSlug":"instagram","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-instagram wp-block-embed-instagram"><div class="wp-block-embed__wrapper">https://www.instagram.com/p/CSpmSvAphdf/</div></figure><!-- /wp:embed -->',
+            $block,
+        );
+    }
+
+    public function test_facebook_url_to_embed() {
+        $converter = new Block_Converter( '<p>https://www.facebook.com/sesametheopossum/posts/1329405240877426</p>' );
+        $block     = $converter->convert();
+
+        $this->assertNotEmpty( $block );
+        $this->assertSame(
+            '<!-- wp:embed {"url":"https://www.facebook.com/sesametheopossum/posts/1329405240877426","type":"rich","providerNameSlug":"embed-handler","responsive":true,"previewable":false} --><figure class="wp-block-embed is-type-rich is-provider-embed-handler wp-block-embed-embed-handler"><div class="wp-block-embed__wrapper">https://www.facebook.com/sesametheopossum/posts/1329405240877426</div></figure><!-- /wp:embed -->',
+            $block,
+        );
+    }
+
 }

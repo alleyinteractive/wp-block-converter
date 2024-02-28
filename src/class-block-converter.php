@@ -161,6 +161,13 @@ class Block_Converter {
 		$content = static::get_node_html( $node );
 
 		if ( ! empty( filter_var( $node->textContent, FILTER_VALIDATE_URL ) ) ) {
+			// Instagram and Facebook embeds require an api key to retrieve oEmbed data.
+			if ( \str_contains( $node->textContent, 'instagram.com' ) ) {
+				return $this->instagram_embed( $node->textContent );
+			}
+			if ( \str_contains( $node->textContent, 'facebook.com' ) ) {
+				return $this->facebook_embed( $node->textContent );
+			}
 			if ( false !== wp_oembed_get( $node->textContent ) ) {
 				return $this->embed( $node->textContent );
 			}
@@ -287,6 +294,59 @@ class Block_Converter {
 				sanitize_title( $data->provider_name ),
 				sanitize_title( $data->provider_name ),
 				$aspect_ratio ? ' ' . $aspect_ratio : '',
+				$url
+			),
+		);
+	}
+
+	/**
+	 * Create Instagram embed blocks.
+	 *
+	 * @param string $url The URL.
+	 * @return Block
+	 */
+	protected function instagram_embed( string $url ): Block {
+		$atts = [
+			'url'              => $url,
+			'type'             => 'rich',
+			'providerNameSlug' => 'instagram',
+			'responsive'       => true,
+		];
+
+		return new Block(
+			block_name: 'embed',
+			attributes: $atts,
+			content: sprintf(
+				'<figure class="wp-block-embed is-type-rich is-provider-instagram wp-block-embed-instagram"><div class="wp-block-embed__wrapper">
+				%s
+				</div></figure>',
+				$url
+			),
+		);
+	}
+
+	/**
+	 * Create Instagram embed blocks.
+	 *
+	 * @param string $url The URL.
+	 * @return Blockx
+	 */
+	protected function facebook_embed( string $url ): Block {
+		$atts = [
+			'url'              => $url,
+			'type'             => 'rich',
+			'providerNameSlug' => 'embed-handler',
+			'responsive'       => true,
+			'previewable'      => false,
+		];
+
+		return new Block(
+			block_name: 'embed',
+			attributes: $atts,
+			content: sprintf(
+				'<figure class="wp-block-embed is-type-rich is-provider-embed-handler wp-block-embed-embed-handler"><div class="wp-block-embed__wrapper">
+				%s
+				</div></figure>',
 				$url
 			),
 		);
