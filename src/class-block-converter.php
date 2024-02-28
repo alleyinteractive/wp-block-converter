@@ -231,7 +231,7 @@ class Block_Converter {
 	 * Create ol blocks.
 	 *
 	 * @param DOMNode $node The node.
-	 * @return block
+	 * @return Block
 	 */
 	protected function ol( DOMNode $node ): Block {
 		return new Block(
@@ -243,6 +243,12 @@ class Block_Converter {
 		);
 	}
 
+	/**
+	 * Create embed blocks.
+	 *
+	 * @param string $url The URL.
+	 * @return Block
+	 */
 	protected function embed( string $url ): Block {
 		$data = _wp_oembed_get_object()->get_data( $url, [] );
 
@@ -257,14 +263,14 @@ class Block_Converter {
 		}
 
 		$atts = [
-			'url' => $url,
-			'type' => $data->type,
+			'url'              => $url,
+			'type'             => $data->type,
 			'providerNameSlug' => sanitize_title( $data->provider_name ),
-			'responsive' => true,
+			'responsive'       => true,
 		];
 
 		if ( ! empty( $aspect_ratio ) ) {
-			$aspect_ratio = sprintf( 'wp-embed-aspect-%s wp-has-aspect-ratio', $aspect_ratio );
+			$aspect_ratio      = sprintf( 'wp-embed-aspect-%s wp-has-aspect-ratio', $aspect_ratio );
 			$atts['className'] = $aspect_ratio;
 		}
 
