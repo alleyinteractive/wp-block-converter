@@ -16,12 +16,12 @@
     ],
     "require": {
         "php": "^8.0|^8.1|^8.2",
-        "alleyinteractive/composer-wordpress-autoloader": "^1.0"
+        "alleyinteractive/composer-wordpress-autoloader": "^1.0",
+        "mantle-framework/support": "^0.12"
     },
     "require-dev": {
         "alleyinteractive/alley-coding-standards": "^2.0",
-        "mantle-framework/testkit": "^0.12",
-        "nunomaduro/collision": "^6.0"
+        "mantle-framework/testkit": "^0.12"
     },
     "config": {
         "allow-plugins": {
