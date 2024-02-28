@@ -159,6 +159,12 @@ class Block_Converter {
 	protected function p( DOMNode $node ): ?Block {
 		$content = static::get_node_html( $node );
 
+		if ( ! empty( filter_var( $node->textContent, FILTER_VALIDATE_URL ) ) ) {
+			if ( false !== wp_oembed_get( $node->textContent ) ) {
+				return $this->embed( $node->textContent );
+			}
+		}
+
 		if ( empty( $content ) ) {
 			return null;
 		}
@@ -234,6 +240,47 @@ class Block_Converter {
 				'ordered' => true,
 			],
 			content: static::get_node_html( $node ),
+		);
+	}
+
+	protected function embed( string $url ): Block {
+		$data = _wp_oembed_get_object()->get_data( $url, [] );
+
+		$aspect_ratio = '';
+		if ( ! empty( $data->height ) && ! empty( $data->width ) ) {
+			if ( 1.78 === round( $data->width / $data->height, 2 ) ) {
+				$aspect_ratio = '16-9';
+			}
+			if ( 1.33 === round( $data->width / $data->height, 2 ) ) {
+				$aspect_ratio = '4-3';
+			}
+		}
+
+		$atts = [
+			'url' => $url,
+			'type' => $data->type,
+			'providerNameSlug' => sanitize_title( $data->provider_name ),
+			'responsive' => true,
+		];
+
+		if ( ! empty( $aspect_ratio ) ) {
+			$aspect_ratio = sprintf( 'wp-embed-aspect-%s wp-has-aspect-ratio', $aspect_ratio );
+			$atts['className'] = $aspect_ratio;
+		}
+
+		return new Block(
+			block_name: 'embed',
+			attributes: $atts,
+			content: sprintf(
+				'<figure class="wp-block-embed is-type-%s is-provider-%s wp-block-embed-%s%s"><div class="wp-block-embed__wrapper">
+				%s
+				</div></figure>',
+				$data->type,
+				sanitize_title( $data->provider_name ),
+				sanitize_title( $data->provider_name ),
+				$aspect_ratio ? ' ' . $aspect_ratio : '',
+				$url
+			),
 		);
 	}
 
