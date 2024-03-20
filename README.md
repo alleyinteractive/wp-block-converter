@@ -7,11 +7,15 @@ Convert HTML into Gutenberg Blocks with PHP
 
 ## Installation
 
-You can install the package via composer:
+You can install the package via Composer:
 
 ```bash
 composer require alleyinteractive/wp-block-converter
 ```
+
+This project is built to be used in a WordPress environment, so it is
+recommended to use this package in a WordPress plugin or theme. Using it in
+isolation is not supported at this time.
 
 ## Usage
 
