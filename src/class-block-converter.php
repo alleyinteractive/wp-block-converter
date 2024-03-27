@@ -170,6 +170,9 @@ class Block_Converter {
 		$content = static::get_node_html( $node );
 
 		if ( ! empty( filter_var( $node->textContent, FILTER_VALIDATE_URL ) ) ) {
+			if ( \str_contains( $node->textContent, '//x.com' ) || \str_contains( $node->textContent, '//www.x.com' ) ) {
+				$node->textContent = str_replace( 'x.com', 'twitter.com', $node->textContent );
+			}
 			// Instagram and Facebook embeds require an api key to retrieve oEmbed data.
 			if ( \str_contains( $node->textContent, 'instagram.com' ) ) {
 				return $this->instagram_embed( $node->textContent );

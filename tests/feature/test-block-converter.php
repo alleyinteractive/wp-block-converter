@@ -174,12 +174,42 @@ class Test_Block_Block_Converter extends Test_Case {
         );
     }
 
-    public function test_x_url_to_embed() {
-        $this->fake_request( 'https://publish.twitter.com/oembed?url=https%3A%2F%2Ftwitter.com%2Falleyco%2Fstatus%2F1679189879086018562' )
+    public function test_twitter_url_to_embed() {
+        $this->fake_request( 'https://publish.twitter.com/oembed?maxwidth=500&maxheight=750&url=https%3A%2F%2Ftwitter.com%2Falleyco%2Fstatus%2F1679189879086018562&dnt=1&format=json' )
             ->with_response_code( 200 )
             ->with_body( '{"url":"https:\/\/twitter.com\/alleyco\/status\/1679189879086018562","author_name":"Alley","author_url":"https:\/\/twitter.com\/alleyco","html":"\u003Cblockquote class=\"twitter-tweet\"\u003E\u003Cp lang=\"en\" dir=\"ltr\"\u003EWe’re a full-service digital agency with the foresight, perspective, and grit to power your brightest ideas and build solutions for your most evasive problems. Learn more about our services here:\u003Ca href=\"https:\/\/t.co\/8zZ5zP1Oyc\"\u003Ehttps:\/\/t.co\/8zZ5zP1Oyc\u003C\/a\u003E\u003C\/p\u003E&mdash; Alley (@alleyco) \u003Ca href=\"https:\/\/twitter.com\/alleyco\/status\/1679189879086018562?ref_src=twsrc%5Etfw\"\u003EJuly 12, 2023\u003C\/a\u003E\u003C\/blockquote\u003E\n\u003Cscript async src=\"https:\/\/platform.twitter.com\/widgets.js\" charset=\"utf-8\"\u003E\u003C\/script\u003E\n\n","width":550,"height":null,"type":"rich","cache_age":"3153600000","provider_name":"Twitter","provider_url":"https:\/\/twitter.com","version":"1.0"}' );
 
         $converter = new Block_Converter( '<p>https://twitter.com/alleyco/status/1679189879086018562</p>' );
+        $block     = $converter->convert();
+
+        $this->assertNotEmpty( $block );
+        $this->assertSame(
+            '<!-- wp:embed {"url":"https://twitter.com/alleyco/status/1679189879086018562","type":"rich","providerNameSlug":"twitter","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-twitter wp-block-embed-twitter"><div class="wp-block-embed__wrapper">https://twitter.com/alleyco/status/1679189879086018562</div></figure><!-- /wp:embed -->',
+            $block,
+        );
+    }
+
+    public function test_x_url_to_embed() {
+        $this->fake_request( 'https://publish.x.com/oembed?url=https%3A%2F%2Fx.com%2Falleyco%2Fstatus%2F1679189879086018562' )
+            ->with_response_code( 200 )
+            ->with_body( '{"url":"https:\/\/twitter.com\/alleyco\/status\/1679189879086018562","author_name":"Alley","author_url":"https:\/\/twitter.com\/alleyco","html":"\u003Cblockquote class=\"twitter-tweet\"\u003E\u003Cp lang=\"en\" dir=\"ltr\"\u003EWe’re a full-service digital agency with the foresight, perspective, and grit to power your brightest ideas and build solutions for your most evasive problems. Learn more about our services here:\u003Ca href=\"https:\/\/t.co\/8zZ5zP1Oyc\"\u003Ehttps:\/\/t.co\/8zZ5zP1Oyc\u003C\/a\u003E\u003C\/p\u003E&mdash; Alley (@alleyco) \u003Ca href=\"https:\/\/twitter.com\/alleyco\/status\/1679189879086018562?ref_src=twsrc%5Etfw\"\u003EJuly 12, 2023\u003C\/a\u003E\u003C\/blockquote\u003E\n\u003Cscript async src=\"https:\/\/platform.twitter.com\/widgets.js\" charset=\"utf-8\"\u003E\u003C\/script\u003E\n\n","width":550,"height":null,"type":"rich","cache_age":"3153600000","provider_name":"Twitter","provider_url":"https:\/\/twitter.com","version":"1.0"}' );
+
+        $converter = new Block_Converter( '<p>https://x.com/alleyco/status/1679189879086018562</p>' );
+        $block     = $converter->convert();
+
+        $this->assertNotEmpty( $block );
+        $this->assertSame(
+            '<!-- wp:embed {"url":"https://twitter.com/alleyco/status/1679189879086018562","type":"rich","providerNameSlug":"twitter","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-twitter wp-block-embed-twitter"><div class="wp-block-embed__wrapper">https://twitter.com/alleyco/status/1679189879086018562</div></figure><!-- /wp:embed -->',
+            $block,
+        );
+    }
+
+    public function test_linked_x_url_to_embed() {
+        $this->fake_request( 'https://publish.x.com/oembed?url=https%3A%2F%2Fx.com%2Falleyco%2Fstatus%2F1679189879086018562' )
+            ->with_response_code( 200 )
+            ->with_body( '{"url":"https:\/\/twitter.com\/alleyco\/status\/1679189879086018562","author_name":"Alley","author_url":"https:\/\/twitter.com\/alleyco","html":"\u003Cblockquote class=\"twitter-tweet\"\u003E\u003Cp lang=\"en\" dir=\"ltr\"\u003EWe’re a full-service digital agency with the foresight, perspective, and grit to power your brightest ideas and build solutions for your most evasive problems. Learn more about our services here:\u003Ca href=\"https:\/\/t.co\/8zZ5zP1Oyc\"\u003Ehttps:\/\/t.co\/8zZ5zP1Oyc\u003C\/a\u003E\u003C\/p\u003E&mdash; Alley (@alleyco) \u003Ca href=\"https:\/\/twitter.com\/alleyco\/status\/1679189879086018562?ref_src=twsrc%5Etfw\"\u003EJuly 12, 2023\u003C\/a\u003E\u003C\/blockquote\u003E\n\u003Cscript async src=\"https:\/\/platform.twitter.com\/widgets.js\" charset=\"utf-8\"\u003E\u003C\/script\u003E\n\n","width":550,"height":null,"type":"rich","cache_age":"3153600000","provider_name":"Twitter","provider_url":"https:\/\/twitter.com","version":"1.0"}' );
+
+        $converter = new Block_Converter( '<p><a href="https://x.com/alleyco/status/1679189879086018562">https://x.com/alleyco/status/1679189879086018562</a></p>' );
         $block     = $converter->convert();
 
         $this->assertNotEmpty( $block );
