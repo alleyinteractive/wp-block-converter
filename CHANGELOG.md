@@ -2,6 +2,10 @@
 
 All notable changes to `WP Block Converter` will be documented in this file.
 
+## 1.3.1
+
+- Fixes embeds of x.com urls (instead of twitter.com)
+
 ## 1.3.0
 
 - Adds macro support to the converter, allowing for custom tags to be added to the
