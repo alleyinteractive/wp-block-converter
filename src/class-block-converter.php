@@ -275,7 +275,7 @@ class Block_Converter {
 		$data = _wp_oembed_get_object()->get_data( $url, [] );
 
 		$aspect_ratio = '';
-		if ( ! empty( $data->height ) && ! empty( $data->width ) ) {
+		if ( ! empty( $data->height ) && ! empty( $data->width ) && is_numeric( $data->height ) && is_numeric( $data->width ) ) {
 			if ( 1.78 === round( $data->width / $data->height, 2 ) ) {
 				$aspect_ratio = '16-9';
 			}
