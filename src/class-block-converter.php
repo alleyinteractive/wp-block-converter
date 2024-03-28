@@ -67,6 +67,7 @@ class Block_Converter {
 			}
 
 			// Merge the block into the HTML collection.
+
 			$html[] = $this->minify_block( (string) $tag_block );
 		}
 
@@ -446,8 +447,13 @@ class Block_Converter {
 	 * @return string
 	 */
 	protected function minify_block( $block ) {
-		if ( preg_match( '/(\s){2,}/s', $block ) === 1 ) {
-			return preg_replace( '/(\s){2,}/s', '', $block );
+		if ( \str_contains( $block, 'wp-block-embed' ) ) {
+			$pattern = '/(\h){2,}/s';
+		} else {
+			$pattern = '/(\s){2,}/s';
+		}
+		if ( preg_match( $pattern, $block ) === 1 ) {
+			return preg_replace( $pattern, '', $block );
 		}
 
 		return $block;

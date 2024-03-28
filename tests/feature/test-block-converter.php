@@ -169,7 +169,9 @@ class Test_Block_Block_Converter extends Test_Case {
 
         $this->assertNotEmpty( $block );
         $this->assertSame(
-			'<!-- wp:embed {"url":"https://www.youtube.com/watch?v=dQw4w9WgXcQ","type":"video","providerNameSlug":"youtube","responsive":true,"className":"wp-embed-aspect-16-9 wp-has-aspect-ratio"} --><figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube wp-embed-aspect-16-9 wp-has-aspect-ratio"><div class="wp-block-embed__wrapper">https://www.youtube.com/watch?v=dQw4w9WgXcQ</div></figure><!-- /wp:embed -->',
+			'<!-- wp:embed {"url":"https://www.youtube.com/watch?v=dQw4w9WgXcQ","type":"video","providerNameSlug":"youtube","responsive":true,"className":"wp-embed-aspect-16-9 wp-has-aspect-ratio"} --><figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube wp-embed-aspect-16-9 wp-has-aspect-ratio"><div class="wp-block-embed__wrapper">
+https://www.youtube.com/watch?v=dQw4w9WgXcQ
+</div></figure><!-- /wp:embed -->',
 			$block,
         );
     }
@@ -184,7 +186,9 @@ class Test_Block_Block_Converter extends Test_Case {
 
         $this->assertNotEmpty( $block );
         $this->assertSame(
-            '<!-- wp:embed {"url":"https://twitter.com/alleyco/status/1679189879086018562","type":"rich","providerNameSlug":"twitter","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-twitter wp-block-embed-twitter"><div class="wp-block-embed__wrapper">https://twitter.com/alleyco/status/1679189879086018562</div></figure><!-- /wp:embed -->',
+            '<!-- wp:embed {"url":"https://twitter.com/alleyco/status/1679189879086018562","type":"rich","providerNameSlug":"twitter","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-twitter wp-block-embed-twitter"><div class="wp-block-embed__wrapper">
+https://twitter.com/alleyco/status/1679189879086018562
+</div></figure><!-- /wp:embed -->',
             $block,
         );
     }
@@ -199,7 +203,9 @@ class Test_Block_Block_Converter extends Test_Case {
 
         $this->assertNotEmpty( $block );
         $this->assertSame(
-            '<!-- wp:embed {"url":"https://twitter.com/alleyco/status/1679189879086018562","type":"rich","providerNameSlug":"twitter","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-twitter wp-block-embed-twitter"><div class="wp-block-embed__wrapper">https://twitter.com/alleyco/status/1679189879086018562</div></figure><!-- /wp:embed -->',
+            '<!-- wp:embed {"url":"https://twitter.com/alleyco/status/1679189879086018562","type":"rich","providerNameSlug":"twitter","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-twitter wp-block-embed-twitter"><div class="wp-block-embed__wrapper">
+https://twitter.com/alleyco/status/1679189879086018562
+</div></figure><!-- /wp:embed -->',
             $block,
         );
     }
@@ -214,7 +220,9 @@ class Test_Block_Block_Converter extends Test_Case {
 
         $this->assertNotEmpty( $block );
         $this->assertSame(
-            '<!-- wp:embed {"url":"https://twitter.com/alleyco/status/1679189879086018562","type":"rich","providerNameSlug":"twitter","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-twitter wp-block-embed-twitter"><div class="wp-block-embed__wrapper">https://twitter.com/alleyco/status/1679189879086018562</div></figure><!-- /wp:embed -->',
+            '<!-- wp:embed {"url":"https://twitter.com/alleyco/status/1679189879086018562","type":"rich","providerNameSlug":"twitter","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-twitter wp-block-embed-twitter"><div class="wp-block-embed__wrapper">
+https://twitter.com/alleyco/status/1679189879086018562
+</div></figure><!-- /wp:embed -->',
             $block,
         );
     }
@@ -225,7 +233,9 @@ class Test_Block_Block_Converter extends Test_Case {
 
         $this->assertNotEmpty( $block );
         $this->assertSame(
-            '<!-- wp:embed {"url":"https://www.instagram.com/p/CSpmSvAphdf/","type":"rich","providerNameSlug":"instagram","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-instagram wp-block-embed-instagram"><div class="wp-block-embed__wrapper">https://www.instagram.com/p/CSpmSvAphdf/</div></figure><!-- /wp:embed -->',
+            '<!-- wp:embed {"url":"https://www.instagram.com/p/CSpmSvAphdf/","type":"rich","providerNameSlug":"instagram","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-instagram wp-block-embed-instagram"><div class="wp-block-embed__wrapper">
+https://www.instagram.com/p/CSpmSvAphdf/
+</div></figure><!-- /wp:embed -->',
             $block,
         );
     }
@@ -236,7 +246,9 @@ class Test_Block_Block_Converter extends Test_Case {
 
         $this->assertNotEmpty( $block );
         $this->assertSame(
-            '<!-- wp:embed {"url":"https://www.facebook.com/sesametheopossum/posts/1329405240877426","type":"rich","providerNameSlug":"embed-handler","responsive":true,"previewable":false} --><figure class="wp-block-embed is-type-rich is-provider-embed-handler wp-block-embed-embed-handler"><div class="wp-block-embed__wrapper">https://www.facebook.com/sesametheopossum/posts/1329405240877426</div></figure><!-- /wp:embed -->',
+            '<!-- wp:embed {"url":"https://www.facebook.com/sesametheopossum/posts/1329405240877426","type":"rich","providerNameSlug":"embed-handler","responsive":true,"previewable":false} --><figure class="wp-block-embed is-type-rich is-provider-embed-handler wp-block-embed-embed-handler"><div class="wp-block-embed__wrapper">
+https://www.facebook.com/sesametheopossum/posts/1329405240877426
+</div></figure><!-- /wp:embed -->',
             $block,
         );
     }
