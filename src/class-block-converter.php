@@ -208,6 +208,12 @@ class Block_Converter {
 
 		// Recursively convert the children of the node.
 		foreach ( $node->childNodes as $child ) {
+			if ( '#text' === $child->nodeName ) {
+				$children .= $child->nodeValue;
+
+				continue;
+			}
+
 			$child_block = $this->{$child->nodeName}( $child );
 
 			if ( ! empty( $child_block ) ) {

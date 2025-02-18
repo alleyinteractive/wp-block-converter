@@ -3,6 +3,12 @@
 
 All notable changes to `WP Block Converter` will be documented in this file.
 
+## 1.5.2
+
+### Fixed
+
+- Fixed issue when converting blockquotes with child text nodes.
+
 ## 1.5.1
 
 ### Fixed

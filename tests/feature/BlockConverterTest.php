@@ -379,4 +379,18 @@ https://www.tiktok.com/@atribecalledval/video/7348705314746699054
 			'hr',
 		] )->map_with_keys( fn ( $tag ) => [ $tag => [ $tag ] ] )->all();
 	}
+
+	public function test_convert_with_children(): void {
+		$html = <<<HTML
+ <blockquote><p><em>Sint sint nulla voluptate nulla adipisicing non proident excepteur duis fugiat fugiat qui minim reprehenderit. Irure adipisicing mollit ipsum eiusmod consequat reprehenderit elit anim irure deserunt in deserunt. In dolore ut quis ex quis laboris ex eu. Minim culpa cillum eu.</em></p>
+<blockquote>
+<blockquote><p><em>-proident excepteur duis fugiat fugiat qui minim reprehenderit </em></p></blockquote>
+</blockquote>
+</blockquote>
+HTML;
+
+		$block = ( new Block_Converter( $html ) )->convert();
+
+		$this->assertNotEmpty( $block );
+	}
 }
