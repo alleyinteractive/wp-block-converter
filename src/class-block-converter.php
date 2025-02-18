@@ -110,7 +110,7 @@ class Block_Converter {
 				'h1', 'h2', 'h3', 'h4', 'h5', 'h6' => $this->h( $node ),
 				'p', 'a', 'abbr', 'b', 'code', 'em', 'i', 'strong', 'sub', 'sup', 'span', 'u' => $this->p( $node ),
 				'figure' => $this->figure( $node ),
-				'br', 'source', 'cite' => null,
+				'br', 'cite', 'source' => null,
 				'hr' => $this->separator(),
 				default => $this->html( $node ),
 			};
