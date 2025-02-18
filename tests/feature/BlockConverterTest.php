@@ -392,5 +392,6 @@ HTML;
 		$block = ( new Block_Converter( $html ) )->convert();
 
 		$this->assertNotEmpty( $block );
+		$this->assertMatchesSnapshot( $block );
 	}
 }
