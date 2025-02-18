@@ -110,7 +110,7 @@ class Block_Converter {
 				'h1', 'h2', 'h3', 'h4', 'h5', 'h6' => $this->h( $node ),
 				'p', 'a', 'abbr', 'b', 'code', 'em', 'i', 'strong', 'sub', 'sup', 'span', 'u' => $this->p( $node ),
 				'figure' => $this->figure( $node ),
-				'br', 'cite', 'source' => null,
+				'br', 'source', 'cite' => null,
 				'hr' => $this->separator(),
 				default => $this->html( $node ),
 			};
@@ -212,6 +212,11 @@ class Block_Converter {
 				$children .= $child->nodeValue;
 
 				continue;
+			}
+
+			// Ensure that the cite tag is not converted to a block.
+			if ( 'cite' === strtolower( $child->nodeName ) ) {
+				$children .= trim( static::get_node_html( $child ) );
 			}
 
 			$child_block = $this->convert_node( $child );

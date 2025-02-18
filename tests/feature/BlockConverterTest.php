@@ -92,6 +92,10 @@ class BlockConverterTest extends Test_Case {
 				'<blockquote><p>Lorem ipsum</p></blockquote>',
 				'<!-- wp:quote --><blockquote class="wp-block-quote"><!-- wp:paragraph --><p>Lorem ipsum</p><!-- /wp:paragraph --></blockquote><!-- /wp:quote -->',
 			],
+			'blockquote with cite' => [
+				'<blockquote><p>Lorem ipsum</p><cite>Source</cite></blockquote>',
+				'<!-- wp:quote --><blockquote class="wp-block-quote"><!-- wp:paragraph --><p>Lorem ipsum</p><!-- /wp:paragraph --><cite>Source</cite></blockquote><!-- /wp:quote -->',
+			],
 			'non-oembed-embed' => [
 				'<embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200" />',
 				'<!-- wp:html --><embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200"></embed><!-- /wp:html -->',
