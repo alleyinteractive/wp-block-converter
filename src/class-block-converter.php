@@ -14,6 +14,7 @@ use DOMNode;
 use DOMNodeList;
 use Exception;
 use Mantle\Support\Traits\Macroable;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
 
@@ -23,8 +24,6 @@ use function Mantle\Support\Helpers\mixed;
  * Converts a DOMDocument to Gutenberg block HTML.
  *
  * Mirrors the `htmlToBlocks()`/`rawHandler()` from the `@wordpress/blocks` package.
- *
- * @todo Improve logging to not silently fail when importing images.
  */
 class Block_Converter {
 	use Concerns\Listens_For_Attachments, Macroable {
@@ -36,10 +35,11 @@ class Block_Converter {
 	 *
 	 * @throws RuntimeException If WordPress is not loaded.
 	 *
-	 * @param string $html The HTML to parse.
-	 * @param bool   $sideload_images Whether to sideload images or not. Defaults to false.
+	 * @param string               $html The HTML to parse.
+	 * @param bool                 $sideload_images Whether to sideload images or not. Defaults to false.
+	 * @param LoggerInterface|null $logger The logger to use.
 	 */
-	public function __construct( public string $html, public bool $sideload_images = false ) {
+	public function __construct( public string $html, public bool $sideload_images = false, protected ?LoggerInterface $logger = null ) {
 		if ( ! function_exists( 'do_action' ) ) {
 			throw new RuntimeException( 'WordPress must be loaded to use the Block_Converter class.' );
 		}
@@ -205,8 +205,16 @@ class Block_Converter {
 					 */
 					do_action( 'wp_block_converter_sideloaded_image', $src, $child_node );
 				}
-			} catch ( Throwable ) { // phpcs:ignore Squiz.Commenting.EmptyCatchComment.Missing, Generic.CodeAnalysis.EmptyStatement.DetectedCatch
-				// Do nothing.
+			} catch ( Throwable $e ) { // phpcs:ignore Squiz.Commenting.EmptyCatchComment.Missing, Generic.CodeAnalysis.EmptyStatement.DetectedCatch
+				if ( $this->logger ) {
+					$this->logger->error(
+						"Error sideloading image: {$e->getMessage()}",
+						[
+							'exception' => $e,
+							'node'      => $child_node,
+						]
+					);
+				}
 			}
 		}
 	}

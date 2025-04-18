@@ -3,6 +3,11 @@
 
 All notable changes to `WP Block Converter` will be documented in this file.
 
+## 1.6.0
+
+- Sideloading of images is now opt-in. You can enable it by setting the
+  `sideload_images` option to `true` when creating the converter instance.
+
 ## 1.5.2
 
 ### Fixed
