@@ -5,6 +5,13 @@ All notable changes to `WP Block Converter` will be documented in this file.
 
 ## 1.6.0
 
+### Added
+
+- Added `wp_block_converter_pre_sideload_image` hook to allow select images to
+  be disabled when sideloading.
+
+### Changed
+
 - Sideloading of images is now opt-in. You can enable it by setting the
   `sideload_images` option to `true` when creating the converter instance.
 

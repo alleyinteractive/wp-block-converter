@@ -171,9 +171,22 @@ class Block_Converter {
 				continue;
 			}
 
+			/**
+			 * Filter if the image should be preloaded.
+			 *
+			 * @since 1.6.0
+			 *
+			 * @param bool            $pre        Whether to sideload the image.
+			 * @param string          $src        The image source URL.
+			 * @param DOMNode         $child_node The child node.
+			 * @param Block_Converter $converter The converter instance.
+			 */
+			$pre = apply_filters( 'wp_block_converter_pre_sideload_image', true, $child_node->getAttribute( 'src' ), $child_node, $this );
+
+			// Re-read the src attribute in case it was modified by the filter.
 			$src = $child_node->getAttribute( 'src' );
 
-			if ( empty( $src ) ) {
+			if ( ! $pre || empty( $src ) ) {
 				continue;
 			}
 
