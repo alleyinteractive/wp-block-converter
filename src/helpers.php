@@ -30,6 +30,14 @@ use WP_Error;
  *        @type null|string $title          Title text. Null defaults to the
  *                                          sanitized filename.
  * }
+ * @phpstan-param array{
+ *   alt?: string,
+ *   caption?: string,
+ *   description?: string,
+ *   meta?: array<string, string>,
+ *   parent_post_id?: null|int,
+ *   title?: null|string,
+ * } $args
  * @param string $meta_key Meta key to store the original URL.
  *
  * @throws Exception If the image was not able to be uploaded.
@@ -68,7 +76,7 @@ function create_or_get_attachment_from_url( string $src, array $args = [], strin
 	}
 
 	// Store the original URL for future reference.
-	update_post_meta( $attachment_id, $meta_key, $src );
+	update_post_meta( (int) $attachment_id, $meta_key, $src );
 
 	$postarr = [
 		'post_content' => $args['description'] ?? '',
@@ -88,8 +96,8 @@ function create_or_get_attachment_from_url( string $src, array $args = [], strin
 	if ( ! empty( array_filter( $postarr ) ) ) {
 		$postarr['ID'] = $attachment_id;
 
-		\wp_update_post( $postarr );
+		\wp_update_post( $postarr ); // @phpstan-ignore-line argument.type
 	}
 
-	return $attachment_id;
+	return (int) $attachment_id;
 }
