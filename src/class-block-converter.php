@@ -219,15 +219,13 @@ class Block_Converter {
 					do_action( 'wp_block_converter_sideloaded_image', $src, $child_node );
 				}
 			} catch ( Throwable $e ) { // phpcs:ignore Squiz.Commenting.EmptyCatchComment.Missing, Generic.CodeAnalysis.EmptyStatement.DetectedCatch
-				if ( $this->logger ) {
-					$this->logger->error(
-						"Error sideloading image: {$e->getMessage()}",
-						[
-							'exception' => $e,
-							'node'      => $child_node,
-						]
-					);
-				}
+				$this->logger?->error(
+					"Error sideloading image: {$e->getMessage()}",
+					[
+						'exception' => $e,
+						'node'      => $child_node,
+					]
+				);
 			}
 		}
 	}
