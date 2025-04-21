@@ -11,17 +11,19 @@ namespace Alley\WP\Block_Converter;
 
 use DOMElement;
 use DOMNode;
+use DOMNodeList;
 use Exception;
 use Mantle\Support\Traits\Macroable;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+
+use function Mantle\Support\Helpers\mixed;
 
 /**
  * Converts a DOMDocument to Gutenberg block HTML.
  *
  * Mirrors the `htmlToBlocks()`/`rawHandler()` from the `@wordpress/blocks` package.
- *
- * @todo Improve logging to not silently fail when importing images.
  */
 class Block_Converter {
 	use Concerns\Listens_For_Attachments, Macroable {
@@ -33,9 +35,11 @@ class Block_Converter {
 	 *
 	 * @throws RuntimeException If WordPress is not loaded.
 	 *
-	 * @param string $html The HTML to parse.
+	 * @param string               $html The HTML to parse.
+	 * @param bool                 $sideload_images Whether to sideload images or not. Defaults to false.
+	 * @param LoggerInterface|null $logger The logger to use.
 	 */
-	public function __construct( public string $html ) {
+	public function __construct( public string $html, public bool $sideload_images = false, protected ?LoggerInterface $logger = null ) {
 		if ( ! function_exists( 'do_action' ) ) {
 			throw new RuntimeException( 'WordPress must be loaded to use the Block_Converter class.' );
 		}
@@ -78,8 +82,8 @@ class Block_Converter {
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param string      $html    HTML converted into Gutenberg blocks.
-		 * @param DOMNodeList $content The original DOMNodeList.
+		 * @param string                 $html    HTML converted into Gutenberg blocks.
+		 * @param \DOMNodeList<\DOMNode> $content The original DOMNodeList.
 		 */
 		$html = trim( (string) apply_filters( 'wp_block_converter_document_html', $html, $content ) );
 
@@ -90,6 +94,8 @@ class Block_Converter {
 
 	/**
 	 * Convert a node to a block.
+	 *
+	 * @throws RuntimeException If the block is not an instance of Block or null.
 	 *
 	 * @param DOMNode $node The node to convert.
 	 * @return Block|null
@@ -116,6 +122,10 @@ class Block_Converter {
 			};
 		}
 
+		if ( null !== $block && ! $block instanceof Block ) {
+			throw new RuntimeException( 'Returned block must be an instance of Block or null.' );
+		}
+
 		/**
 		 * Hook to allow output customizations.
 		 *
@@ -126,7 +136,7 @@ class Block_Converter {
 		 */
 		$block = apply_filters( 'wp_block_converter_block', $block, $node );
 
-		if ( ! $block || ! $block instanceof Block ) {
+		if ( ! $block instanceof Block ) {
 			return null;
 		}
 
@@ -137,9 +147,13 @@ class Block_Converter {
 	 * Sideload any child images of a DOMNode and replace the src with the new URL.
 	 *
 	 * @param DOMNode $node The node.
-	 * @return DOMNode
+	 * @return void
 	 */
 	protected function sideload_child_images( DOMNode $node ): void {
+		if ( ! $this->sideload_images ) {
+			return;
+		}
+
 		$children = $node->childNodes;
 
 		if ( ! $children->length ) {
@@ -157,9 +171,22 @@ class Block_Converter {
 				continue;
 			}
 
+			/**
+			 * Filter if the image should be preloaded.
+			 *
+			 * @since 1.6.0
+			 *
+			 * @param bool            $pre        Whether to sideload the image.
+			 * @param string          $src        The image source URL.
+			 * @param DOMNode         $child_node The child node.
+			 * @param Block_Converter $converter The converter instance.
+			 */
+			$pre = apply_filters( 'wp_block_converter_pre_sideload_image', true, $child_node->getAttribute( 'src' ), $child_node, $this );
+
+			// Re-read the src attribute in case it was modified by the filter.
 			$src = $child_node->getAttribute( 'src' );
 
-			if ( empty( $src ) ) {
+			if ( ! $pre || empty( $src ) ) {
 				continue;
 			}
 
@@ -177,7 +204,7 @@ class Block_Converter {
 
 					// Update the parent node with the new link if the parent
 					// node is an anchor.
-					if ( 'a' === $node->nodeName && $previous_src === $node->getAttribute( 'href' ) ) {
+					if ( $node instanceof DOMElement && 'a' === $node->nodeName && $previous_src === $node->getAttribute( 'href' ) ) {
 						$node->setAttribute( 'href', $src );
 					}
 
@@ -191,8 +218,14 @@ class Block_Converter {
 					 */
 					do_action( 'wp_block_converter_sideloaded_image', $src, $child_node );
 				}
-			} catch ( Throwable ) { // phpcs:ignore Squiz.Commenting.EmptyCatchComment.Missing, Generic.CodeAnalysis.EmptyStatement.DetectedCatch
-				// Do nothing.
+			} catch ( Throwable $e ) { // phpcs:ignore Squiz.Commenting.EmptyCatchComment.Missing, Generic.CodeAnalysis.EmptyStatement.DetectedCatch
+				$this->logger?->error(
+					"Error sideloading image: {$e->getMessage()}",
+					[
+						'exception' => $e,
+						'node'      => $child_node,
+					]
+				);
 			}
 		}
 	}
@@ -384,13 +417,13 @@ class Block_Converter {
 		}
 
 		if ( 2 === $children->length ) {
-			if ( 'figcaption' !== $children->item( 1 )->nodeName ) {
+			if ( 'figcaption' !== $children->item( 1 )?->nodeName ) {
 				return false;
 			}
 		}
 
 		// Check if the first child is an <img> or an <a> with an <img> child.
-		if ( 'img' === $children->item( 0 )->nodeName || $this->is_anchor_wrapped_image( $children->item( 0 ) ) ) {
+		if ( 'img' === $children->item( 0 )?->nodeName || $this->is_anchor_wrapped_image( $children->item( 0 ) ) ) {
 			return true;
 		}
 
@@ -400,17 +433,21 @@ class Block_Converter {
 	/**
 	 * Check if the figure node is an anchor wrapped image.
 	 *
-	 * @param DOMNode $node The node.
+	 * @param DOMNode|null $node The node.
 	 * @return bool
 	 */
-	protected function is_anchor_wrapped_image( DOMNode $node ): bool {
+	protected function is_anchor_wrapped_image( ?DOMNode $node ): bool {
+		if ( ! $node ) {
+			return false;
+		}
+
 		$children = $node->childNodes;
 
 		if ( ! $children->length ) {
 			return false;
 		}
 
-		if ( 1 === $children->length && 'img' === $children->item( 0 )->nodeName ) {
+		if ( 1 === $children->length && 'img' === $children->item( 0 )?->nodeName ) {
 			return true;
 		}
 
@@ -453,7 +490,7 @@ class Block_Converter {
 			$image_node = $element->getElementsByTagName( 'img' )->item( 0 );
 
 			// Bail early if the image node is not found.
-			if ( ! $image_node || ! $image_node instanceof DOMElement ) {
+			if ( ! $image_node ) {
 				return null;
 			}
 		} else {
@@ -534,8 +571,8 @@ class Block_Converter {
 
 		$atts = [
 			'url'              => $url,
-			'type'             => $data->type,
-			'providerNameSlug' => sanitize_title( $data->provider_name ),
+			'type'             => mixed( $data->type ?? '' )->string(),
+			'providerNameSlug' => sanitize_title( mixed( $data->provider_name ?? '' )->string() ),
 			'responsive'       => true,
 		];
 
@@ -551,9 +588,9 @@ class Block_Converter {
 				'<figure class="wp-block-embed is-type-%s is-provider-%s wp-block-embed-%s%s"><div class="wp-block-embed__wrapper">
 				%s
 				</div></figure>',
-				$data->type,
-				sanitize_title( $data->provider_name ),
-				sanitize_title( $data->provider_name ),
+				mixed( $data->type ?? '' )->string(),
+				sanitize_title( mixed( $data->provider_name ?? '' )->string() ),
+				sanitize_title( mixed( $data->provider_name ?? '' )->string() ),
 				$aspect_ratio ? ' ' . $aspect_ratio : '',
 				$url
 			),
@@ -657,7 +694,7 @@ class Block_Converter {
 	 *
 	 * @param DOMNode $node The current DOMNode.
 	 * @param string  $tag The tag to search for.
-	 * @return DOMNodeList The raw HTML.
+	 * @return DOMNodeList<DOMNode> The raw HTML.
 	 */
 	public static function get_nodes( DOMNode $node, $tag ) {
 		return static::get_node_tag_from_html(
@@ -673,7 +710,7 @@ class Block_Converter {
 	 * @return string The raw HTML.
 	 */
 	public static function get_node_html( DOMNode $node ): string {
-		return $node->ownerDocument->saveHTML( $node );
+		return $node->ownerDocument?->saveHTML( $node ) ?: '';
 	}
 
 	/**
@@ -681,7 +718,7 @@ class Block_Converter {
 	 *
 	 * @param string $html The HTML content.
 	 * @param string $tag The tag to search for.
-	 * @return DOMNodeList The list of DOMNodes.
+	 * @return \DOMNodeList<\DOMNode> The list of DOMNodes.
 	 */
 	public static function get_node_tag_from_html( $html, $tag = 'body' ) {
 		$dom = new \DOMDocument();
@@ -701,14 +738,15 @@ class Block_Converter {
 	 * @param string $block Gutenberg blocks.
 	 * @return string
 	 */
-	protected function minify_block( $block ) {
+	protected function minify_block( string $block ): string {
 		if ( \str_contains( $block, 'wp-block-embed' ) ) {
 			$pattern = '/(\h){2,}/s';
 		} else {
 			$pattern = '/(\s){2,}/s';
 		}
+
 		if ( preg_match( $pattern, $block ) === 1 ) {
-			return preg_replace( $pattern, '', $block );
+			return preg_replace( $pattern, '', $block ) ?: '';
 		}
 
 		return $block;
@@ -754,7 +792,6 @@ class Block_Converter {
 	 * @return string The WordPress image URL.
 	 */
 	public function upload_image( string $src, string $alt ): string {
-		// Remove all image arguments.
 		$src = $this->remove_image_args( $src );
 
 		return (string) wp_get_attachment_url( create_or_get_attachment_from_url( $src, [ 'alt' => $alt ] ) );
@@ -810,6 +847,6 @@ class Block_Converter {
 	 * @return string $html The new HTML.
 	 */
 	public function remove_empty_p_blocks( string $html ): string {
-		return \preg_replace( '/(\<\!\-\- wp\:paragraph \-\-\>[\s\n\r]*?\<p\>[\s\n\r]*?\<\/p\>[\s\n\r]*?\<\!\-\- \/wp\:paragraph \-\-\>)/', '', $html );
+		return \preg_replace( '/(\<\!\-\- wp\:paragraph \-\-\>[\s\n\r]*?\<p\>[\s\n\r]*?\<\/p\>[\s\n\r]*?\<\!\-\- \/wp\:paragraph \-\-\>)/', '', $html ) ?: $html;
 	}
 }

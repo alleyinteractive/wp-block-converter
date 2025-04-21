@@ -9,9 +9,9 @@ namespace Alley\WP\Block_Block_Converter\Tests\Feature;
 
 use Alley\WP\Block_Converter\Block;
 use Alley\WP\Block_Converter\Block_Converter;
+use Alley\WP\Block_Converter\Tests\TestCase;
 use DOMNode;
 use Mantle\Testing\Concerns\Prevent_Remote_Requests;
-use Mantle\Testkit\Test_Case;
 use Mantle\Support\Str;
 use Mantle\Testing\Concerns\Refresh_Database;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -22,7 +22,7 @@ use function Mantle\Testing\mock_http_response;
 /**
  * Test case for Block Block_Converter Module.
  */
-class BlockConverterTest extends Test_Case {
+class BlockConverterTest extends TestCase {
 	use Prevent_Remote_Requests, Refresh_Database;
 
 	protected function setUp(): void {
@@ -108,7 +108,7 @@ class BlockConverterTest extends Test_Case {
 		$this->fake_request( 'https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png' )
 			->with_file( __DIR__ . '/../fixtures/image.png' );
 
-		$converter = new Block_Converter( $html );
+		$converter = new Block_Converter( $html, sideload_images: true );
 		$block     = $converter->convert();
 
 		$this->assertEquals( $expected, $block );

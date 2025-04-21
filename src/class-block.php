@@ -14,18 +14,18 @@ class Block {
 	/**
 	 * Constructor.
 	 *
-	 * @param string|null $block_name The block name.
-	 * @param array       $attributes The block attributes.
-	 * @param string|null $content    The block content.
+	 * @param string               $block_name The block name.
+	 * @param array<string, mixed> $attributes The block attributes.
+	 * @param string|null          $content    The block content.
 	 */
-	public function __construct( public ?string $block_name, public array $attributes = [], public ?string $content = null ) {
+	public function __construct( public string $block_name, public array $attributes = [], public ?string $content = null ) {
 	}
 
 	/**
 	 * Render the block.
 	 */
 	public function render(): string {
-		return get_comment_delimited_block_content( $this->block_name, $this->attributes, $this->content );
+		return get_comment_delimited_block_content( $this->block_name, $this->attributes, $this->content ?? '' );
 	}
 
 	/**
