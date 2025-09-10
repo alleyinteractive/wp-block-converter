@@ -63,7 +63,7 @@ class Block_Converter {
 
 		$html = [];
 
-		foreach ( $content->item( 0 )->childNodes as $i => $node ) {
+		foreach ( $content->item( 0 )->childNodes as $node ) {
 			if ( '#text' === $node->nodeName ) {
 				continue;
 			}
