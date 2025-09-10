@@ -63,7 +63,7 @@ class Block_Converter {
 
 		$html = [];
 
-		foreach ( $content->item( 0 )->childNodes as $node ) {
+		foreach ( $content->item( 0 )->childNodes as $i => $node ) {
 			if ( '#text' === $node->nodeName ) {
 				continue;
 			}
@@ -338,6 +338,10 @@ class Block_Converter {
 
 		$content = static::get_node_html( $node );
 
+		if ( empty( $content ) ) {
+			return null;
+		}
+
 		// TODO: Account for Twitter/Facebook embeds being inline links in
 		// content and not full embeds.
 		if ( ! empty( filter_var( $node->textContent, FILTER_VALIDATE_URL ) ) ) {
@@ -358,10 +362,6 @@ class Block_Converter {
 			if ( false !== wp_oembed_get( $node->textContent ) ) {
 				return $this->oembed( $node->textContent );
 			}
-		}
-
-		if ( empty( $content ) ) {
-			return null;
 		}
 
 		return new Block(
@@ -710,6 +710,27 @@ class Block_Converter {
 	 * @return string The raw HTML.
 	 */
 	public static function get_node_html( DOMNode $node ): string {
+		// Remove HTML comment nodes from the children.
+		if ( $node->hasChildNodes() ) {
+			foreach ( iterator_to_array( $node->childNodes ) as $child ) {
+				if ( $child->nodeType === XML_COMMENT_NODE ) {
+					$node->removeChild( $child );
+					continue;
+				}
+
+				// Remove any newline text nodes.
+				if ( "\\n" === trim( (string) $child->nodeValue ) ) {
+					$node->removeChild( $child );
+					continue;
+				}
+			}
+		}
+
+		// Clear out any empty paragraph tags.
+		if ( 'p' === $node->nodeName && empty( trim( (string) $node->nodeValue ) ) ) {
+			return '';
+		}
+
 		return $node->ownerDocument?->saveHTML( $node ) ?: '';
 	}
 
