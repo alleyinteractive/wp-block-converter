@@ -342,8 +342,6 @@ HTML;
 
 		$converted = ( new Block_Converter( $html, false ) )->convert();
 
-		dd( $converted );
-
 		$this->assertMatchesSnapshot( $converted );
 	}
 
