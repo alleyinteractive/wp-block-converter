@@ -340,6 +340,9 @@ https://www.tiktok.com/@atribecalledval/video/7348705314746699054
 
 	/**
 	 * Test that all elements can be manually overridden with a macro.
+	 *
+	 * This must be the last method in the class because it overrides
+	 * built-in macros and does not remove them (yet).
 	 */
 	#[DataProvider( 'macroable_dataprovider' )]
 	public function test_macroable_override_built_in( string $tag ): void {
