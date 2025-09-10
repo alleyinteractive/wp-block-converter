@@ -117,6 +117,19 @@ class BlockConverterTest extends TestCase {
 		$this->assertRequestSent( 'https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png', 1 );
 	}
 
+	public function test_image_with_sideloading_disabled(): void {
+		$html = <<<'HTML'
+<img src="https://example.org/image.jpg" alt="" />
+HTML;
+
+		$result = ( new Block_Converter( $html, false ) )->convert();
+
+		$this->assertEquals(
+			'<!-- wp:image --><figure class="wp-block-image"><img src="https://example.org/image.jpg" alt=""></figure><!-- /wp:image -->',
+			$result,
+		);
+	}
+
 	public static function image_dataprovider(): array {
 		$url = wp_upload_dir()['url'];
 
@@ -352,6 +365,9 @@ HTML;
 
 	/**
 	 * Test that all elements can be manually overridden with a macro.
+	 *
+	 * This must be the last method in the class because it overrides
+	 * built-in macros and does not remove them (yet).
 	 */
 	#[DataProvider( 'macroable_dataprovider' )]
 	public function test_macroable_override_built_in( string $tag ): void {

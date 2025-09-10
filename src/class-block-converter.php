@@ -504,18 +504,23 @@ class Block_Converter {
 			$image_src = $image_node->getAttribute( 'src' );
 		}
 
-		try {
-			$image_src = $this->upload_image( $image_src, $alt );
-
-			// Update the image src attribute.
-			$image_node->setAttribute( 'src', $image_src );
-
-			// Remove any srcset attributes.
-			if ( $image_node->hasAttribute( 'srcset' ) ) {
-				$image_node->removeAttribute( 'srcset' );
-			}
-		} catch ( Exception ) {
+		if ( empty( $image_src ) ) {
 			return null;
+		}
+
+		if ( $this->sideload_images ) {
+			try {
+				$image_src = $this->upload_image( $image_src, $alt );
+
+				$image_node->setAttribute( 'src', $image_src );
+
+				// Remove any srcset attributes.
+				if ( $image_node->hasAttribute( 'srcset' ) ) {
+					$image_node->removeAttribute( 'srcset' );
+				}
+			} catch ( Exception ) {
+				return null;
+			}
 		}
 
 		if ( empty( $image_src ) ) {

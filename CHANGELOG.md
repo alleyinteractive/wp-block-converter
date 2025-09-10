@@ -3,6 +3,10 @@
 
 All notable changes to `WP Block Converter` will be documented in this file.
 
+## 1.6.1
+
+- Fix issue where parent images were being sideloaded when `sideload_images` was set to false.
+
 ## 1.6.0
 
 ### Added
