@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace Alley\WP\Block_Converter\Concerns;
 
+use Mantle\Support\Str;
+
 /**
  * Trait for handling Microsoft Word content detection.
  */
@@ -40,13 +42,13 @@ trait Microsoft_Word_Content {
 	 * @return bool True if the node contains Microsoft Word content, false otherwise.
 	 */
 	protected function is_ms_word_content( \DOMNode $node ): bool {
-		$class_attr = $node->attributes?->getNamedItem( 'class' );
+		if ( $node->nodeType !== XML_ELEMENT_NODE || ! $node instanceof \DOMElement ) {
+			return false;
+		}
 
-		return $node->nodeType === XML_ELEMENT_NODE
-			&& $node->hasAttributes()
-			&& $class_attr !== null
-			&& $class_attr->nodeValue !== null
-			&& strpos( $class_attr->nodeValue, 'MsoNormal' ) !== false;
+		$html = (string) $node->ownerDocument?->saveHTML( $node );
+
+		return Str::contains( $html, [ 'class="MsoNormal"', 'mso-border-alt' ] );
 	}
 
 	/**
