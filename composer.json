@@ -17,6 +17,7 @@
     "require": {
         "php": "^8.2",
         "alleyinteractive/composer-wordpress-autoloader": "^1.0",
+        "alleyinteractive/wp-bulk-task": "^1.0",
         "mantle-framework/support": "^1.6",
         "psr/log": "^2.0 || ^3.0"
     },
@@ -35,7 +36,8 @@
     },
     "autoload": {
         "files": [
-            "src/helpers.php"
+            "src/helpers.php",
+            "src/cli.php"
         ]
     },
     "autoload-dev": {
