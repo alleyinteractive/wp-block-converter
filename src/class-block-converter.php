@@ -63,6 +63,15 @@ class Block_Converter {
 			return '';
 		}
 
+		// Clean MS Word content if enabled.
+		if ( $this->convert_ms_word_content ) {
+			foreach ( $content->item( 0 )->childNodes as $node ) {
+				if ( '#text' !== $node->nodeName ) {
+					$this->clean_ms_word_node( $node );
+				}
+			}
+		}
+
 		$html = [];
 
 		foreach ( $content->item( 0 )->childNodes as $node ) {

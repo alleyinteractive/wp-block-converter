@@ -39,82 +39,100 @@ trait Microsoft_Word_Content {
 	 */
 	protected function is_ms_word_content( \DOMNode $node ): bool {
 		// Check for MsoNormal class in the node's class attribute.
+		$class_attr = $node->attributes?->getNamedItem( 'class' );
 		return $node->nodeType === XML_ELEMENT_NODE
 			&& $node->hasAttributes()
-			&& $node->attributes->getNamedItem( 'class' ) !== null
-			&& strpos( $node->attributes->getNamedItem( 'class' )->nodeValue, 'MsoNormal' ) !== false;
+			&& $class_attr !== null
+			&& $class_attr->nodeValue !== null
+			&& strpos( $class_attr->nodeValue, 'MsoNormal' ) !== false;
 	}
 
 	/**
 	 * Clean up Microsoft Word formatting from a DOM node.
 	 *
 	 * @param \DOMNode $node The DOM node to clean up.
-	 * @return void
 	 */
 	protected function clean_ms_word_node( \DOMNode $node ): void {
-		if ( $node->nodeType !== XML_ELEMENT_NODE ) {
+		if ( $node->nodeType !== XML_ELEMENT_NODE || ! $node instanceof \DOMElement ) {
 			return;
 		}
 
-		/** @var \DOMElement $element */
-		$element = $node;
-
 		// Remove MsoNormal class from class attribute.
-		if ( $element->hasAttribute( 'class' ) ) {
-			$classes = $element->getAttribute( 'class' );
-			$classes = preg_replace( '/\bMsoNormal\b/', '', $classes );
-			$classes = trim( preg_replace( '/\s+/', ' ', $classes ) );
+		if ( $node->hasAttribute( 'class' ) ) {
+			$classes = $node->getAttribute( 'class' );
+			$classes = preg_replace( '/\bMsoNormal\b/', '', $classes ) ?? '';
+			$classes = trim( preg_replace( '/\s+/', ' ', $classes ) ?? '' );
 
 			if ( empty( $classes ) ) {
-				$element->removeAttribute( 'class' );
+				$node->removeAttribute( 'class' );
 			} else {
-				$element->setAttribute( 'class', $classes );
+				$node->setAttribute( 'class', $classes );
 			}
 		}
 
-		// Remove style attribute.
-		if ( $element->hasAttribute( 'style' ) ) {
-			$element->removeAttribute( 'style' );
+		// Remove style attribute from ALL elements.
+		if ( $node->hasAttribute( 'style' ) ) {
+			$node->removeAttribute( 'style' );
+		}
+
+		// Remove other MS Word specific attributes.
+		$ms_word_attributes = [ 'border', 'mso-border-alt' ];
+		foreach ( $ms_word_attributes as $attr ) {
+			if ( $node->hasAttribute( $attr ) ) {
+				$node->removeAttribute( $attr );
+			}
 		}
 
 		// Convert <b> tags to <strong> tags.
-		if ( $element->nodeName === 'b' ) {
-			$strong = $element->ownerDocument->createElement( 'strong' );
+		if ( $node->nodeName === 'b' && $node->ownerDocument !== null ) {
+			$strong = $node->ownerDocument->createElement( 'strong' );
 
 			// Copy all attributes except ones we're cleaning.
-			if ( $element->hasAttributes() ) {
-				foreach ( $element->attributes as $attr ) {
-					if ( $attr->nodeName !== 'class' && $attr->nodeName !== 'style' ) {
+			if ( $node->hasAttributes() ) {
+				foreach ( $node->attributes as $attr ) {
+					if ( $attr->nodeName !== 'class' && $attr->nodeName !== 'style' && $attr->nodeValue !== null ) {
 						$strong->setAttribute( $attr->nodeName, $attr->nodeValue );
 					}
 				}
 			}
 
 			// Move all child nodes to the new strong element.
-			while ( $element->firstChild ) {
-				$strong->appendChild( $element->firstChild );
+			while ( $node->firstChild ) {
+				$strong->appendChild( $node->firstChild );
 			}
 
 			// Replace the b element with strong element.
-			$element->parentNode->replaceChild( $strong, $element );
-			$element = $strong;
+			if ( $node->parentNode !== null ) {
+				$node->parentNode->replaceChild( $strong, $node );
+				$node = $strong;
+			}
 		}
 
 		// Remove <span> tags by unwrapping their content.
-		if ( $element->nodeName === 'span' ) {
+		if ( $node->nodeName === 'span' ) {
+			// First, recursively clean the children before moving them.
+			$children = [];
+			foreach ( $node->childNodes as $child ) {
+				$children[] = $child;
+			}
+
+			foreach ( $children as $child ) {
+				$this->clean_ms_word_node( $child );
+			}
+
 			// Move all child nodes before the span element.
-			while ( $element->firstChild ) {
-				$element->parentNode->insertBefore( $element->firstChild, $element );
+			while ( $node->firstChild ) {
+				$node->parentNode?->insertBefore( $node->firstChild, $node );
 			}
 
 			// Remove the empty span element.
-			$element->parentNode->removeChild( $element );
-			return; // No need to process children as they've been moved.
+			$node->parentNode?->removeChild( $node );
+			return; // No need to process children again as they've been processed and moved.
 		}
 
-		// Recursively clean child nodes.
+		// Recursively clean child nodes to ensure all nested elements are processed.
 		$children = [];
-		foreach ( $element->childNodes as $child ) {
+		foreach ( $node->childNodes as $child ) {
 			$children[] = $child;
 		}
 
