@@ -26,7 +26,9 @@ use function Mantle\Support\Helpers\mixed;
  * Mirrors the `htmlToBlocks()`/`rawHandler()` from the `@wordpress/blocks` package.
  */
 class Block_Converter {
-	use Concerns\Listens_For_Attachments, Macroable {
+	use Concerns\Listens_For_Attachments;
+	use Concerns\Microsoft_Word_Content;
+	use Macroable {
 		__call as macro_call;
 	}
 
@@ -103,6 +105,10 @@ class Block_Converter {
 	public function convert_node( DOMNode $node ): ?Block {
 		if ( '#text' === $node->nodeName ) {
 			return null;
+		}
+
+		if ( $this->convert_ms_word_content && $this->is_ms_word_content( $node ) ) {
+			$this->clean_ms_word_node( $node );
 		}
 
 		if ( static::has_macro( $node->nodeName ) ) {
@@ -338,6 +344,10 @@ class Block_Converter {
 
 		$content = static::get_node_html( $node );
 
+		if ( empty( $content ) ) {
+			return null;
+		}
+
 		// TODO: Account for Twitter/Facebook embeds being inline links in
 		// content and not full embeds.
 		if ( ! empty( filter_var( $node->textContent, FILTER_VALIDATE_URL ) ) ) {
@@ -358,10 +368,6 @@ class Block_Converter {
 			if ( false !== wp_oembed_get( $node->textContent ) ) {
 				return $this->oembed( $node->textContent );
 			}
-		}
-
-		if ( empty( $content ) ) {
-			return null;
 		}
 
 		return new Block(
@@ -715,6 +721,27 @@ class Block_Converter {
 	 * @return string The raw HTML.
 	 */
 	public static function get_node_html( DOMNode $node ): string {
+		// Remove HTML comment nodes from the children.
+		if ( $node->hasChildNodes() ) {
+			foreach ( iterator_to_array( $node->childNodes ) as $child ) {
+				if ( $child->nodeType === XML_COMMENT_NODE ) {
+					$node->removeChild( $child );
+					continue;
+				}
+
+				// Remove any newline text nodes.
+				if ( "\\n" === trim( (string) $child->nodeValue ) ) {
+					$node->removeChild( $child );
+					continue;
+				}
+			}
+		}
+
+		// Clear out any empty paragraph tags.
+		if ( 'p' === $node->nodeName && empty( trim( (string) $node->nodeValue ) ) ) {
+			return '';
+		}
+
 		return $node->ownerDocument?->saveHTML( $node ) ?: '';
 	}
 
