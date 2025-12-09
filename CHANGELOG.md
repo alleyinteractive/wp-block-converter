@@ -3,6 +3,10 @@
 
 All notable changes to `WP Block Converter` will be documented in this file.
 
+## Unreleased
+
+- Fix issue with `pre` tags not being converted correctly.
+
 ## 1.7.0
 
 - Fix issue where parent images were being sideloaded when `sideload_images` was set to false.
