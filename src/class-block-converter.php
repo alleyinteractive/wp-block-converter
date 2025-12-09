@@ -26,7 +26,9 @@ use function Mantle\Support\Helpers\mixed;
  * Mirrors the `htmlToBlocks()`/`rawHandler()` from the `@wordpress/blocks` package.
  */
 class Block_Converter {
-	use Concerns\Listens_For_Attachments, Macroable {
+	use Concerns\Listens_For_Attachments;
+	use Concerns\Microsoft_Word_Content;
+	use Macroable {
 		__call as macro_call;
 	}
 
@@ -103,6 +105,10 @@ class Block_Converter {
 	public function convert_node( DOMNode $node ): ?Block {
 		if ( '#text' === $node->nodeName ) {
 			return null;
+		}
+
+		if ( $this->is_ms_word_content( $node ) ) {
+			$this->clean_ms_word_node( $node );
 		}
 
 		if ( static::has_macro( $node->nodeName ) ) {

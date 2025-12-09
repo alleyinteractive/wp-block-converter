@@ -1,10 +1,10 @@
-<!-- wp:paragraph --><p class="MsoNormal" style="margin-bottom:12.0pt;line-height:115%"><b><span style='font-size:11.0pt;line-height:115%;font-family:"Calibri",sans-serif;color:black'>This is a test from Microsoft Word</span></b></p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p><strong>This is a test from Microsoft Word</strong></p><!-- /wp:paragraph -->
 
-<!-- wp:paragraph --><p class="MsoNormal" style="margin-bottom:12.0pt;line-height:115%"><span style='font-size:11.0pt;line-height:115%;font-family:"Calibri",sans-serif;color:black'>Here is a link to <a href="https://alley.com" style="color:blue;text-decoration:underline">Alley</a></span></p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Here is a link to <a href="https://alley.com" style="color:blue;text-decoration:underline">Alley</a></p><!-- /wp:paragraph -->
 
 <!-- wp:list --><ul style="margin-top:0in" type="disc"><li class="MsoNormal" style="margin-bottom:12.0pt;line-height:115%"><span style='font-size:11.0pt;line-height:115%;font-family:"Calibri",sans-serif;color:black'>First item</span></li><li class="MsoNormal" style="margin-bottom:12.0pt;line-height:115%"><span style='font-size:11.0pt;line-height:115%;font-family:"Calibri",sans-serif;color:black'>Second item</span></li>
 </ul><!-- /wp:list -->
 
-<!-- wp:paragraph --><p class="MsoNormal" style="margin-bottom:12.0pt;line-height:115%"><span style='font-size:11.0pt;line-height:115%;font-family:"Calibri",sans-serif;color:black'>Here is an image:</span></p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Here is an image:</p><!-- /wp:paragraph -->
 
 <!-- wp:image --><figure class="wp-block-image"><img border="0" src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Screen Shot 2022-01-19 at 2.51.37 PM" width="300" style="width:225.0pt;border:none;mso-border-alt:solid #000000 .5pt;mso-border-alt:solid windowtext .5pt;mso-padding-alt:0in 0in 0in 0in"></figure><!-- /wp:image -->
