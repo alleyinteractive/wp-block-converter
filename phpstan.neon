@@ -9,9 +9,6 @@ parameters:
 		- src/
 
 	ignoreErrors:
-		-
-			identifier: requireOnce.fileNotFound
-
 #        - '#PHPDoc tag @var#'
 #
 #    excludePaths:

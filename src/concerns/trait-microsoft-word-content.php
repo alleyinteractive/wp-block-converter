@@ -2,6 +2,8 @@
 /**
  * Microsoft_Word_Content trait file
  *
+ * phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+ *
  * @package wp-block-converter
  */
 
@@ -38,8 +40,8 @@ trait Microsoft_Word_Content {
 	 * @return bool True if the node contains Microsoft Word content, false otherwise.
 	 */
 	protected function is_ms_word_content( \DOMNode $node ): bool {
-		// Check for MsoNormal class in the node's class attribute.
 		$class_attr = $node->attributes?->getNamedItem( 'class' );
+
 		return $node->nodeType === XML_ELEMENT_NODE
 			&& $node->hasAttributes()
 			&& $class_attr !== null
