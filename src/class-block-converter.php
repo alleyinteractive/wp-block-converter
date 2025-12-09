@@ -772,16 +772,14 @@ class Block_Converter {
 	 */
 	protected function minify_block( string $block ): string {
 		if ( \str_contains( $block, 'wp-block-embed' ) ) {
-			$pattern = '/(\h){2,}/s';
-		} else {
-			$pattern = '/(\s){2,}/s';
+			if ( preg_match( '/(\h){2,}/s', $block ) === 1 ) {
+				return preg_replace( '/(\h){2,}/s', '', $block ) ?: '';
+			}
+
+			return $block;
 		}
 
-		if ( preg_match( $pattern, $block ) === 1 ) {
-			return preg_replace( $pattern, '', $block ) ?: '';
-		}
-
-		return $block;
+		return trim( $block );
 	}
 
 	/**

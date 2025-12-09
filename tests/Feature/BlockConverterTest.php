@@ -158,6 +158,7 @@ HTML;
 				'<img decoding="async" loading="lazy" width="786" height="672" src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962">',
 				'<!-- wp:image --><figure class="wp-block-image"><img decoding="async" loading="lazy" width="786" height="672" src="' . $url . '/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962"></figure><!-- /wp:image -->',
 			],
+
 		];
 	}
 
