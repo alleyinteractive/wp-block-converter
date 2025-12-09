@@ -40,6 +40,8 @@ class BlockConverterTest extends TestCase {
 		$dir = wp_upload_dir();
 
 		shell_exec( "rm -rf {$dir['path']}/*" );
+
+		remove_all_actions( 'add_attachment' );
 	}
 
 	#[DataProvider( 'converter_data_provider' )]
@@ -103,6 +105,14 @@ class BlockConverterTest extends TestCase {
 				'<embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200" />',
 				'<!-- wp:html --><embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200"></embed><!-- /wp:html -->',
 			],
+			'paragraph with double spaces' => [
+				'<p>This is content with  a double space.</p>',
+				'<!-- wp:paragraph --><p>This is content with  a double space.</p><!-- /wp:paragraph -->',
+			],
+			'paragraph with multiple spaces' => [
+				'<p>This has    four spaces and	a tab.</p>',
+				'<!-- wp:paragraph --><p>This has    four spaces and	a tab.</p><!-- /wp:paragraph -->',
+			],
 		];
 	}
 
@@ -158,7 +168,6 @@ HTML;
 				'<img decoding="async" loading="lazy" width="786" height="672" src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962">',
 				'<!-- wp:image --><figure class="wp-block-image"><img decoding="async" loading="lazy" width="786" height="672" src="' . $url . '/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962"></figure><!-- /wp:image -->',
 			],
-
 		];
 	}
 
