@@ -229,6 +229,66 @@ HTML;
 		$this->assertSame( 'Override', $block );
 	}
 
+	#[DataProvider( 'multi_line_pre_tag_data_provider' )]
+	public function test_converting_multi_line_pre_tag( string $html, string $expected ) {
+		$this->assertSame(
+			$expected,
+			( new Block_Converter( $html ) )->convert(),
+		);
+	}
+
+	public static function multi_line_pre_tag_data_provider(): array {
+		return [
+			[
+				'
+<pre>
+Line 1
+Line 2
+
+Line 3
+</pre>',
+				'<!-- wp:html --><pre>
+Line 1
+Line 2
+
+Line 3
+</pre><!-- /wp:html -->',
+			],
+			[
+				'
+<pre>
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+1815 - Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+1900 - Ut enim ad minim veniam, quis nostrud exercitation ullamco.
+1915 - Duis aute irure dolor in reprehenderit in voluptate velit.
+1925 - Excepteur sint occaecat cupidatat non proident sunt in culpa.
+
+Names: John Doe, Example Person (1800-1900)
+		Jane Smith, Test Author (1850-1950)
+
+Deaths: Lorem Ipsum, Historical Figure (1700-1800)
+		Dolor Sit, Notable Person (1750-1850)
+</pre>
+			',
+			'<!-- wp:html --><pre>
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+1815 - Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+1900 - Ut enim ad minim veniam, quis nostrud exercitation ullamco.
+1915 - Duis aute irure dolor in reprehenderit in voluptate velit.
+1925 - Excepteur sint occaecat cupidatat non proident sunt in culpa.
+
+Names: John Doe, Example Person (1800-1900)
+		Jane Smith, Test Author (1850-1950)
+
+Deaths: Lorem Ipsum, Historical Figure (1700-1800)
+		Dolor Sit, Notable Person (1750-1850)
+</pre><!-- /wp:html -->',
+			],
+		];
+	}
+
 	#[DataProvider( 'embed_data_provider' )]
 	public function test_url_to_embed( string $html, string $expected, array $requests = [] ) {
 		foreach ( $requests as $url => $response ) {

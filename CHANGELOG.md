@@ -6,6 +6,7 @@ All notable changes to `WP Block Converter` will be documented in this file.
 ## Unreleased
 
 - Fix issue with double spaces being removed when converting.
+- Fix issue with `pre` tags not being converted correctly.
 
 ## 1.7.0
 

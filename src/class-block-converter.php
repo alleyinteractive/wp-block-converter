@@ -70,8 +70,28 @@ class Block_Converter {
 				continue;
 			}
 
-			// Merge the block into the HTML collection.
-			$html[] = $this->minify_block( (string) $this->convert_node( $node ) );
+			$block = (string) $this->convert_node( $node );
+
+			$skip_minify_block = false;
+
+			if ( 'pre' === strtolower( $node->nodeName ) ) {
+				$skip_minify_block = true;
+			}
+
+			/**
+			 * Skip minifying certain blocks.
+			 *
+			 * @param bool     $skip_minify_block Whether to skip minifying the block.
+			 * @param string   $block The block HTML.
+			 * @param \DOMNode $node The DOM node being converted.
+			 */
+			$skip_minify_block = apply_filters( 'wp_block_converter_skip_minify_block', $skip_minify_block, $block, $node );
+
+			if ( ! $skip_minify_block ) {
+				$block = $this->minify_block( $block );
+			}
+
+			$html[] = $block;
 		}
 
 		$html = implode( "\n\n", $html );
