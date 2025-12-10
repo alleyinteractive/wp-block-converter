@@ -81,6 +81,16 @@ class Convert_To_Blocks_Command extends WP_CLI_Command {
 
 		$this->pause_side_effects();
 
+		$default = [
+			'post-type'   => 'post',
+			'post-status' => 'publish',
+		];
+
+		// Confirm if no arguments are provided.
+		if ( empty( $assoc_args ) || ( count( $assoc_args ) === count( $default ) && ! array_diff_key( $assoc_args, $default ) ) ) {
+			WP_CLI::confirm( __( 'You have not provided any arguments. This will process all published posts. Do you want to continue?', 'wp-block-converter' ) );
+		}
+
 		$dry_run         = ! empty( $assoc_args['dry-run'] );
 		$sideload_images = ! empty( $assoc_args['sideload-images'] );
 		$post_type       = $assoc_args['post-type'] ?? 'post';
