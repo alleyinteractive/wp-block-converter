@@ -196,6 +196,9 @@ class Convert_To_Blocks_Command extends WP_CLI_Command {
 
 		if ( $dry_run ) {
 			WP_CLI::line( 'This was a dry run. Run without --dry-run to make actual changes.' );
+		} else {
+			$bulk_task->cursor->reset();
+			WP_CLI::line( 'Cursor has been reset. Run the command again to reprocess posts if needed.' );
 		}
 	}
 }

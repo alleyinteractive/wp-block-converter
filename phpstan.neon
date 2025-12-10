@@ -1,5 +1,5 @@
 includes:
-  - vendor/szepeviktor/phpstan-wordpress/extension.neon
+	- vendor/szepeviktor/phpstan-wordpress/extension.neon
 
 parameters:
 	# Level 9 is the highest level
@@ -10,3 +10,4 @@ parameters:
 
 	excludePaths:
 		- ./src/class-convert-to-blocks-command.php
+		- ./src/cli.php
