@@ -19,6 +19,7 @@
         "alleyinteractive/composer-wordpress-autoloader": "^1.0",
         "alleyinteractive/wp-bulk-task": "^1.0",
         "mantle-framework/support": "^1.6",
+        "nunomaduro/termwind": "^2.3",
         "psr/log": "^2.0 || ^3.0"
     },
     "require-dev": {

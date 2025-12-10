@@ -122,25 +122,25 @@ This package includes a WP-CLI command to bulk convert posts from HTML to Gutenb
 
 ```bash
 # Convert all published posts to blocks
-wp block-converter convert-to-blocks
+wp block-converter
 
 # Preview changes without saving (dry run)
-wp block-converter convert-to-blocks --dry-run
+wp block-converter --dry-run
 
 # Convert a specific post
-wp block-converter convert-to-blocks --post-id=123
+wp block-converter --post-id=123
 
 # Convert multiple specific posts
-wp block-converter convert-to-blocks --post-id=123,456,789
+wp block-converter --post-id=123,456,789
 
 # Convert custom post type
-wp block-converter convert-to-blocks --post-type=page
+wp block-converter --post-type=page
 
 # Convert with image sideloading
-wp block-converter convert-to-blocks --sideload-images
+wp block-converter --sideload-images
 
 # Reset the cursor to start from the beginning
-wp block-converter convert-to-blocks --rewind
+wp block-converter --rewind
 ```
 
 ### Command Options

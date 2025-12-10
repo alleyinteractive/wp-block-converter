@@ -11,6 +11,7 @@ namespace Alley\WP\Block_Converter;
 
 use Alley\WP_Bulk_Task\Bulk_Task;
 use Alley\WP_Bulk_Task\Bulk_Task_Side_Effects;
+use Alley\WP_Bulk_Task\Cursor\Memory_Cursor;
 use Alley\WP_Bulk_Task\Progress\PHP_CLI_Progress_Bar;
 use WP_CLI;
 use WP_CLI_Command;
@@ -53,24 +54,24 @@ class Convert_To_Blocks_Command extends WP_CLI_Command {
 	 * ## EXAMPLES
 	 *
 	 *     # Convert all published posts to blocks
-	 *     $ wp block-converter convert-to-blocks
+	 *     $ wp block-converter
 	 *
 	 *     # Dry run to see what would be converted
-	 *     $ wp block-converter convert-to-blocks --dry-run
+	 *     $ wp block-converter --dry-run
 	 *
 	 *     # Convert a specific post
-	 *     $ wp block-converter convert-to-blocks --post-id=123
+	 *     $ wp block-converter --post-id=123
 	 *
 	 *     # Convert custom post type with image sideloading
-	 *     $ wp block-converter convert-to-blocks --post-type=page --sideload-images
+	 *     $ wp block-converter --post-type=page --sideload-images
 	 *
 	 *     # Reset the cursor to start from the beginning
-	 *     $ wp block-converter convert-to-blocks --rewind
+	 *     $ wp block-converter --rewind
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
 	 */
-	public function convert_to_blocks( $args, $assoc_args ) {
+	public function __invoke( $args, $assoc_args ) {
 		$bulk_task = new Bulk_Task(
 			'convert_to_blocks',
 			new PHP_CLI_Progress_Bar(
@@ -78,19 +79,21 @@ class Convert_To_Blocks_Command extends WP_CLI_Command {
 			)
 		);
 
-		// Handle rewind requests.
-		if ( ! empty( $assoc_args['rewind'] ) ) {
-			$bulk_task->cursor->reset();
-			WP_CLI::success( __( 'Rewound the cursor. Run again without the --rewind flag to process posts.', 'wp-block-converter' ) );
-			return;
-		}
-
 		$this->pause_side_effects();
 
 		$dry_run         = ! empty( $assoc_args['dry-run'] );
 		$sideload_images = ! empty( $assoc_args['sideload-images'] );
 		$post_type       = $assoc_args['post-type'] ?? 'post';
 		$post_status     = $assoc_args['post-status'] ?? 'publish';
+
+		// Use in-memory cursor for dry run to avoid saving progress.
+		if ( $dry_run ) {
+			$bulk_task->cursor = new Memory_Cursor();
+		} elseif ( ! empty( $assoc_args['rewind'] ) ) {
+			$bulk_task->cursor->reset();
+			WP_CLI::success( __( 'Rewound the cursor. Run again without the --rewind flag to process posts.', 'wp-block-converter' ) );
+			return;
+		}
 
 		// Build query arguments.
 		$query_args = [
@@ -100,7 +103,7 @@ class Convert_To_Blocks_Command extends WP_CLI_Command {
 
 		// If specific post IDs are provided, only process those posts.
 		if ( ! empty( $assoc_args['post-id'] ) ) {
-			$post_ids = array_map( 'intval', explode( ',', $assoc_args['post-id'] ) );
+			$post_ids               = array_map( 'intval', explode( ',', $assoc_args['post-id'] ) );
 			$query_args['post__in'] = $post_ids;
 		}
 

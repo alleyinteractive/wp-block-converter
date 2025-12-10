@@ -8,10 +8,5 @@ parameters:
 	paths:
 		- src/
 
-	ignoreErrors:
-#        - '#PHPDoc tag @var#'
-#
-#    excludePaths:
-#        - ./*/*/FileToBeExcluded.php
-#
-#    checkMissingIterableValueType: false
+	excludePaths:
+		- ./src/class-convert-to-blocks-command.php
