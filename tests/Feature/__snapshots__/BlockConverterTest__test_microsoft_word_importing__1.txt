@@ -2,7 +2,9 @@
 
 <!-- wp:paragraph --><p>Here is a link to <a href="https://alley.com">Alley</a></p><!-- /wp:paragraph -->
 
-<!-- wp:list --><ul type="disc"><li>First item</li><li>Second item</li>
+<!-- wp:list --><ul type="disc">
+	<li>First item</li>
+	<li>Second item</li>
 </ul><!-- /wp:list -->
 
 <!-- wp:paragraph --><p>Here is an image:</p><!-- /wp:paragraph -->
