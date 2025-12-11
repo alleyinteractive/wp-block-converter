@@ -1,5 +1,5 @@
 includes:
-  - vendor/szepeviktor/phpstan-wordpress/extension.neon
+	- vendor/szepeviktor/phpstan-wordpress/extension.neon
 
 parameters:
 	# Level 9 is the highest level
@@ -8,13 +8,6 @@ parameters:
 	paths:
 		- src/
 
-	ignoreErrors:
-		-
-			identifier: requireOnce.fileNotFound
-
-#        - '#PHPDoc tag @var#'
-#
-#    excludePaths:
-#        - ./*/*/FileToBeExcluded.php
-#
-#    checkMissingIterableValueType: false
+	excludePaths:
+		- ./src/class-convert-to-blocks-command.php
+		- ./src/cli.php

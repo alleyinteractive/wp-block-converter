@@ -114,6 +114,53 @@ Block_Converter::macro( 'p', function ( \DOMNode $node ) {
 } );
 ```
 
+## WP-CLI Command
+
+This package includes a WP-CLI command to bulk convert posts from HTML to Gutenberg blocks. The command uses [wp-bulk-task](https://github.com/alleyinteractive/wp-bulk-task) for efficient processing of large numbers of posts with resume support.
+
+### Basic Usage
+
+```bash
+# Convert all published posts to blocks
+wp block-converter
+
+# Preview changes without saving (dry run)
+wp block-converter --dry-run
+
+# Convert a specific post
+wp block-converter --post-id=123
+
+# Convert multiple specific posts
+wp block-converter --post-id=123,456,789
+
+# Convert custom post type
+wp block-converter --post-type=page
+
+# Convert with image sideloading
+wp block-converter --sideload-images
+
+# Reset the cursor to start from the beginning
+wp block-converter --rewind
+```
+
+### Command Options
+
+- `--post-type=<post-type>` - The post type to convert. Default: `post`
+- `--post-status=<post-status>` - The post status to filter by. Default: `publish`
+- `--post-id=<post-id>` - Comma-separated list of post IDs to convert. If provided, only these posts will be processed.
+- `--dry-run` - If present, no updates will be made. Shows what would be changed.
+- `--rewind` - Resets the cursor so the next time the command is run it will start from the beginning.
+- `--sideload-images` - If present, images will be sideloaded and attached to the post.
+
+### Features
+
+- **Resume Support**: If the command is interrupted, it will resume from where it left off on the next run
+- **Progress Bar**: Shows real-time progress during bulk processing
+- **Dry Run Mode**: Preview changes before actually modifying posts
+- **Smart Skipping**: Automatically skips posts that already have blocks or have empty content
+- **Error Handling**: Continues processing even if individual posts fail, with detailed error reporting
+- **Statistics**: Displays a summary of processed, converted, skipped, and failed posts
+
 ## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
