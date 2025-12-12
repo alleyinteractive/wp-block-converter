@@ -10,4 +10,3 @@ parameters:
 
 	excludePaths:
 		- ./src/class-convert-to-blocks-command.php
-		- ./src/cli.php

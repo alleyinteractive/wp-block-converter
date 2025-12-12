@@ -37,8 +37,7 @@
     },
     "autoload": {
         "files": [
-            "src/helpers.php",
-            "src/cli.php"
+            "src/helpers.php"
         ]
     },
     "autoload-dev": {

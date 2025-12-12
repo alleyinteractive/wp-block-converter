@@ -3,6 +3,13 @@
 
 All notable changes to `WP Block Converter` will be documented in this file.
 
+## 1.8.2
+
+### Changed
+
+- Drop the CLI command added in 1.8.0. It is causing downstream issues that need
+  to be resolved before it can be re-added.
+
 ## 1.8.1
 
 ### Fixed
