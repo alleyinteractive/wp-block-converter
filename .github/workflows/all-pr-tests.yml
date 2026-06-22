@@ -27,7 +27,7 @@ jobs:
     # Name the job in the matrix
     name: "PR Tests PHP ${{ matrix.php }} WordPress ${{ matrix.wordpress }}"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Run General Tests
         # See https://github.com/alleyinteractive/action-test-general for more options
