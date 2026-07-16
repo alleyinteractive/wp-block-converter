@@ -17,7 +17,7 @@ jobs:
     # Define a matrix of PHP/WordPress versions to test against
     strategy:
       matrix:
-        php: [8.2, 8.3, 8.4]
+        php: [8.3, 8.4, 8.5]
         wordpress: ["latest"]
     runs-on: ubuntu-latest
     # Cancel any existing runs of this workflow
