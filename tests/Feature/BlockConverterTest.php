@@ -53,65 +53,143 @@ class BlockConverterTest extends TestCase {
 		return [
 			'paragraph' => [
 				'<p>Content to migrate</p>',
-				'<!-- wp:paragraph --><p>Content to migrate</p><!-- /wp:paragraph -->',
+				<<<HTML
+<!-- wp:paragraph -->
+<p>Content to migrate</p>
+<!-- /wp:paragraph -->
+HTML,
 			],
 			'empty-paragraphs' => [
 				'<p>Content to migrate</p><p></p>',
-				'<!-- wp:paragraph --><p>Content to migrate</p><!-- /wp:paragraph -->',
+				<<<HTML
+<!-- wp:paragraph -->
+<p>Content to migrate</p>
+<!-- /wp:paragraph -->
+HTML,
 			],
 			'paragraph-heading' => [
 				'<p>Content to migrate</p><h1>Heading 01</h1>',
-				'<!-- wp:paragraph --><p>Content to migrate</p><!-- /wp:paragraph -->
+					<<<HTML
+<!-- wp:paragraph -->
+<p>Content to migrate</p>
+<!-- /wp:paragraph -->
 
-<!-- wp:heading {"level":1} --><h1>Heading 01</h1><!-- /wp:heading -->',
+<!-- wp:heading {"level":1} -->
+<h1 class="wp-block-heading">Heading 01</h1>
+<!-- /wp:heading -->
+HTML,
 			],
 			'h1' => [
 				'<h1>Another content</h1>',
-				'<!-- wp:heading {"level":1} --><h1>Another content</h1><!-- /wp:heading -->',
+				<<<HTML
+<!-- wp:heading {"level":1} -->
+<h1 class="wp-block-heading">Another content</h1>
+<!-- /wp:heading -->
+HTML,
 			],
 			'h2' => [
 				'<h2>Another content</h2>',
-				'<!-- wp:heading {"level":2} --><h2>Another content</h2><!-- /wp:heading -->',
+				<<<HTML
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Another content</h2>
+<!-- /wp:heading -->
+HTML,
 			],
 			'h3' => [
 				'<h3>Another content</h3>',
-				'<!-- wp:heading {"level":3} --><h3>Another content</h3><!-- /wp:heading -->',
+				<<<HTML
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">Another content</h3>
+<!-- /wp:heading -->
+HTML,
 			],
 			'h4' => [
 				'<h4>Another content</h4>',
-				'<!-- wp:heading {"level":4} --><h4>Another content</h4><!-- /wp:heading -->',
+				<<<HTML
+<!-- wp:heading {"level":4} -->
+<h4 class="wp-block-heading">Another content</h4>
+<!-- /wp:heading -->
+HTML,
 			],
 			'h5' => [
 				'<h5>Another content</h5>',
-				'<!-- wp:heading {"level":5} --><h5>Another content</h5><!-- /wp:heading -->',
+				<<<HTML
+<!-- wp:heading {"level":5} -->
+<h5 class="wp-block-heading">Another content</h5>
+<!-- /wp:heading -->
+HTML,
 			],
 			'ol' => [
 				'<ol><li>Random content</li><li>Another random content</li></ol>',
-				'<!-- wp:list {"ordered":true} --><ol><li>Random content</li><li>Another random content</li></ol><!-- /wp:list -->',
+				<<<HTML
+<!-- wp:list {"ordered":true} -->
+<ol class="wp-block-list"><!-- wp:list-item -->
+<li>Random content</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Another random content</li>
+<!-- /wp:list-item --></ol>
+<!-- /wp:list -->
+HTML,
 			],
 			'ul' => [
 				'<ul><li>Random content</li><li>Another random content</li></ul>',
-				'<!-- wp:list --><ul><li>Random content</li><li>Another random content</li></ul><!-- /wp:list -->',
+				<<<HTML
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>Random content</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Another random content</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+HTML,
 			],
 			'blockquote' => [
 				'<blockquote><p>Lorem ipsum</p></blockquote>',
-				'<!-- wp:quote --><blockquote class="wp-block-quote"><!-- wp:paragraph --><p>Lorem ipsum</p><!-- /wp:paragraph --></blockquote><!-- /wp:quote -->',
+				<<<HTML
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:paragraph -->
+<p>Lorem ipsum</p>
+<!-- /wp:paragraph --></blockquote>
+<!-- /wp:quote -->
+HTML,
 			],
 			'blockquote with cite' => [
 				'<blockquote><p>Lorem ipsum</p><cite>Source</cite></blockquote>',
-				'<!-- wp:quote --><blockquote class="wp-block-quote"><!-- wp:paragraph --><p>Lorem ipsum</p><!-- /wp:paragraph --><cite>Source</cite></blockquote><!-- /wp:quote -->',
+				<<<HTML
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:paragraph -->
+<p>Lorem ipsum</p>
+<!-- /wp:paragraph --><cite>Source</cite></blockquote>
+<!-- /wp:quote -->
+HTML,
 			],
 			'non-oembed-embed' => [
 				'<embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200" />',
-				'<!-- wp:html --><embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200"></embed><!-- /wp:html -->',
+				<<<HTML
+<!-- wp:html -->
+<embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200" />
+<!-- /wp:html -->
+HTML,
 			],
 			'paragraph with double spaces' => [
 				'<p>This is content with  a double space.</p>',
-				'<!-- wp:paragraph --><p>This is content with  a double space.</p><!-- /wp:paragraph -->',
+				<<<HTML
+<!-- wp:paragraph -->
+<p>This is content with a double space.</p>
+<!-- /wp:paragraph -->
+HTML,
 			],
 			'paragraph with multiple spaces' => [
 				'<p>This has    four spaces and	a tab.</p>',
-				'<!-- wp:paragraph --><p>This has    four spaces and	a tab.</p><!-- /wp:paragraph -->',
+				<<<HTML
+<!-- wp:paragraph -->
+<p>This has four spaces and a tab.</p>
+<!-- /wp:paragraph -->
+HTML,
 			],
 		];
 	}
@@ -135,7 +213,11 @@ HTML;
 		$result = ( new Block_Converter( $html, false ) )->convert();
 
 		$this->assertEquals(
-			'<!-- wp:image --><figure class="wp-block-image"><img src="https://example.org/image.jpg" alt=""></figure><!-- /wp:image -->',
+			<<<HTML
+<!-- wp:image {"sizeSlug":"large"} -->
+<figure class="wp-block-image size-large"><img src="https://example.org/image.jpg" alt=""/></figure>
+<!-- /wp:image -->
+HTML,
 			$result,
 		);
 	}
