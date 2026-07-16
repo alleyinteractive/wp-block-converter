@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(composer:*)",
+      "Bash(curl:*)",
+      "Bash(echo:*)",
+      "Bash(find:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git status)",
+      "Bash(git show:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(php:*)",
+      "Bash(pwd:*)",
+      "Edit",
+      "Write"
+    ],
+    "deny": [
+      "Bash(git commit:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(gh merge)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); path=$(echo \"$input\" | jq -r '.tool_input.file_path // empty'); if [ -n \"$path\" ]; then dir=$(dirname \"$path\"); if git -C \"$dir\" check-ignore -q \"$path\" 2>/dev/null; then echo \"Editing gitignored path is not allowed: $path\" >&2; exit 2; fi; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); path=$(echo \"$input\" | jq -r '.tool_input.file_path // empty'); if [ -n \"$path\" ]; then dir=$(dirname \"$path\"); if git -C \"$dir\" check-ignore -q \"$path\" 2>/dev/null; then echo \"Writing to gitignored path is not allowed: $path\" >&2; exit 2; fi; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
