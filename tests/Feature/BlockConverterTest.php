@@ -1,11 +1,11 @@
 <?php
 /**
- * Class Block Block_Converter
+ * Class Block_Converter
  *
  * @package wp-block-converter
  */
 
-namespace Alley\WP\Block_Block_Converter\Tests\Feature;
+namespace Alley\WP\Block_Converter\Tests\Feature;
 
 use Alley\WP\Block_Converter\Block;
 use Alley\WP\Block_Converter\Block_Converter;
@@ -20,7 +20,7 @@ use function Mantle\Support\Helpers\collect;
 use function Mantle\Testing\mock_http_response;
 
 /**
- * Test case for Block Block_Converter Module.
+ * Test case for Block_Converter Module.
  */
 class BlockConverterTest extends TestCase {
 	use Prevent_Remote_Requests, Refresh_Database;

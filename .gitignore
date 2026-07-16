@@ -8,7 +8,7 @@ node_modules
 *.log
 
 # Cache files
-.phpcs/*.json
+.phpcs.cache.json
 .phpunit.result.cache
 
 # Ignore temporary OS files

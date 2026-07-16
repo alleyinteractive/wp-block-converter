@@ -5,16 +5,21 @@
   <!-- Include Alley Rules -->
   <rule ref="Alley-Interactive" />
 
+  <!-- Filenames follow PSR-4 (matching the class/trait name) rather than the WordPress class-*.php convention. -->
+  <rule ref="WordPress.Files.FileName">
+    <exclude name="WordPress.Files.FileName.NotHyphenatedLowercase" />
+    <exclude name="WordPress.Files.FileName.InvalidClassFileName" />
+  </rule>
+
   <!--
   Pass some flags to PHPCS:
     p flag: Show progress of the run.
     s flag: Show sniff codes in all reports.
-    n flag: Do not print warnings.
   -->
   <arg value="ps" />
 
   <!-- Whenever possible, cache the scan results and re-use those for unchanged files on the next scan. -->
-  <arg name="cache" value=".phpcs/cache.json" />
+  <arg name="cache" value=".phpcs.cache.json" />
 
   <!-- Strip the filepaths down to the relevant bit. -->
   <arg name="basepath" value="./" />
@@ -30,8 +35,8 @@
   <exclude-pattern>build/</exclude-pattern>
   <exclude-pattern>vendor/</exclude-pattern>
 
-  <!-- The version set here matches the minimum version tested in buddy.yml. -->
-  <config name="minimum_supported_wp_version" value="5.9" />
+  <!-- The version set here matches the minimum version tested in CI. -->
+  <config name="minimum_supported_wp_version" value="7.0" />
 
   <!-- Define the prefixes that can be used by the plugin -->
   <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
