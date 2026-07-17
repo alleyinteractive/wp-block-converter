@@ -1135,8 +1135,8 @@ class Block_Converter {
 	/**
 	 * Collect a node's descendant text nodes, in document order.
 	 *
-	 * @param Node    $node       The node to collect text nodes from.
-	 * @param Node[]  $text_nodes The collected text nodes, passed by reference.
+	 * @param Node   $node       The node to collect text nodes from.
+	 * @param Node[] $text_nodes The collected text nodes, passed by reference.
 	 * @return void
 	 */
 	protected static function collect_text_nodes( Node $node, array &$text_nodes ): void {
