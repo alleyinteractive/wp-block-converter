@@ -269,6 +269,10 @@ class Block_Converter {
 		// Recursively convert the children of the node.
 		foreach ( $node->childNodes as $child ) {
 			if ( '#text' === $child->nodeName ) {
+				if ( '' === trim( (string) $child->nodeValue ) ) {
+					continue;
+				}
+
 				$children .= $child->nodeValue;
 
 				continue;
@@ -310,6 +314,10 @@ class Block_Converter {
 	 * @return Block|null
 	 */
 	protected function h( Node $node ): ?Block {
+		if ( $node instanceof Element ) {
+			$node->setAttribute( 'class', 'wp-block-heading' );
+		}
+
 		$content = static::get_node_html( $node );
 
 		if ( empty( $content ) ) {
@@ -362,6 +370,7 @@ class Block_Converter {
 		}
 
 		$this->sideload_child_images( $node );
+		static::collapse_whitespace( $node );
 
 		$content = static::get_node_html( $node );
 
@@ -495,12 +504,7 @@ class Block_Converter {
 	 * @return Block
 	 */
 	protected function ul( Node $node ): Block {
-		$this->sideload_child_images( $node );
-
-		return new Block(
-			block_name: 'list',
-			content: static::get_node_html( $node ),
-		);
+		return $this->list( $node, false );
 	}
 
 	/**
@@ -577,14 +581,55 @@ class Block_Converter {
 	 * @return Block
 	 */
 	protected function ol( Node $node ): Block {
+		return $this->list( $node, true );
+	}
+
+	/**
+	 * Create list blocks, wrapping each <li> child in a nested "list-item"
+	 * block to match the block editor's markup.
+	 *
+	 * @param Node $node    The node.
+	 * @param bool $ordered Whether the list is ordered (<ol>).
+	 * @return Block
+	 */
+	protected function list( Node $node, bool $ordered ): Block {
 		$this->sideload_child_images( $node );
+
+		if ( $node instanceof Element ) {
+			$node->setAttribute( 'class', 'wp-block-list' );
+		}
+
+		$items = [];
+
+		foreach ( $node->childNodes as $child ) {
+			if ( 'li' !== strtolower( $child->nodeName ) ) {
+				continue;
+			}
+
+			$items[] = (string) $this->list_item( $child );
+		}
+
+		$node->textContent = '__CHILDREN__';
+
+		$content = str_replace( '__CHILDREN__', implode( "\n\n", $items ), static::get_node_html( $node ) );
 
 		return new Block(
 			block_name: 'list',
-			attributes: [
-				'ordered' => true,
-			],
-			content: static::get_node_html( $node ),
+			attributes: $ordered ? [ 'ordered' => true ] : [],
+			content: $content,
+		);
+	}
+
+	/**
+	 * Create list-item blocks for a <li>.
+	 *
+	 * @param Node $node The node.
+	 * @return Block
+	 */
+	protected function list_item( Node $node ): Block {
+		return new Block(
+			block_name: 'list-item',
+			content: $this->convert_with_children( $node ),
 		);
 	}
 
@@ -719,8 +764,34 @@ class Block_Converter {
 
 		return new Block(
 			block_name: 'html',
-			content: $html,
+			content: static::self_close_void_elements( $html ),
 		);
+	}
+
+	/**
+	 * Restore the self-closing "/>" syntax on void elements.
+	 *
+	 * WordPress intentionally self-closes void elements in its block output
+	 * (e.g. the image block's `<img .../>`), with no space before the `/>`.
+	 * `Dom\HTMLDocument::saveHtml()` doesn't do this — it always serializes
+	 * void elements per the HTML5 spec (e.g. `<embed ...>`, no trailing
+	 * slash) — so restore that syntax here to match.
+	 *
+	 * @param string $html The HTML to restore self-closing syntax in.
+	 * @return string
+	 */
+	protected static function self_close_void_elements( string $html ): string {
+		$void_elements = [ 'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr' ];
+
+		return preg_replace_callback(
+			'/<(' . implode( '|', $void_elements ) . ')\b[^>]*>/i',
+			static function ( array $matches ): string {
+				$tag = rtrim( trim( $matches[0], '>' ) );
+
+				return str_ends_with( $tag, '/' ) ? $matches[0] : $tag . '/>';
+			},
+			$html
+		) ?? $html;
 	}
 
 	/**
@@ -773,6 +844,28 @@ class Block_Converter {
 		$owner_document = $node->ownerDocument;
 
 		return $owner_document instanceof HTMLDocument ? $owner_document->saveHtml( $node ) : '';
+	}
+
+	/**
+	 * Collapse runs of whitespace in a node's descendant text nodes down to a
+	 * single space, matching how a browser (and the block editor's rich text
+	 * fields) render collapsible whitespace.
+	 *
+	 * @param Node $node The node to collapse whitespace within.
+	 * @return void
+	 */
+	protected static function collapse_whitespace( Node $node ): void {
+		foreach ( $node->childNodes as $child ) {
+			if ( '#text' === $child->nodeName ) {
+				$child->nodeValue = preg_replace( '/\s+/', ' ', (string) $child->nodeValue );
+
+				continue;
+			}
+
+			if ( $child->hasChildNodes() ) {
+				static::collapse_whitespace( $child );
+			}
+		}
 	}
 
 	/**

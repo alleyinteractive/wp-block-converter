@@ -213,7 +213,7 @@ HTML,
 HTML,
 				<<<HTML
 <!-- wp:html -->
-<embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200" />
+<embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200"/>
 <!-- /wp:html -->
 HTML,
 			],
