@@ -265,7 +265,8 @@ class Block_Converter {
 	 * @return string The children as blocks.
 	 */
 	public function convert_with_children( Node $node ): string {
-		$children = '';
+		$children           = '';
+		$previous_was_block = false;
 
 		// Recursively convert the children of the node.
 		foreach ( $node->childNodes as $child ) {
@@ -274,7 +275,8 @@ class Block_Converter {
 					continue;
 				}
 
-				$children .= $child->nodeValue;
+				$children          .= $child->nodeValue;
+				$previous_was_block = false;
 
 				continue;
 			}
@@ -287,7 +289,17 @@ class Block_Converter {
 			$child_block = $this->convert_node( $child );
 
 			if ( ! empty( $child_block ) ) {
-				$children .= $this->minify_block( (string) $child_block );
+				// Separate consecutive block-level children with a blank
+				// line, matching the top-level join in convert(). Non-block
+				// content (plain text, <cite>) attaches directly with no gap.
+				if ( $previous_was_block ) {
+					$children .= "\n\n";
+				}
+
+				$children          .= $this->minify_block( (string) $child_block );
+				$previous_was_block = true;
+			} else {
+				$previous_was_block = false;
 			}
 		}
 
@@ -372,6 +384,7 @@ class Block_Converter {
 
 		$this->sideload_child_images( $node );
 		static::collapse_whitespace( $node );
+		static::trim_edge_whitespace( $node );
 
 		$content = static::get_node_html( $node );
 
@@ -934,6 +947,51 @@ class Block_Converter {
 
 			if ( $child->hasChildNodes() ) {
 				static::collapse_whitespace( $child );
+			}
+		}
+	}
+
+	/**
+	 * Trim leading whitespace from a node's first descendant text node and
+	 * trailing whitespace from its last, matching how a browser trims edge
+	 * whitespace when rendering `white-space: normal` content.
+	 *
+	 * @param Node $node The node to trim edge whitespace within.
+	 * @return void
+	 */
+	protected static function trim_edge_whitespace( Node $node ): void {
+		$text_nodes = [];
+
+		static::collect_text_nodes( $node, $text_nodes );
+
+		if ( empty( $text_nodes ) ) {
+			return;
+		}
+
+		$first            = reset( $text_nodes );
+		$first->nodeValue = ltrim( (string) $first->nodeValue );
+
+		$last            = end( $text_nodes );
+		$last->nodeValue = rtrim( (string) $last->nodeValue );
+	}
+
+	/**
+	 * Collect a node's descendant text nodes, in document order.
+	 *
+	 * @param Node    $node       The node to collect text nodes from.
+	 * @param Node[]  $text_nodes The collected text nodes, passed by reference.
+	 * @return void
+	 */
+	protected static function collect_text_nodes( Node $node, array &$text_nodes ): void {
+		foreach ( $node->childNodes as $child ) {
+			if ( '#text' === $child->nodeName ) {
+				$text_nodes[] = $child;
+
+				continue;
+			}
+
+			if ( $child->hasChildNodes() ) {
+				static::collect_text_nodes( $child, $text_nodes );
 			}
 		}
 	}
