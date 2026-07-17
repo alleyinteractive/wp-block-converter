@@ -248,16 +248,22 @@ HTML,
 		);
 		$block     = $converter->convert();
 
-		// TODO: Get image ID and URL for sideloaded image; replace {{IMAGE_ID}} and {{IMAGE_URL}} placeholders in $expected before comparison.
+		$this->assertCount(
+			expectedCount: 1,
+			haystack: $converter->get_created_attachment_ids(),
+		);
+
+		$attachment_id = $converter->get_created_attachment_ids()[0];
+
+		$expected = str_replace(
+			search: [ '{{IMAGE_ID}}', '{{IMAGE_SRC}}' ],
+			replace: [ $attachment_id, wp_get_attachment_url( $attachment_id ) ],
+			subject: $expected,
+		);
 
 		$this->assertEquals(
 			expected: $expected,
 			actual: $block,
-		);
-
-		$this->assertCount(
-			expectedCount: 1,
-			haystack: $converter->get_created_attachment_ids(),
 		);
 		$this->assertRequestSent(
 			url_or_callback: 'https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png',

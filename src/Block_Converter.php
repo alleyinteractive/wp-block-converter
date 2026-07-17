@@ -150,6 +150,24 @@ class Block_Converter {
 			};
 		}
 
+		return $this->finalize_block( $block, $node );
+	}
+
+	/**
+	 * Apply the `wp_block_converter_block` filter to a generated block.
+	 *
+	 * Shared by `convert_node()` and any method that builds `Block` instances
+	 * outside of the normal per-node dispatch (e.g. splitting a single node
+	 * into multiple sibling blocks), so every generated block passes through
+	 * the same customization hook.
+	 *
+	 * @throws RuntimeException If the block is not an instance of Block or null.
+	 *
+	 * @param mixed $block The generated block, if any.
+	 * @param Node  $node  The node the block was generated from.
+	 * @return Block|null
+	 */
+	protected function finalize_block( mixed $block, Node $node ): ?Block {
 		if ( null !== $block && ! $block instanceof Block ) {
 			throw new RuntimeException( 'Returned block must be an instance of Block or null.' );
 		}
@@ -164,11 +182,7 @@ class Block_Converter {
 		 */
 		$block = apply_filters( 'wp_block_converter_block', $block, $node );
 
-		if ( ! $block instanceof Block ) {
-			return null;
-		}
-
-		return $block;
+		return $block instanceof Block ? $block : null;
 	}
 
 	/**
@@ -382,6 +396,10 @@ class Block_Converter {
 			return $this->img( $node );
 		}
 
+		if ( 'p' === strtolower( $node->nodeName ) && $this->paragraph_has_inline_image( $node ) ) {
+			return $this->split_paragraph_with_inline_images( $node );
+		}
+
 		$this->sideload_child_images( $node );
 		static::collapse_whitespace( $node );
 		static::trim_edge_whitespace( $node );
@@ -432,6 +450,87 @@ class Block_Converter {
 	}
 
 	/**
+	 * Check if a <p> has an <img> (bare or anchor-wrapped) as one of several
+	 * direct children, i.e. an image sitting inline in running text rather
+	 * than being the paragraph's sole content.
+	 *
+	 * @param Node $node The node.
+	 * @return bool
+	 */
+	protected function paragraph_has_inline_image( Node $node ): bool {
+		foreach ( static::significant_child_nodes( $node ) as $child ) {
+			if ( 'img' === strtolower( $child->nodeName ) || $this->is_anchor_wrapped_image( $child ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Split a <p> containing one or more inline images into separate
+	 * paragraph and image blocks, matching how the block editor splits a
+	 * pasted inline image out of its surrounding text into its own image
+	 * block (floated right of the remaining text).
+	 *
+	 * @param Node $node The node.
+	 * @return Block|null
+	 */
+	protected function split_paragraph_with_inline_images( Node $node ): ?Block {
+		// Each inline image is sideloaded individually by img() below — not
+		// pre-sideloaded here, which would overwrite its src with a local
+		// URL before img() ever sees the original remote one.
+		static::collapse_whitespace( $node );
+
+		$blocks = [];
+		$buffer = '';
+
+		foreach ( $node->childNodes as $child ) {
+			if ( 'img' === strtolower( $child->nodeName ) || $this->is_anchor_wrapped_image( $child ) ) {
+				$text = trim( $buffer );
+
+				if ( '' !== $text ) {
+					$blocks[] = $this->finalize_block(
+						new Block( block_name: 'paragraph', content: sprintf( '<p>%s</p>', $text ) ),
+						$child,
+					);
+				}
+
+				$blocks[] = $this->finalize_block( $this->img( $child, split_from_paragraph: true ), $child );
+
+				$buffer = '';
+
+				continue;
+			}
+
+			$buffer .= '#text' === $child->nodeName ? (string) $child->nodeValue : static::get_node_html( $child );
+		}
+
+		$text = trim( $buffer );
+
+		if ( '' !== $text ) {
+			$blocks[] = $this->finalize_block(
+				new Block( block_name: 'paragraph', content: sprintf( '<p>%s</p>', $text ) ),
+				$node,
+			);
+		}
+
+		$blocks = array_filter( $blocks );
+
+		if ( empty( $blocks ) ) {
+			return null;
+		}
+
+		return new Block(
+			block_name: '',
+			content: implode(
+				"\n\n",
+				array_map( fn ( Block $block ) => $this->minify_block( (string) $block ), $blocks )
+			),
+		);
+	}
+
+	/**
 	 * Create figure blocks.
 	 *
 	 * This method only supports converting a <figure> block that has either a
@@ -443,17 +542,7 @@ class Block_Converter {
 	 */
 	public function figure( Node $node ): ?Block {
 		if ( $this->is_supported_figure( $node ) ) {
-			$this->sideload_child_images( $node );
-
-			// Ensure it has the "wp-block-image" class.
-			if ( $node instanceof Element ) {
-				$node->setAttribute( 'class', 'wp-block-image' );
-			}
-
-			return new Block(
-				block_name: 'image',
-				content: static::get_node_html( $node ),
-			);
+			return $this->img( $node );
 		}
 
 		return $this->html( $node );
@@ -466,34 +555,25 @@ class Block_Converter {
 	 * @return bool
 	 */
 	protected function is_supported_figure( Node $node ): bool {
-		$children = $node->childNodes;
+		$children = static::significant_child_nodes( $node );
 
-		if ( ! $children->length ) {
+		if ( empty( $children ) || count( $children ) > 2 ) {
 			return false;
 		}
 
-		if ( $children->length > 2 ) {
+		if ( 2 === count( $children ) && 'figcaption' !== strtolower( $children[1]->nodeName ) ) {
 			return false;
 		}
 
-		$second_child = $children->item( 1 );
-
-		if ( 2 === $children->length && ( ! $second_child || 'figcaption' !== strtolower( $second_child->nodeName ) ) ) {
-			return false;
-		}
-
-		$first_child = $children->item( 0 );
+		$first_child = $children[0];
 
 		// Check if the first child is an <img> or an <a> with an <img> child.
-		if ( $first_child && ( 'img' === strtolower( $first_child->nodeName ) || $this->is_anchor_wrapped_image( $first_child ) ) ) {
-			return true;
-		}
-
-		return false;
+		return 'img' === strtolower( $first_child->nodeName ) || $this->is_anchor_wrapped_image( $first_child );
 	}
 
 	/**
-	 * Check if the figure node is an anchor wrapped image.
+	 * Check if the node's only meaningful child is an <img>, e.g. an <a>
+	 * wrapping a single image.
 	 *
 	 * @param Node|null $node The node.
 	 * @return bool
@@ -503,19 +583,47 @@ class Block_Converter {
 			return false;
 		}
 
-		$children = $node->childNodes;
+		$children = static::significant_child_nodes( $node );
 
-		if ( ! $children->length ) {
-			return false;
+		return 1 === count( $children ) && 'img' === strtolower( $children[0]->nodeName );
+	}
+
+	/**
+	 * Get a node's child nodes, ignoring whitespace-only text nodes (e.g. the
+	 * indentation/newlines between tags in pretty-printed source HTML), so
+	 * child-counting checks only see meaningfully different markup.
+	 *
+	 * @param Node $node The node.
+	 * @return Node[]
+	 */
+	protected static function significant_child_nodes( Node $node ): array {
+		$children = [];
+
+		foreach ( $node->childNodes as $child ) {
+			if ( '#text' === $child->nodeName && '' === trim( (string) $child->nodeValue ) ) {
+				continue;
+			}
+
+			$children[] = $child;
 		}
 
-		$first_child = $children->item( 0 );
+		return $children;
+	}
 
-		if ( 1 === $children->length && $first_child && 'img' === strtolower( $first_child->nodeName ) ) {
-			return true;
+	/**
+	 * Remove whitespace-only text node children from an element in place,
+	 * e.g. the indentation/newlines between tags in pretty-printed source
+	 * HTML that the block editor's own markup doesn't have.
+	 *
+	 * @param Element $element The element.
+	 * @return void
+	 */
+	protected static function remove_whitespace_only_child_text_nodes( Element $element ): void {
+		foreach ( iterator_to_array( $element->childNodes ) as $child ) {
+			if ( '#text' === $child->nodeName && '' === trim( (string) $child->nodeValue ) ) {
+				$element->removeChild( $child );
+			}
 		}
-
-		return false;
 	}
 
 	/**
@@ -532,14 +640,18 @@ class Block_Converter {
 	 * Create img block.
 	 *
 	 * Supports being passed a element that is a <img> or a parent element that
-	 * contains an <img>. If it is passed a parent element that contains an
-	 * <img> tag, the resulting block will preserve the parent element and wrap
-	 * it in a <figure> tag.
+	 * contains an <img>. If the parent element is itself a <figure>, its
+	 * markup is preserved and reused as the block's outer wrapper; for any
+	 * other parent (e.g. an <a>), the resulting block wraps it in a new
+	 * <figure> tag.
 	 *
-	 * @param Element|Node $element The node.
+	 * @param Element|Node $element              The node.
+	 * @param bool         $split_from_paragraph Whether this image was split out from inline
+	 *                                           paragraph text, in which case the block editor
+	 *                                           floats it right of the remaining text.
 	 * @return Block|null
 	 */
-	protected function img( Element|Node $element ): ?Block {
+	protected function img( Element|Node $element, bool $split_from_paragraph = false ): ?Block {
 		if ( ! $element instanceof Element ) {
 			return null;
 		}
@@ -567,7 +679,8 @@ class Block_Converter {
 			return null;
 		}
 
-		$attributes = [];
+		$attributes        = [];
+		$wrapped_in_anchor = $image_node->parentNode instanceof Element && 'a' === strtolower( $image_node->parentNode->nodeName );
 
 		if ( $this->sideload_images ) {
 			try {
@@ -582,6 +695,35 @@ class Block_Converter {
 			} catch ( Exception ) {
 				return null;
 			}
+
+			$attachment_id = (int) attachment_url_to_postid( $image_src ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.attachment_url_to_postid_attachment_url_to_postid
+
+			if ( $attachment_id ) {
+				$image_node->setAttribute( 'class', 'wp-image-' . $attachment_id );
+			}
+
+			// The block editor's exact attribute shape for a sideloaded
+			// image, confirmed against a live WP 7.0 install: a link
+			// disables the lightbox and points the image at its custom
+			// href, while a bare image split out of paragraph text keeps
+			// its (default) "none" link destination explicit and floats
+			// right of the remaining text.
+			if ( $wrapped_in_anchor ) {
+				$attributes['lightbox'] = [ 'enabled' => false ];
+			}
+
+			$attributes['id']       = $attachment_id;
+			$attributes['sizeSlug'] = 'full';
+
+			if ( $wrapped_in_anchor ) {
+				$attributes['linkDestination'] = 'custom';
+			} elseif ( $split_from_paragraph ) {
+				$attributes['linkDestination'] = 'none';
+			}
+
+			if ( $split_from_paragraph ) {
+				$attributes['align'] = 'right';
+			}
 		} elseif ( ! ( $this->convert_ms_word_content && $this->is_ms_word_html( $this->html ) ) ) {
 			// Without a known attachment, default to the block editor's
 			// "Large" image size option — unless this is a Microsoft Word
@@ -594,18 +736,33 @@ class Block_Converter {
 			return null;
 		}
 
-		$class = 'wp-block-image' . ( isset( $attributes['sizeSlug'] ) ? ' size-' . $attributes['sizeSlug'] : '' );
+		$class = 'wp-block-image'
+			. ( $split_from_paragraph ? ' alignright' : '' )
+			. ( isset( $attributes['sizeSlug'] ) ? ' size-' . $attributes['sizeSlug'] : '' );
+
+		if ( 'figure' === strtolower( $element->nodeName ) ) {
+			$element->setAttribute( 'class', $class );
+
+			$figcaption = $element->getElementsByTagName( 'figcaption' )->item( 0 );
+
+			if ( $figcaption instanceof Element ) {
+				$figcaption->setAttribute( 'class', 'wp-element-caption' );
+			}
+
+			// Drop the indentation/newline text nodes a pretty-printed
+			// <figure> has between its children — the block editor's own
+			// figure markup has no whitespace between its child elements.
+			static::remove_whitespace_only_child_text_nodes( $element );
+
+			$content = static::get_node_html( $element );
+		} else {
+			$content = sprintf( '<figure class="%s">%s</figure>', $class, static::get_node_html( $element ) );
+		}
 
 		return new Block(
 			block_name: 'image',
 			attributes: $attributes,
-			content: static::self_close_void_elements(
-				sprintf(
-					'<figure class="%s">%s</figure>',
-					$class,
-					static::get_node_html( $element ),
-				)
-			),
+			content: static::self_close_void_elements( $content ),
 		);
 	}
 

@@ -34,6 +34,14 @@ class Block {
 		$attributes = empty( $this->attributes ) ? '' : self::serialize_attributes( $this->attributes ) . ' ';
 		$content    = $this->content ?? '';
 
+		// An empty block name marks this as a passthrough for content that's
+		// already fully block-comment-delimited (e.g. multiple sibling
+		// blocks produced from splitting a single source node), so render
+		// it verbatim instead of wrapping it in another comment delimiter.
+		if ( '' === $block_name ) {
+			return $content;
+		}
+
 		if ( empty( $content ) ) {
 			return sprintf( '<!-- wp:%s %s/-->', $block_name, $attributes );
 		}
