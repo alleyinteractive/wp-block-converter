@@ -546,6 +546,8 @@ class Block_Converter {
 			return null;
 		}
 
+		$attributes = [];
+
 		if ( $this->sideload_images ) {
 			try {
 				$image_src = $this->upload_image( $image_src, $alt );
@@ -559,17 +561,27 @@ class Block_Converter {
 			} catch ( Exception ) {
 				return null;
 			}
+		} elseif ( ! $image_node->hasAttribute( 'width' ) ) {
+			// Without a known attachment or explicit dimensions, default to
+			// the block editor's "Large" image size option.
+			$attributes['sizeSlug'] = 'large';
 		}
 
 		if ( empty( $image_src ) ) {
 			return null;
 		}
 
+		$class = 'wp-block-image' . ( isset( $attributes['sizeSlug'] ) ? ' size-' . $attributes['sizeSlug'] : '' );
+
 		return new Block(
 			block_name: 'image',
-			content: sprintf(
-				'<figure class="wp-block-image">%s</figure>',
-				static::get_node_html( $element ),
+			attributes: $attributes,
+			content: static::self_close_void_elements(
+				sprintf(
+					'<figure class="%s">%s</figure>',
+					$class,
+					static::get_node_html( $element ),
+				)
 			),
 		);
 	}
