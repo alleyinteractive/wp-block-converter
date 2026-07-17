@@ -562,9 +562,11 @@ class Block_Converter {
 			} catch ( Exception ) {
 				return null;
 			}
-		} elseif ( ! $image_node->hasAttribute( 'width' ) ) {
-			// Without a known attachment or explicit dimensions, default to
-			// the block editor's "Large" image size option.
+		} elseif ( ! ( $this->convert_ms_word_content && $this->is_ms_word_html( $this->html ) ) ) {
+			// Without a known attachment, default to the block editor's
+			// "Large" image size option — unless this is a Microsoft Word
+			// paste, which the editor handles as a distinct import path
+			// that doesn't assign a size slug.
 			$attributes['sizeSlug'] = 'large';
 		}
 
