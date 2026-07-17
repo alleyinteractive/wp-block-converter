@@ -10,7 +10,7 @@ namespace Alley\WP\Block_Converter\Tests\Feature;
 use Alley\WP\Block_Converter\Block;
 use Alley\WP\Block_Converter\Block_Converter;
 use Alley\WP\Block_Converter\Tests\TestCase;
-use DOMNode;
+use Dom\Node;
 use Mantle\Testing\Concerns\Prevent_Remote_Requests;
 use Mantle\Support\Str;
 use Mantle\Testing\Concerns\Refresh_Database;
@@ -103,7 +103,7 @@ class BlockConverterTest extends TestCase {
 			],
 			'non-oembed-embed' => [
 				'<embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200" />',
-				'<!-- wp:html --><embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200"></embed><!-- /wp:html -->',
+				'<!-- wp:html --><embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200"><!-- /wp:html -->',
 			],
 			'paragraph with double spaces' => [
 				'<p>This is content with  a double space.</p>',
@@ -247,8 +247,7 @@ Line 2
 
 Line 3
 </pre>',
-				'<!-- wp:html --><pre>
-Line 1
+				'<!-- wp:html --><pre>Line 1
 Line 2
 
 Line 3
@@ -271,8 +270,7 @@ Deaths: Lorem Ipsum, Historical Figure (1700-1800)
 		Dolor Sit, Notable Person (1750-1850)
 </pre>
 			',
-			'<!-- wp:html --><pre>
-Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+			'<!-- wp:html --><pre>Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 
 1815 - Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
 1900 - Ut enim ad minim veniam, quis nostrud exercitation ullamco.
@@ -386,7 +384,7 @@ HTML;
 	public function test_macroable() {
 		Block_Converter::macro(
 			'special-tag',
-			function (DOMNode $node) {
+			function (Node $node) {
 				return new Block( 'paragraph', [ 'attribute' => '123' ], Block_Converter::get_node_html( $node ) );
 			},
 		);
@@ -407,11 +405,11 @@ HTML;
 	 */
 	#[DataProvider( 'macroable_dataprovider' )]
 	public function test_macroable_override_built_in( string $tag ): void {
-		$is_single_tag = in_array( $tag, [ 'img', 'br', 'hr' ], true );
+		$is_single_tag = in_array( $tag, [ 'img', 'br', 'hr', 'source' ], true );
 
 		Block_Converter::macro(
 			$tag,
-			fn ( \DOMNode $node ) => new Block( 'core/paragraph', [], $is_single_tag ? $node->nodeName : $node->textContent ),
+			fn ( \Dom\Node $node ) => new Block( 'core/paragraph', [], $is_single_tag ? strtolower( $node->nodeName ) : ( $node->textContent ?? '' ) ),
 		);
 
 		$block = ( new Block_Converter( $is_single_tag ? "<$tag />" : "<$tag>content here</$tag>" ) )->convert();

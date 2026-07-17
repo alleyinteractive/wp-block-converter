@@ -6,6 +6,8 @@ Convert HTML into Gutenberg Blocks with PHP
 
 ## Installation
 
+Requires PHP 8.4 or later, since HTML parsing is handled by the `Dom\HTMLDocument` API.
+
 You can install the package via Composer:
 
 ```bash
@@ -39,7 +41,7 @@ Filter the generated block for a specific node.
 ```php
 use Alley\WP\Block_Converter\Block;
 
-add_filter( 'wp_block_converter_block', function ( Block $block, \DOMElement $node ): ?Block {
+add_filter( 'wp_block_converter_block', function ( Block $block, \Dom\Node $node ): ?Block {
 	// Modify the block before it is serialized.
 	$block->content = '...';
 	$block->blockName = '...';
@@ -54,7 +56,7 @@ add_filter( 'wp_block_converter_block', function ( Block $block, \DOMElement $no
 Filter the generated blocks for an entire HTML body.
 
 ```php
-add_filter( 'wp_block_converter_document_html', function( string $blocks, \DOMNodeList $content ): string {
+add_filter( 'wp_block_converter_document_html', function( string $blocks, \Dom\HTMLCollection $content ): string {
 	// ...
 	return $blocks;
 }, 10, 2 );
@@ -87,12 +89,12 @@ supported by the converter.
 use Alley\WP\Block_Converter\Block_Converter;
 use Alley\WP\Block_Converter\Block;
 
-Block_Converter::macro( 'special-tag', function ( \DOMNode $node ) {
+Block_Converter::macro( 'special-tag', function ( \Dom\Node $node ) {
 	return new Block( 'core/paragraph', [], $node->textContent );
 } );
 
 // You can also use the raw HTML with a helper method from Block Converter:
-Block_Converter::macro( 'special-tag', function ( \DOMNode $node ) {
+Block_Converter::macro( 'special-tag', function ( \Dom\Node $node ) {
 	return new Block( 'core/paragraph', [], Block_Converter::get_node_html( $node ) );
 } );
 ```
@@ -105,7 +107,7 @@ for a specific tag.
 use Alley\WP\Block_Converter\Block_Converter;
 use Alley\WP\Block_Converter\Block;
 
-Block_Converter::macro( 'p', function ( \DOMNode $node ) {
+Block_Converter::macro( 'p', function ( \Dom\Node $node ) {
 	if ( special_condition() ) {
 		return new Block( 'core/paragraph', [ 'attribute' => 123 ], 'This is a paragraph' );
 	}
