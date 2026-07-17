@@ -80,7 +80,7 @@ HTML,
 <p>Content to migrate</p>
 <h1>Heading 01</h1>
 HTML,
-					<<<HTML
+				<<<HTML
 <!-- wp:paragraph -->
 <p>Content to migrate</p>
 <!-- /wp:paragraph -->
@@ -632,7 +632,36 @@ HTML;
 
 		$converted = ( new Block_Converter( $html, false ) )->convert();
 
-		$this->assertMatchesSnapshot( actual: $converted );
+		$this->assertSame(
+			expected: <<<HTML
+<!-- wp:paragraph -->
+<p><strong>This is a test from Microsoft Word</strong></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Here is a link to <a href="https://alley.com">Alley</a></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>First item</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Second item</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>Here is an image:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image -->
+<figure class="wp-block-image"><img src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Screen Shot 2022-01-19 at 2.51.37 PM"/></figure>
+<!-- /wp:image -->
+HTML,
+			actual: $converted,
+		);
 	}
 
 	public function test_macroable() {
@@ -737,6 +766,23 @@ HTML;
 		$block = ( new Block_Converter( $html ) )->convert();
 
 		$this->assertNotEmpty( actual: $block );
-		$this->assertMatchesSnapshot( actual: $block );
+		$this->assertSame(
+			expected: <<<HTML
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:paragraph -->
+<p><em>Sint sint nulla voluptate nulla adipisicing non proident excepteur duis fugiat fugiat qui minim reprehenderit. Irure adipisicing mollit ipsum eiusmod consequat reprehenderit elit anim irure deserunt in deserunt. In dolore ut quis ex quis laboris ex eu. Minim culpa cillum eu.</em></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:paragraph -->
+<p><em>-proident excepteur duis fugiat fugiat qui minim reprehenderit</em></p>
+<!-- /wp:paragraph --></blockquote>
+<!-- /wp:quote --></blockquote>
+<!-- /wp:quote --></blockquote>
+<!-- /wp:quote -->
+HTML,
+			actual: $block,
+		);
 	}
 }
