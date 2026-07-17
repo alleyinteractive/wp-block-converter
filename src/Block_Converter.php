@@ -389,7 +389,14 @@ class Block_Converter {
 				$node->textContent = $text_content;
 			}
 
-			// Instagram and Facebook embeds require an api key to retrieve oEmbed data.
+			// Twitter/X, Instagram, and Facebook's embed shape is hardcoded
+			// here instead of making an oEmbed request, since the block
+			// converter avoids depending on live oEmbed HTTP calls where a
+			// sensible shape can be determined from the URL alone.
+			if ( \str_contains( $text_content, 'twitter.com' ) ) {
+				return $this->twitter_embed( $text_content );
+			}
+
 			if ( \str_contains( $text_content, 'instagram.com' ) ) {
 				return $this->instagram_embed( $text_content );
 			}
@@ -697,6 +704,32 @@ class Block_Converter {
 	}
 
 	/**
+	 * Create Twitter/X embed blocks.
+	 *
+	 * @param string $url The URL.
+	 * @return Block
+	 */
+	protected function twitter_embed( string $url ): Block {
+		$atts = [
+			'url'              => $url,
+			'type'             => 'rich',
+			'providerNameSlug' => 'x',
+			'responsive'       => true,
+		];
+
+		return new Block(
+			block_name: 'embed',
+			attributes: $atts,
+			content: sprintf(
+				'<figure class="wp-block-embed is-type-rich is-provider-x wp-block-embed-x"><div class="wp-block-embed__wrapper">
+				%s
+				</div></figure>',
+				$url
+			),
+		);
+	}
+
+	/**
 	 * Create Instagram embed blocks.
 	 *
 	 * @param string $url The URL.
@@ -723,7 +756,7 @@ class Block_Converter {
 	}
 
 	/**
-	 * Create Instagram embed blocks.
+	 * Create Facebook embed blocks.
 	 *
 	 * @param string $url The URL.
 	 * @return Block
@@ -732,7 +765,7 @@ class Block_Converter {
 		$atts = [
 			'url'              => $url,
 			'type'             => 'rich',
-			'providerNameSlug' => 'embed-handler',
+			'providerNameSlug' => 'facebook',
 			'responsive'       => true,
 			'previewable'      => false,
 		];
@@ -741,7 +774,7 @@ class Block_Converter {
 			block_name: 'embed',
 			attributes: $atts,
 			content: sprintf(
-				'<figure class="wp-block-embed is-type-rich is-provider-embed-handler wp-block-embed-embed-handler"><div class="wp-block-embed__wrapper">
+				'<figure class="wp-block-embed is-type-rich is-provider-facebook wp-block-embed-facebook"><div class="wp-block-embed__wrapper">
 				%s
 				</div></figure>',
 				$url

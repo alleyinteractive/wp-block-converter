@@ -590,7 +590,7 @@ HTML,
 <p>https://www.facebook.com/sesametheopossum/posts/1329405240877426</p>
 HTML,
 				<<<HTML
-<!-- wp:embed {"url":"https://www.facebook.com/sesametheopossum/posts/1329405240877426","type":"rich","providerNameSlug":"facebook","responsive":true} -->
+<!-- wp:embed {"url":"https://www.facebook.com/sesametheopossum/posts/1329405240877426","type":"rich","providerNameSlug":"facebook","responsive":true,"previewable":false} -->
 <figure class="wp-block-embed is-type-rich is-provider-facebook wp-block-embed-facebook"><div class="wp-block-embed__wrapper">
 https://www.facebook.com/sesametheopossum/posts/1329405240877426
 </div></figure>
