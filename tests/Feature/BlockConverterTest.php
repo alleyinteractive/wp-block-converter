@@ -10,7 +10,7 @@ namespace Alley\WP\Block_Converter\Tests\Feature;
 use Alley\WP\Block_Converter\Block;
 use Alley\WP\Block_Converter\Block_Converter;
 use Alley\WP\Block_Converter\Tests\TestCase;
-use DOMNode;
+use Dom\Node;
 use Mantle\Testing\Concerns\Prevent_Remote_Requests;
 use Mantle\Support\Str;
 use Mantle\Testing\Concerns\Refresh_Database;
@@ -638,7 +638,7 @@ HTML;
 	public function test_macroable() {
 		Block_Converter::macro(
 			'special-tag',
-			function (DOMNode $node) {
+			function (Node $node) {
 				return new Block( 'paragraph', [ 'attribute' => '123' ], Block_Converter::get_node_html( $node ) );
 			},
 		);
@@ -663,11 +663,11 @@ HTML,
 	 */
 	#[DataProvider( 'macroable_dataprovider' )]
 	public function test_macroable_override_built_in( string $tag ): void {
-		$is_single_tag = in_array( $tag, [ 'img', 'br', 'hr' ], true );
+		$is_single_tag = in_array( $tag, [ 'img', 'br', 'hr', 'source' ], true );
 
 		Block_Converter::macro(
 			$tag,
-			fn ( \DOMNode $node ) => new Block( 'core/paragraph', [], $is_single_tag ? $node->nodeName : $node->textContent ),
+			fn ( \Dom\Node $node ) => new Block( 'core/paragraph', [], $is_single_tag ? strtolower( $node->nodeName ) : ( $node->textContent ?? '' ) ),
 		);
 
 		$block = ( new Block_Converter( $is_single_tag ? "<$tag />" : "<$tag>content here</$tag>" ) )->convert();
