@@ -145,6 +145,7 @@ class Block_Converter {
 				'figure' => $this->figure( $node ),
 				'br', 'cite', 'source' => null,
 				'hr' => $this->separator(),
+				'pre' => $this->preformatted( $node ),
 				default => $this->html( $node ),
 			};
 		}
@@ -755,6 +756,28 @@ class Block_Converter {
 		return new Block(
 			block_name: 'separator',
 			content: '<hr class="wp-block-separator has-alpha-channel-opacity"/>'
+		);
+	}
+
+	/**
+	 * Create preformatted blocks.
+	 *
+	 * @param Node $node The node.
+	 * @return Block|null
+	 */
+	protected function preformatted( Node $node ): ?Block {
+		$content = trim( (string) $node->textContent );
+
+		if ( empty( $content ) ) {
+			return null;
+		}
+
+		return new Block(
+			block_name: 'preformatted',
+			content: sprintf(
+				'<pre class="wp-block-preformatted">%s</pre>',
+				str_replace( "\n", '<br>', htmlspecialchars( $content, ENT_NOQUOTES ) ),
+			),
 		);
 	}
 
