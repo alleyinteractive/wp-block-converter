@@ -23,6 +23,23 @@ trait Microsoft_Word_Content {
 	protected bool $convert_ms_word_content = true;
 
 	/**
+	 * Patterns based on TinyMCE Word filter detection.
+	 *
+	 * @var string[]
+	 */
+	private const MS_WORD_PATTERNS = [
+		'/<font face="Times New Roman"/',
+		'/class="?Mso/',
+		'/style="[^"]*\bmso-/',
+		'/style=\'[^\']*\bmso-/',
+		'/w:WordDocument/',
+		'/class="OutlineElement"/',
+		'/id="?docs-internal-guid-/',
+		'/mso-border-alt/',
+		'/MsoNormal/',
+	];
+
+	/**
 	 * Enable or disable Microsoft Word content conversion.
 	 *
 	 * @param bool $convert Whether to convert Microsoft Word content.
@@ -33,6 +50,7 @@ trait Microsoft_Word_Content {
 
 		return $this;
 	}
+
 	/**
 	 * Determines if the given node contains Microsoft Word content.
 	 *
@@ -48,20 +66,17 @@ trait Microsoft_Word_Content {
 
 		$html = $owner_document instanceof \Dom\HTMLDocument ? $owner_document->saveHtml( $node ) : '';
 
-		// Patterns based on TinyMCE Word filter detection.
-		$patterns = [
-			'/<font face="Times New Roman"/',
-			'/class="?Mso/',
-			'/style="[^"]*\bmso-/',
-			'/style=\'[^\']*\bmso-/',
-			'/w:WordDocument/',
-			'/class="OutlineElement"/',
-			'/id="?docs-internal-guid-/',
-			'/mso-border-alt/',
-			'/MsoNormal/',
-		];
+		return $this->is_ms_word_html( $html );
+	}
 
-		foreach ( $patterns as $pattern ) {
+	/**
+	 * Determines if a raw HTML string looks like Microsoft Word content.
+	 *
+	 * @param string $html The HTML to check.
+	 * @return bool True if the HTML contains Microsoft Word markers, false otherwise.
+	 */
+	protected function is_ms_word_html( string $html ): bool {
+		foreach ( self::MS_WORD_PATTERNS as $pattern ) {
 			if ( preg_match( $pattern . 'i', $html ) ) {
 				return true;
 			}
@@ -171,6 +186,8 @@ trait Microsoft_Word_Content {
 			'face', // Often "Times New Roman" from Word.
 			'size', // Font size attributes.
 			'color', // Color attributes that should be in CSS.
+			'type', // Presentational list-style attribute Word adds to <ul>/<ol>.
+			'width', // Presentational sizing Word adds to <img> and other elements.
 		];
 		foreach ( $ms_word_attributes as $attr ) {
 			if ( $node->hasAttribute( $attr ) ) {

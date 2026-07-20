@@ -46,127 +46,330 @@ class BlockConverterTest extends TestCase {
 
 	#[DataProvider( 'converter_data_provider' )]
 	public function test_convert_to_blocks( string $html, string $expected ) {
-		$this->assertSame( $expected, ( new Block_Converter( $html ) )->convert() );
+		$this->assertSame(
+			expected: $expected,
+			actual: ( new Block_Converter( $html ) )->convert(),
+		);
 	}
 
 	public static function converter_data_provider() {
 		return [
 			'paragraph' => [
-				'<p>Content to migrate</p>',
-				'<!-- wp:paragraph --><p>Content to migrate</p><!-- /wp:paragraph -->',
+				<<<HTML
+<p>Content to migrate</p>
+HTML,
+				<<<HTML
+<!-- wp:paragraph -->
+<p>Content to migrate</p>
+<!-- /wp:paragraph -->
+HTML,
 			],
 			'empty-paragraphs' => [
-				'<p>Content to migrate</p><p></p>',
-				'<!-- wp:paragraph --><p>Content to migrate</p><!-- /wp:paragraph -->',
+				<<<HTML
+<p>Content to migrate</p>
+<p></p>
+HTML,
+				<<<HTML
+<!-- wp:paragraph -->
+<p>Content to migrate</p>
+<!-- /wp:paragraph -->
+HTML,
 			],
 			'paragraph-heading' => [
-				'<p>Content to migrate</p><h1>Heading 01</h1>',
-				'<!-- wp:paragraph --><p>Content to migrate</p><!-- /wp:paragraph -->
+				<<<HTML
+<p>Content to migrate</p>
+<h1>Heading 01</h1>
+HTML,
+				<<<HTML
+<!-- wp:paragraph -->
+<p>Content to migrate</p>
+<!-- /wp:paragraph -->
 
-<!-- wp:heading {"level":1} --><h1>Heading 01</h1><!-- /wp:heading -->',
+<!-- wp:heading {"level":1} -->
+<h1 class="wp-block-heading">Heading 01</h1>
+<!-- /wp:heading -->
+HTML,
 			],
 			'h1' => [
-				'<h1>Another content</h1>',
-				'<!-- wp:heading {"level":1} --><h1>Another content</h1><!-- /wp:heading -->',
+				<<<HTML
+<h1>Another content</h1>
+HTML,
+				<<<HTML
+<!-- wp:heading {"level":1} -->
+<h1 class="wp-block-heading">Another content</h1>
+<!-- /wp:heading -->
+HTML,
 			],
 			'h2' => [
-				'<h2>Another content</h2>',
-				'<!-- wp:heading {"level":2} --><h2>Another content</h2><!-- /wp:heading -->',
+				<<<HTML
+<h2>Another content</h2>
+HTML,
+				<<<HTML
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Another content</h2>
+<!-- /wp:heading -->
+HTML,
 			],
 			'h3' => [
-				'<h3>Another content</h3>',
-				'<!-- wp:heading {"level":3} --><h3>Another content</h3><!-- /wp:heading -->',
+				<<<HTML
+<h3>Another content</h3>
+HTML,
+				<<<HTML
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">Another content</h3>
+<!-- /wp:heading -->
+HTML,
 			],
 			'h4' => [
-				'<h4>Another content</h4>',
-				'<!-- wp:heading {"level":4} --><h4>Another content</h4><!-- /wp:heading -->',
+				<<<HTML
+<h4>Another content</h4>
+HTML,
+				<<<HTML
+<!-- wp:heading {"level":4} -->
+<h4 class="wp-block-heading">Another content</h4>
+<!-- /wp:heading -->
+HTML,
 			],
 			'h5' => [
-				'<h5>Another content</h5>',
-				'<!-- wp:heading {"level":5} --><h5>Another content</h5><!-- /wp:heading -->',
+				<<<HTML
+<h5>Another content</h5>
+HTML,
+				<<<HTML
+<!-- wp:heading {"level":5} -->
+<h5 class="wp-block-heading">Another content</h5>
+<!-- /wp:heading -->
+HTML,
 			],
 			'ol' => [
-				'<ol><li>Random content</li><li>Another random content</li></ol>',
-				'<!-- wp:list {"ordered":true} --><ol><li>Random content</li><li>Another random content</li></ol><!-- /wp:list -->',
+				<<<HTML
+<ol>
+	<li>Random content</li>
+	<li>Another random content</li>
+</ol>
+HTML,
+				<<<HTML
+<!-- wp:list {"ordered":true} -->
+<ol class="wp-block-list"><!-- wp:list-item -->
+<li>Random content</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Another random content</li>
+<!-- /wp:list-item --></ol>
+<!-- /wp:list -->
+HTML,
 			],
 			'ul' => [
-				'<ul><li>Random content</li><li>Another random content</li></ul>',
-				'<!-- wp:list --><ul><li>Random content</li><li>Another random content</li></ul><!-- /wp:list -->',
+				<<<HTML
+<ul>
+	<li>Random content</li>
+	<li>Another random content</li>
+</ul>
+HTML,
+				<<<HTML
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>Random content</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Another random content</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+HTML,
 			],
 			'blockquote' => [
-				'<blockquote><p>Lorem ipsum</p></blockquote>',
-				'<!-- wp:quote --><blockquote class="wp-block-quote"><!-- wp:paragraph --><p>Lorem ipsum</p><!-- /wp:paragraph --></blockquote><!-- /wp:quote -->',
+				<<<HTML
+<blockquote>
+	<p>Lorem ipsum</p>
+</blockquote>
+HTML,
+				<<<HTML
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:paragraph -->
+<p>Lorem ipsum</p>
+<!-- /wp:paragraph --></blockquote>
+<!-- /wp:quote -->
+HTML,
 			],
 			'blockquote with cite' => [
-				'<blockquote><p>Lorem ipsum</p><cite>Source</cite></blockquote>',
-				'<!-- wp:quote --><blockquote class="wp-block-quote"><!-- wp:paragraph --><p>Lorem ipsum</p><!-- /wp:paragraph --><cite>Source</cite></blockquote><!-- /wp:quote -->',
+				<<<HTML
+<blockquote>
+	<p>Lorem ipsum</p>
+	<cite>Source</cite>
+</blockquote>
+HTML,
+				<<<HTML
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:paragraph -->
+<p>Lorem ipsum</p>
+<!-- /wp:paragraph --><cite>Source</cite></blockquote>
+<!-- /wp:quote -->
+HTML,
 			],
 			'non-oembed-embed' => [
-				'<embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200" />',
-				'<!-- wp:html --><embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200"><!-- /wp:html -->',
+				<<<HTML
+<embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200" />
+HTML,
+				<<<HTML
+<!-- wp:html -->
+<embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200"/>
+<!-- /wp:html -->
+HTML,
 			],
 			'paragraph with double spaces' => [
-				'<p>This is content with  a double space.</p>',
-				'<!-- wp:paragraph --><p>This is content with  a double space.</p><!-- /wp:paragraph -->',
+				<<<HTML
+<p>This is content with  a double space.</p>
+HTML,
+				<<<HTML
+<!-- wp:paragraph -->
+<p>This is content with a double space.</p>
+<!-- /wp:paragraph -->
+HTML,
 			],
 			'paragraph with multiple spaces' => [
-				'<p>This has    four spaces and	a tab.</p>',
-				'<!-- wp:paragraph --><p>This has    four spaces and	a tab.</p><!-- /wp:paragraph -->',
+				<<<HTML
+<p>This has    four spaces and	a tab.</p>
+HTML,
+				<<<HTML
+<!-- wp:paragraph -->
+<p>This has four spaces and a tab.</p>
+<!-- /wp:paragraph -->
+HTML,
 			],
 		];
 	}
 
 	#[DataProvider( 'image_dataprovider' )]
 	public function test_image( string $html, string $expected ) {
-		$converter = new Block_Converter( $html, sideload_images: true );
+		$converter = new Block_Converter(
+			html: $html,
+			sideload_images: true,
+		);
 		$block     = $converter->convert();
 
-		$this->assertEquals( $expected, $block );
+		$this->assertCount(
+			expectedCount: 1,
+			haystack: $converter->get_created_attachment_ids(),
+		);
 
-		$this->assertCount( 1, $converter->get_created_attachment_ids() );
-		$this->assertRequestSent( 'https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png', 1 );
+		$attachment_id = $converter->get_created_attachment_ids()[0];
+
+		$expected = str_replace(
+			search: [ '{{IMAGE_ID}}', '{{IMAGE_SRC}}' ],
+			replace: [ $attachment_id, wp_get_attachment_url( $attachment_id ) ],
+			subject: $expected,
+		);
+
+		$this->assertEquals(
+			expected: $expected,
+			actual: $block,
+		);
+		$this->assertRequestSent(
+			url_or_callback: 'https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png',
+			expected_times: 1,
+		);
 	}
 
 	public function test_image_with_sideloading_disabled(): void {
-		$html = <<<'HTML'
-<img src="https://example.org/image.jpg" alt="" />
+		$html = <<<HTML
+<img src="https://example.org/image.jpg" alt="Sample alt text" />
 HTML;
 
 		$result = ( new Block_Converter( $html, false ) )->convert();
 
 		$this->assertEquals(
-			'<!-- wp:image --><figure class="wp-block-image"><img src="https://example.org/image.jpg" alt=""></figure><!-- /wp:image -->',
-			$result,
+			expected: <<<HTML
+<!-- wp:image {"sizeSlug":"large"} -->
+<figure class="wp-block-image size-large"><img src="https://example.org/image.jpg" alt="Sample alt text"/></figure>
+<!-- /wp:image -->
+HTML,
+			actual: $result,
 		);
 	}
 
 	public static function image_dataprovider(): array {
-		$url = wp_upload_dir()['url'];
-
 		return [
 			'image wrapped with figure/a' => [
-				'<figure class="wp-block-image size-large"><a href="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png"><img decoding="async" loading="lazy" width="786" height="672" src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962"></a></figure>',
-				'<!-- wp:image --><figure class="wp-block-image"><a href="' . $url . '/Screen-Shot-2022-01-19-at-2.51.37-PM.png"><img decoding="async" loading="lazy" width="786" height="672" src="' . $url . '/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962"></a></figure><!-- /wp:image -->'
+				<<<HTML
+<figure>
+	<a href="https://alley.com/"><img src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Sample alt text"></a>
+</figure>
+HTML,
+				<<<HTML
+<!-- wp:image {"lightbox":{"enabled":false},"id":{{IMAGE_ID}},"sizeSlug":"full","linkDestination":"custom"} -->
+<figure class="wp-block-image size-full"><a href="https://alley.com/"><img src="{{IMAGE_SRC}}" alt="Sample alt text" class="wp-image-{{IMAGE_ID}}"/></a></figure>
+<!-- /wp:image -->
+HTML,
 			],
 			'image wrapped with figure/a with caption' => [
-				'<figure class="wp-block-image size-large"><a href="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png"><img decoding="async" loading="lazy" width="786" height="672" src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962"></a><figcaption>Image caption</figcaption></figure>',
-				'<!-- wp:image --><figure class="wp-block-image"><a href="' . $url . '/Screen-Shot-2022-01-19-at-2.51.37-PM.png"><img decoding="async" loading="lazy" width="786" height="672" src="' . $url . '/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962"></a><figcaption>Image caption</figcaption></figure><!-- /wp:image -->'
+				<<<HTML
+<figure>
+	<a href="https://alley.com/"><img src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Sample alt text"></a>
+	<figcaption>Image caption</figcaption>
+</figure>
+HTML,
+				<<<HTML
+<!-- wp:image {"lightbox":{"enabled":false},"id":{{IMAGE_ID}},"sizeSlug":"full","linkDestination":"custom"} -->
+<figure class="wp-block-image size-full"><a href="https://alley.com/"><img src="{{IMAGE_SRC}}" alt="Sample alt text" class="wp-image-{{IMAGE_ID}}"/></a><figcaption class="wp-element-caption">Image caption</figcaption></figure>
+<!-- /wp:image -->
+HTML,
 			],
 			'image wrapped with anchor' => [
-				'<a href="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png"><img decoding="async" loading="lazy" width="786" height="672" src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962"></a>',
-				'<!-- wp:image --><figure class="wp-block-image"><a href="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png"><img decoding="async" loading="lazy" width="786" height="672" src="' . $url . '/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962"></a></figure><!-- /wp:image -->',
+				<<<HTML
+<a href="https://alley.com/"><img src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Sample alt text"></a>
+HTML,
+				<<<HTML
+<!-- wp:image {"lightbox":{"enabled":false},"id":{{IMAGE_ID}},"sizeSlug":"full","linkDestination":"custom"} -->
+<figure class="wp-block-image size-full"><a href="https://alley.com/"><img src="{{IMAGE_SRC}}" alt="Sample alt text" class="wp-image-{{IMAGE_ID}}"/></a></figure>
+<!-- /wp:image -->
+HTML,
 			],
 			'image wrapped with paragraph' => [
-				'<p>Content to migrate <img decoding="async" loading="lazy" width="786" height="672" src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962"></p>',
-				'<!-- wp:paragraph --><p>Content to migrate <img decoding="async" loading="lazy" width="786" height="672" src="' . $url . '/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962"></p><!-- /wp:paragraph -->'
+				<<<HTML
+<p>Content before image. <img src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Sample alt text"> Content after image.</p>
+HTML,
+				<<<HTML
+<!-- wp:paragraph -->
+<p>Content before image.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"id":{{IMAGE_ID}},"sizeSlug":"full","linkDestination":"none","align":"right"} -->
+<figure class="wp-block-image alignright size-full"><img src="{{IMAGE_SRC}}" alt="Sample alt text" class="wp-image-{{IMAGE_ID}}"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p>Content after image.</p>
+<!-- /wp:paragraph -->
+HTML,
 			],
 			'image wrapped with paragraph and anchor' => [
-				'<p>Content to migrate <a href="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png"><img decoding="async" loading="lazy" width="786" height="672" src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962"></a></p>',
-				'<!-- wp:paragraph --><p>Content to migrate <a href="' . $url . '/Screen-Shot-2022-01-19-at-2.51.37-PM.png"><img decoding="async" loading="lazy" width="786" height="672" src="' . $url . '/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962"></a></p><!-- /wp:paragraph -->'
+				<<<HTML
+<p>Content before image. <a href="https://alley.com/"><img src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Sample alt text"></a> Content after image.</p>
+HTML,
+				<<<HTML
+<!-- wp:paragraph -->
+<p>Content before image.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"lightbox":{"enabled":false},"id":{{IMAGE_ID}},"sizeSlug":"full","linkDestination":"custom","align":"right"} -->
+<figure class="wp-block-image alignright size-full"><a href="https://alley.com/"><img src="{{IMAGE_SRC}}" alt="Sample alt text" class="wp-image-{{IMAGE_ID}}"/></a></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p>Content after image.</p>
+<!-- /wp:paragraph -->
+HTML,
 			],
 			'image not wrapped' => [
-				'<img decoding="async" loading="lazy" width="786" height="672" src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962">',
-				'<!-- wp:image --><figure class="wp-block-image"><img decoding="async" loading="lazy" width="786" height="672" src="' . $url . '/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="" class="wp-image-5962"></figure><!-- /wp:image -->',
+				<<<HTML
+<img src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Sample alt text">
+HTML,
+				<<<HTML
+<!-- wp:image {"id":{{IMAGE_ID}},"sizeSlug":"full"} -->
+<figure class="wp-block-image size-full"><img src="{{IMAGE_SRC}}" alt="Sample alt text" class="wp-image-{{IMAGE_ID}}"/></figure>
+<!-- /wp:image -->
+HTML,
 			],
 		];
 	}
@@ -178,10 +381,14 @@ HTML;
 		$converter = new Block_Converter( '<p>bar</p><p></p><p>' . $arbitrarySpaces . $arbitraryNewLines . '</p>' );
 		$block     = $converter->convert();
 
-		$this->assertNotEmpty( $block );
+		$this->assertNotEmpty( actual: $block );
 		$this->assertSame(
-			$block,
-			'<!-- wp:paragraph --><p>bar</p><!-- /wp:paragraph -->',
+			expected: <<<HTML
+<!-- wp:paragraph -->
+<p>bar</p>
+<!-- /wp:paragraph -->
+HTML,
+			actual: $block,
 		);
 	}
 
@@ -189,7 +396,10 @@ HTML;
 		$this->expectApplied( 'wp_block_converter_document_html' )->once();
 		$this->expectApplied( 'wp_block_converter_block' )->once()->andReturnInstanceOf( Block::class );
 
-		$html = '<p>Content to migrate</p><h1>Heading 01</h1>';
+		$html = <<<HTML
+<p>Content to migrate</p>
+<h1>Heading 01</h1>
+HTML;
 
 		add_filter(
 			'wp_block_converter_block',
@@ -208,10 +418,16 @@ HTML;
 
 
 		$this->assertSame(
-			'<!-- wp:paragraph -->Override content<!-- /wp:paragraph -->
+			expected: <<<HTML
+<!-- wp:paragraph -->
+Override content
+<!-- /wp:paragraph -->
 
-<!-- wp:heading {"level":1} --><h1>Heading 01</h1><!-- /wp:heading -->',
-			$block,
+<!-- wp:heading {"level":1} -->
+<h1 class="wp-block-heading">Heading 01</h1>
+<!-- /wp:heading -->
+HTML,
+			actual: $block,
 		);
 	}
 
@@ -219,42 +435,49 @@ HTML;
 		$this->expectApplied( 'wp_block_converter_block' )->twice();
 		$this->expectApplied( 'wp_block_converter_document_html' )->once();
 
-		$html = '<p>Content to migrate</p><h1>Heading 01</h1>';
+		$html = <<<HTML
+<p>Content to migrate</p>
+<h1>Heading 01</h1>
+HTML;
 
 		add_filter( 'wp_block_converter_document_html', fn () => 'Override' );
 
 		$converter = new Block_Converter( $html );
 		$block     = $converter->convert();
 
-		$this->assertSame( 'Override', $block );
+		$this->assertSame(
+			expected: 'Override',
+			actual: $block,
+		);
 	}
 
 	#[DataProvider( 'multi_line_pre_tag_data_provider' )]
 	public function test_converting_multi_line_pre_tag( string $html, string $expected ) {
 		$this->assertSame(
-			$expected,
-			( new Block_Converter( $html ) )->convert(),
+			expected: $expected,
+			actual: ( new Block_Converter( $html ) )->convert(),
 		);
 	}
 
 	public static function multi_line_pre_tag_data_provider(): array {
 		return [
 			[
-				'
+				<<<HTML
 <pre>
 Line 1
 Line 2
 
 Line 3
-</pre>',
-				'<!-- wp:html --><pre>Line 1
-Line 2
-
-Line 3
-</pre><!-- /wp:html -->',
+</pre>
+HTML,
+				<<<HTML
+<!-- wp:preformatted -->
+<pre class="wp-block-preformatted">Line 1<br>Line 2<br><br>Line 3</pre>
+<!-- /wp:preformatted -->
+HTML,
 			],
 			[
-				'
+				<<<HTML
 <pre>
 Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 
@@ -269,20 +492,12 @@ Names: John Doe, Example Person (1800-1900)
 Deaths: Lorem Ipsum, Historical Figure (1700-1800)
 		Dolor Sit, Notable Person (1750-1850)
 </pre>
-			',
-			'<!-- wp:html --><pre>Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-
-1815 - Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-1900 - Ut enim ad minim veniam, quis nostrud exercitation ullamco.
-1915 - Duis aute irure dolor in reprehenderit in voluptate velit.
-1925 - Excepteur sint occaecat cupidatat non proident sunt in culpa.
-
-Names: John Doe, Example Person (1800-1900)
-		Jane Smith, Test Author (1850-1950)
-
-Deaths: Lorem Ipsum, Historical Figure (1700-1800)
-		Dolor Sit, Notable Person (1750-1850)
-</pre><!-- /wp:html -->',
+HTML,
+				<<<HTML
+<!-- wp:preformatted -->
+<pre class="wp-block-preformatted">Lorem ipsum dolor sit amet, consectetur adipiscing elit.<br><br>1815 - Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.<br>1900 - Ut enim ad minim veniam, quis nostrud exercitation ullamco.<br>1915 - Duis aute irure dolor in reprehenderit in voluptate velit.<br>1925 - Excepteur sint occaecat cupidatat non proident sunt in culpa.<br><br>Names: John Doe, Example Person (1800-1900)<br>		Jane Smith, Test Author (1850-1950)<br><br>Deaths: Lorem Ipsum, Historical Figure (1700-1800)<br>		Dolor Sit, Notable Person (1750-1850)</pre>
+<!-- /wp:preformatted -->
+HTML,
 			],
 		];
 	}
@@ -298,68 +513,113 @@ Deaths: Lorem Ipsum, Historical Figure (1700-1800)
 		$converter = new Block_Converter( $html );
 		$block     = $converter->convert();
 
-		$this->assertNotEmpty( $block );
-		$this->assertSame( $expected, $block );
+		$this->assertNotEmpty( actual: $block );
+		$this->assertSame(
+			expected: $expected,
+			actual: $block,
+		);
 	}
 
 	public static function embed_data_provider(): array {
 		return [
 			'youtube' => [
-				'<p>https://www.youtube.com/watch?v=dQw4w9WgXcQ</p>',
-				'<!-- wp:embed {"url":"https://www.youtube.com/watch?v=dQw4w9WgXcQ","type":"video","providerNameSlug":"youtube","responsive":true,"className":"wp-embed-aspect-16-9 wp-has-aspect-ratio"} --><figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube wp-embed-aspect-16-9 wp-has-aspect-ratio"><div class="wp-block-embed__wrapper">
+				<<<HTML
+<p>https://www.youtube.com/watch?v=dQw4w9WgXcQ</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://www.youtube.com/watch?v=dQw4w9WgXcQ","type":"video","providerNameSlug":"youtube","responsive":true,"className":"wp-embed-aspect-16-9 wp-has-aspect-ratio"} -->
+<figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube wp-embed-aspect-16-9 wp-has-aspect-ratio"><div class="wp-block-embed__wrapper">
 https://www.youtube.com/watch?v=dQw4w9WgXcQ
-</div></figure><!-- /wp:embed -->',
+</div></figure>
+<!-- /wp:embed -->
+HTML,
 				[
 					'https://www.youtube.com/oembed?maxwidth=500&maxheight=750&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DdQw4w9WgXcQ&dnt=1&format=json' => '{"title":"Rick Astley - Never Gonna Give You Up (Official Music Video)","author_name":"Rick Astley","author_url":"https://www.youtube.com/@RickAstleyYT","type":"video","height":281,"width":500,"version":"1.0","provider_name":"YouTube","provider_url":"https://www.youtube.com/","thumbnail_height":360,"thumbnail_width":480,"thumbnail_url":"https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg","html":"\u003ciframe width=\u0022500\u0022 height=\u0022281\u0022 src=\u0022https://www.youtube.com/embed/dQw4w9WgXcQ?feature=oembed\u0022 frameborder=\u00220\u0022 allow=\u0022accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\u0022 allowfullscreen title=\u0022Rick Astley - Never Gonna Give You Up (Official Music Video)\u0022\u003e\u003c/iframe\u003e"}',
 				],
 			],
 			'twitter' => [
-				'<p>https://twitter.com/alleyco/status/1679189879086018562</p>',
-				'<!-- wp:embed {"url":"https://twitter.com/alleyco/status/1679189879086018562","type":"rich","providerNameSlug":"twitter","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-twitter wp-block-embed-twitter"><div class="wp-block-embed__wrapper">
+				<<<HTML
+<p>https://twitter.com/alleyco/status/1679189879086018562</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://twitter.com/alleyco/status/1679189879086018562","type":"rich","providerNameSlug":"x","responsive":true} -->
+<figure class="wp-block-embed is-type-rich is-provider-x wp-block-embed-x"><div class="wp-block-embed__wrapper">
 https://twitter.com/alleyco/status/1679189879086018562
-</div></figure><!-- /wp:embed -->',
+</div></figure>
+<!-- /wp:embed -->
+HTML,
 			],
 			'x.com' => [
-				'<p>https://x.com/alleyco/status/1679189879086018562</p>',
-				'<!-- wp:embed {"url":"https://twitter.com/alleyco/status/1679189879086018562","type":"rich","providerNameSlug":"twitter","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-twitter wp-block-embed-twitter"><div class="wp-block-embed__wrapper">
+				<<<HTML
+<p>https://x.com/alleyco/status/1679189879086018562</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://twitter.com/alleyco/status/1679189879086018562","type":"rich","providerNameSlug":"x","responsive":true} -->
+<figure class="wp-block-embed is-type-rich is-provider-x wp-block-embed-x"><div class="wp-block-embed__wrapper">
 https://twitter.com/alleyco/status/1679189879086018562
-</div></figure><!-- /wp:embed -->',
+</div></figure>
+<!-- /wp:embed -->
+HTML,
 				[
 					'https://publish.x.com/oembed?url=https%3A%2F%2Fx.com%2Falleyco%2Fstatus%2F1679189879086018562' => '{"url":"https:\/\/twitter.com\/alleyco\/status\/1679189879086018562","author_name":"Alley","author_url":"https:\/\/twitter.com\/alleyco","html":"\u003Cblockquote class=\"twitter-tweet\"\u003E\u003Cp lang=\"en\" dir=\"ltr\"\u003EWe\'re a full-service digital agency with the foresight, perspective, and grit to power your brightest ideas and build solutions for your most evasive problems. Learn more about our services here:\u003Ca href=\"https:\/\/t.co\/8zZ5zP1Oyc\"\u003Ehttps:\/\/t.co\/8zZ5zP1Oyc\u003C\/a\u003E\u003C\/p\u003E&mdash; Alley (@alleyco) \u003Ca href=\"https:\/\/twitter.com\/alleyco\/status\/1679189879086018562?ref_src=twsrc%5Etfw\"\u003EJuly 12, 2023\u003C\/a\u003E\u003C\/blockquote\u003E\n\u003Cscript async src=\"https:\/\/platform.twitter.com\/widgets.js\" charset=\"utf-8\"\u003E\u003C\/script\u003E\n\n","width":550,"height":null,"type":"rich","cache_age":"3153600000","provider_name":"Twitter","provider_url":"https:\/\/twitter.com","version":"1.0"}',
 				],
 			],
 			'x.com linked' => [
-				'<p><a href="https://x.com/alleyco/status/1679189879086018562">https://x.com/alleyco/status/1679189879086018562</a></p>',
-				'<!-- wp:embed {"url":"https://twitter.com/alleyco/status/1679189879086018562","type":"rich","providerNameSlug":"twitter","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-twitter wp-block-embed-twitter"><div class="wp-block-embed__wrapper">
+				<<<HTML
+<p><a href="https://x.com/alleyco/status/1679189879086018562">https://x.com/alleyco/status/1679189879086018562</a></p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://twitter.com/alleyco/status/1679189879086018562","type":"rich","providerNameSlug":"x","responsive":true} -->
+<figure class="wp-block-embed is-type-rich is-provider-x wp-block-embed-x"><div class="wp-block-embed__wrapper">
 https://twitter.com/alleyco/status/1679189879086018562
-</div></figure><!-- /wp:embed -->',
+</div></figure>
+<!-- /wp:embed -->
+HTML,
 				[
 					'https://publish.x.com/oembed?url=https%3A%2F%2Fx.com%2Falleyco%2Fstatus%2F1679189879086018562' => '{"url":"https:\/\/twitter.com\/alleyco\/status\/1679189879086018562","author_name":"Alley","author_url":"https:\/\/twitter.com\/alleyco","html":"\u003Cblockquote class=\"twitter-tweet\"\u003E\u003Cp lang=\"en\" dir=\"ltr\"\u003EWe\'re a full-service digital agency with the foresight, perspective, and grit to power your brightest ideas and build solutions for your most evasive problems. Learn more about our services here:\u003Ca href=\"https:\/\/t.co\/8zZ5zP1Oyc\"\u003Ehttps:\/\/t.co\/8zZ5zP1Oyc\u003C\/a\u003E\u003C\/p\u003E&mdash; Alley (@alleyco) \u003Ca href=\"https:\/\/twitter.com\/alleyco\/status\/1679189879086018562?ref_src=twsrc%5Etfw\"\u003EJuly 12, 2023\u003C\/a\u003E\u003C\/blockquote\u003E\n\u003Cscript async src=\"https:\/\/platform.twitter.com\/widgets.js\" charset=\"utf-8\"\u003E\u003C\/script\u003E\n\n","width":550,"height":null,"type":"rich","cache_age":"3153600000","provider_name":"Twitter","provider_url":"https:\/\/twitter.com","version":"1.0"}',
 				],
 			],
 			'instagram' => [
-				'<p>https://www.instagram.com/p/CSpmSvAphdf/</p>',
-				'<!-- wp:embed {"url":"https://www.instagram.com/p/CSpmSvAphdf/","type":"rich","providerNameSlug":"instagram","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-instagram wp-block-embed-instagram"><div class="wp-block-embed__wrapper">
+				<<<HTML
+<p>https://www.instagram.com/p/CSpmSvAphdf/</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://www.instagram.com/p/CSpmSvAphdf/","type":"rich","providerNameSlug":"instagram","responsive":true} -->
+<figure class="wp-block-embed is-type-rich is-provider-instagram wp-block-embed-instagram"><div class="wp-block-embed__wrapper">
 https://www.instagram.com/p/CSpmSvAphdf/
-</div></figure><!-- /wp:embed -->',
+</div></figure>
+<!-- /wp:embed -->
+HTML,
 			],
 			'facebook' => [
-				'<p>https://www.facebook.com/sesametheopossum/posts/1329405240877426</p>',
-				'<!-- wp:embed {"url":"https://www.facebook.com/sesametheopossum/posts/1329405240877426","type":"rich","providerNameSlug":"embed-handler","responsive":true,"previewable":false} --><figure class="wp-block-embed is-type-rich is-provider-embed-handler wp-block-embed-embed-handler"><div class="wp-block-embed__wrapper">
+				<<<HTML
+<p>https://www.facebook.com/sesametheopossum/posts/1329405240877426</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://www.facebook.com/sesametheopossum/posts/1329405240877426","type":"rich","providerNameSlug":"facebook","responsive":true,"previewable":false} -->
+<figure class="wp-block-embed is-type-rich is-provider-facebook wp-block-embed-facebook"><div class="wp-block-embed__wrapper">
 https://www.facebook.com/sesametheopossum/posts/1329405240877426
-</div></figure><!-- /wp:embed -->',
+</div></figure>
+<!-- /wp:embed -->
+HTML,
 			],
 			'tiktok' => [
-				'<p>https://www.tiktok.com/@atribecalledval/video/7348705314746699054</p>',
-				'<!-- wp:embed {"url":"https://www.tiktok.com/@atribecalledval/video/7348705314746699054","type":"video","providerNameSlug":"tiktok","responsive":true} --><figure class="wp-block-embed is-type-video is-provider-tiktok wp-block-embed-tiktok"><div class="wp-block-embed__wrapper">
+				<<<HTML
+<p>https://www.tiktok.com/@atribecalledval/video/7348705314746699054</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://www.tiktok.com/@atribecalledval/video/7348705314746699054","type":"video","providerNameSlug":"tiktok","responsive":true} -->
+<figure class="wp-block-embed is-type-video is-provider-tiktok wp-block-embed-tiktok"><div class="wp-block-embed__wrapper">
 https://www.tiktok.com/@atribecalledval/video/7348705314746699054
-</div></figure><!-- /wp:embed -->',
+</div></figure>
+<!-- /wp:embed -->
+HTML,
 			],
 		];
 	}
 
 	public function test_microsoft_word_importing(): void {
-		$html = <<<'HTML'
+		$html = <<<HTML
 <meta content="text/html; charset=utf-8" http-equiv="Content-Type"><meta content="Word.Document" name="ProgId"><meta content="Microsoft Word 12" name="Generator"><meta content="Microsoft Word 12" name="Originator"><link href="file:///C:%5CDOCUME%7E1%5C{{REDACTED}}%5CLOCALS%7E1%5CTemp%5Cmsohtmlclip1%5C01%5Cclip_filelist.xml" rel="File-List"><link href="file:///C:%5CDOCUME%7E1%5C{{REDACTED}}%5CLOCALS%7E1%5CTemp%5Cmsohtmlclip1%5C01%5Cclip_themedata.thmx" rel="themeData"><link href="file:///C:%5CDOCUME%7E1%5C{{REDACTED}}%5CLOCALS%7E1%5CTemp%5Cmsohtmlclip1%5C01%5Cclip_colorschememapping.xml" rel="colorSchemeMapping">\n
 <!--[if gte mso 9]><xml> Normal0falsefalsefalseEN-USX-NONEX-NONEMicrosoftInternetExplorer4 </xml><![endif]-->\n
 <!--[if gte mso 9]><![endif]-->\n
@@ -378,7 +638,68 @@ HTML;
 
 		$converted = ( new Block_Converter( $html, false ) )->convert();
 
-		$this->assertMatchesSnapshot( $converted );
+		$this->assertSame(
+			expected: <<<HTML
+<!-- wp:paragraph -->
+<p><strong>This is a test from Microsoft Word</strong></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Here is a link to <a href="https://alley.com">Alley</a></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>First item</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Second item</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>Here is an image:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image -->
+<figure class="wp-block-image"><img src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Screen Shot 2022-01-19 at 2.51.37 PM"/></figure>
+<!-- /wp:image -->
+HTML,
+			actual: $converted,
+		);
+	}
+
+	public function test_convert_with_children(): void {
+		$html = <<<HTML
+<blockquote><p><em>Sint sint nulla voluptate nulla adipisicing non proident excepteur duis fugiat fugiat qui minim reprehenderit. Irure adipisicing mollit ipsum eiusmod consequat reprehenderit elit anim irure deserunt in deserunt. In dolore ut quis ex quis laboris ex eu. Minim culpa cillum eu.</em></p>
+<blockquote>
+<blockquote><p><em>-proident excepteur duis fugiat fugiat qui minim reprehenderit </em></p></blockquote>
+</blockquote>
+</blockquote>
+HTML;
+
+		$block = ( new Block_Converter( $html ) )->convert();
+
+		$this->assertNotEmpty( actual: $block );
+		$this->assertSame(
+			expected: <<<HTML
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:paragraph -->
+<p><em>Sint sint nulla voluptate nulla adipisicing non proident excepteur duis fugiat fugiat qui minim reprehenderit. Irure adipisicing mollit ipsum eiusmod consequat reprehenderit elit anim irure deserunt in deserunt. In dolore ut quis ex quis laboris ex eu. Minim culpa cillum eu.</em></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:paragraph -->
+<p><em>-proident excepteur duis fugiat fugiat qui minim reprehenderit</em></p>
+<!-- /wp:paragraph --></blockquote>
+<!-- /wp:quote --></blockquote>
+<!-- /wp:quote --></blockquote>
+<!-- /wp:quote -->
+HTML,
+			actual: $block,
+		);
 	}
 
 	public function test_macroable() {
@@ -392,8 +713,12 @@ HTML;
 		$block = ( new Block_Converter( '<special-tag>content here</special-tag>' ) )->convert();
 
 		$this->assertEquals(
-			'<!-- wp:paragraph {"attribute":"123"} --><special-tag>content here</special-tag><!-- /wp:paragraph -->',
-			$block,
+			expected: <<<HTML
+<!-- wp:paragraph {"attribute":"123"} -->
+<special-tag>content here</special-tag>
+<!-- /wp:paragraph -->
+HTML,
+			actual: $block,
 		);
 	}
 
@@ -416,13 +741,21 @@ HTML;
 
 		if ( $is_single_tag ) {
 			$this->assertEquals(
-				"<!-- wp:paragraph -->$tag<!-- /wp:paragraph -->",
-				$block,
+				expected: <<<HTML
+<!-- wp:paragraph -->
+$tag
+<!-- /wp:paragraph -->
+HTML,
+				actual: $block,
 			);
 		} else {
 			$this->assertEquals(
-				"<!-- wp:paragraph -->content here<!-- /wp:paragraph -->",
-				$block,
+				expected: <<<HTML
+<!-- wp:paragraph -->
+content here
+<!-- /wp:paragraph -->
+HTML,
+				actual: $block,
 			);
 		}
 	}
@@ -457,20 +790,5 @@ HTML;
 			'source',
 			'hr',
 		] )->map_with_keys( fn ( $tag ) => [ $tag => [ $tag ] ] )->all();
-	}
-
-	public function test_convert_with_children(): void {
-		$html = <<<HTML
- <blockquote><p><em>Sint sint nulla voluptate nulla adipisicing non proident excepteur duis fugiat fugiat qui minim reprehenderit. Irure adipisicing mollit ipsum eiusmod consequat reprehenderit elit anim irure deserunt in deserunt. In dolore ut quis ex quis laboris ex eu. Minim culpa cillum eu.</em></p>
-<blockquote>
-<blockquote><p><em>-proident excepteur duis fugiat fugiat qui minim reprehenderit </em></p></blockquote>
-</blockquote>
-</blockquote>
-HTML;
-
-		$block = ( new Block_Converter( $html ) )->convert();
-
-		$this->assertNotEmpty( $block );
-		$this->assertMatchesSnapshot( $block );
 	}
 }

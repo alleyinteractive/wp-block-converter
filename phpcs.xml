@@ -5,6 +5,11 @@
   <!-- Include Alley Rules -->
   <rule ref="Alley-Interactive" />
 
+  <!-- This library uses json_encode() directly (e.g. to serialize block attributes) rather than wp_json_encode(), since its output must exactly match core's block serialization and doesn't need wp_json_encode()'s escaping/filtering behavior. -->
+  <rule ref="WordPress.WP.AlternativeFunctions">
+    <exclude name="WordPress.WP.AlternativeFunctions.json_encode_json_encode" />
+  </rule>
+
   <!-- Filenames follow PSR-4 (matching the class/trait name) rather than the WordPress class-*.php convention. -->
   <rule ref="WordPress.Files.FileName">
     <exclude name="WordPress.Files.FileName.NotHyphenatedLowercase" />

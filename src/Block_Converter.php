@@ -145,10 +145,29 @@ class Block_Converter {
 				'figure' => $this->figure( $node ),
 				'br', 'cite', 'source' => null,
 				'hr' => $this->separator(),
+				'pre' => $this->preformatted( $node ),
 				default => $this->html( $node ),
 			};
 		}
 
+		return $this->finalize_block( $block, $node );
+	}
+
+	/**
+	 * Apply the `wp_block_converter_block` filter to a generated block.
+	 *
+	 * Shared by `convert_node()` and any method that builds `Block` instances
+	 * outside of the normal per-node dispatch (e.g. splitting a single node
+	 * into multiple sibling blocks), so every generated block passes through
+	 * the same customization hook.
+	 *
+	 * @throws RuntimeException If the block is not an instance of Block or null.
+	 *
+	 * @param mixed $block The generated block, if any.
+	 * @param Node  $node  The node the block was generated from.
+	 * @return Block|null
+	 */
+	protected function finalize_block( mixed $block, Node $node ): ?Block {
 		if ( null !== $block && ! $block instanceof Block ) {
 			throw new RuntimeException( 'Returned block must be an instance of Block or null.' );
 		}
@@ -163,11 +182,7 @@ class Block_Converter {
 		 */
 		$block = apply_filters( 'wp_block_converter_block', $block, $node );
 
-		if ( ! $block instanceof Block ) {
-			return null;
-		}
-
-		return $block;
+		return $block instanceof Block ? $block : null;
 	}
 
 	/**
@@ -264,12 +279,18 @@ class Block_Converter {
 	 * @return string The children as blocks.
 	 */
 	public function convert_with_children( Node $node ): string {
-		$children = '';
+		$children           = '';
+		$previous_was_block = false;
 
 		// Recursively convert the children of the node.
 		foreach ( $node->childNodes as $child ) {
 			if ( '#text' === $child->nodeName ) {
-				$children .= $child->nodeValue;
+				if ( '' === trim( (string) $child->nodeValue ) ) {
+					continue;
+				}
+
+				$children          .= $child->nodeValue;
+				$previous_was_block = false;
 
 				continue;
 			}
@@ -282,7 +303,17 @@ class Block_Converter {
 			$child_block = $this->convert_node( $child );
 
 			if ( ! empty( $child_block ) ) {
-				$children .= $this->minify_block( (string) $child_block );
+				// Separate consecutive block-level children with a blank
+				// line, matching the top-level join in convert(). Non-block
+				// content (plain text, <cite>) attaches directly with no gap.
+				if ( $previous_was_block ) {
+					$children .= "\n\n";
+				}
+
+				$children          .= $this->minify_block( (string) $child_block );
+				$previous_was_block = true;
+			} else {
+				$previous_was_block = false;
 			}
 		}
 
@@ -310,6 +341,10 @@ class Block_Converter {
 	 * @return Block|null
 	 */
 	protected function h( Node $node ): ?Block {
+		if ( $node instanceof Element ) {
+			$node->setAttribute( 'class', 'wp-block-heading' );
+		}
+
 		$content = static::get_node_html( $node );
 
 		if ( empty( $content ) ) {
@@ -361,7 +396,13 @@ class Block_Converter {
 			return $this->img( $node );
 		}
 
+		if ( 'p' === strtolower( $node->nodeName ) && $this->paragraph_has_inline_image( $node ) ) {
+			return $this->split_paragraph_with_inline_images( $node );
+		}
+
 		$this->sideload_child_images( $node );
+		static::collapse_whitespace( $node );
+		static::trim_edge_whitespace( $node );
 
 		$content = static::get_node_html( $node );
 
@@ -374,12 +415,19 @@ class Block_Converter {
 		// TODO: Account for Twitter/Facebook embeds being inline links in
 		// content and not full embeds.
 		if ( ! empty( filter_var( $text_content, FILTER_VALIDATE_URL ) ) ) {
-			if ( \str_contains( $text_content, '//x.com' ) || \str_contains( $text_content, '//www.x.com' ) ) {
-				$text_content      = str_replace( 'x.com', 'twitter.com', $text_content );
+			if ( \str_contains( $text_content, '//x.com/' ) || \str_contains( $text_content, '//www.x.com/' ) ) {
+				$text_content      = str_replace( [ '//x.com/', '//www.x.com/' ], '//twitter.com/', $text_content );
 				$node->textContent = $text_content;
 			}
 
-			// Instagram and Facebook embeds require an api key to retrieve oEmbed data.
+			// Twitter/X, Instagram, and Facebook's embed shape is hardcoded
+			// here instead of making an oEmbed request, since the block
+			// converter avoids depending on live oEmbed HTTP calls where a
+			// sensible shape can be determined from the URL alone.
+			if ( \str_contains( $text_content, 'twitter.com' ) ) {
+				return $this->twitter_embed( $text_content );
+			}
+
 			if ( \str_contains( $text_content, 'instagram.com' ) ) {
 				return $this->instagram_embed( $text_content );
 			}
@@ -402,6 +450,87 @@ class Block_Converter {
 	}
 
 	/**
+	 * Check if a <p> has an <img> (bare or anchor-wrapped) as one of several
+	 * direct children, i.e. an image sitting inline in running text rather
+	 * than being the paragraph's sole content.
+	 *
+	 * @param Node $node The node.
+	 * @return bool
+	 */
+	protected function paragraph_has_inline_image( Node $node ): bool {
+		foreach ( static::significant_child_nodes( $node ) as $child ) {
+			if ( 'img' === strtolower( $child->nodeName ) || $this->is_anchor_wrapped_image( $child ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Split a <p> containing one or more inline images into separate
+	 * paragraph and image blocks, matching how the block editor splits a
+	 * pasted inline image out of its surrounding text into its own image
+	 * block (floated right of the remaining text).
+	 *
+	 * @param Node $node The node.
+	 * @return Block|null
+	 */
+	protected function split_paragraph_with_inline_images( Node $node ): ?Block {
+		// Each inline image is sideloaded individually by img() below — not
+		// pre-sideloaded here, which would overwrite its src with a local
+		// URL before img() ever sees the original remote one.
+		static::collapse_whitespace( $node );
+
+		$blocks = [];
+		$buffer = '';
+
+		foreach ( $node->childNodes as $child ) {
+			if ( 'img' === strtolower( $child->nodeName ) || $this->is_anchor_wrapped_image( $child ) ) {
+				$text = trim( $buffer );
+
+				if ( '' !== $text ) {
+					$blocks[] = $this->finalize_block(
+						new Block( block_name: 'paragraph', content: sprintf( '<p>%s</p>', $text ) ),
+						$child,
+					);
+				}
+
+				$blocks[] = $this->finalize_block( $this->img( $child, split_from_paragraph: true ), $child );
+
+				$buffer = '';
+
+				continue;
+			}
+
+			$buffer .= '#text' === $child->nodeName ? (string) $child->nodeValue : static::get_node_html( $child );
+		}
+
+		$text = trim( $buffer );
+
+		if ( '' !== $text ) {
+			$blocks[] = $this->finalize_block(
+				new Block( block_name: 'paragraph', content: sprintf( '<p>%s</p>', $text ) ),
+				$node,
+			);
+		}
+
+		$blocks = array_filter( $blocks );
+
+		if ( empty( $blocks ) ) {
+			return null;
+		}
+
+		return new Block(
+			block_name: '',
+			content: implode(
+				"\n\n",
+				array_map( fn ( Block $block ) => $this->minify_block( (string) $block ), $blocks )
+			),
+		);
+	}
+
+	/**
 	 * Create figure blocks.
 	 *
 	 * This method only supports converting a <figure> block that has either a
@@ -413,17 +542,7 @@ class Block_Converter {
 	 */
 	public function figure( Node $node ): ?Block {
 		if ( $this->is_supported_figure( $node ) ) {
-			$this->sideload_child_images( $node );
-
-			// Ensure it has the "wp-block-image" class.
-			if ( $node instanceof Element ) {
-				$node->setAttribute( 'class', 'wp-block-image' );
-			}
-
-			return new Block(
-				block_name: 'image',
-				content: static::get_node_html( $node ),
-			);
+			return $this->img( $node );
 		}
 
 		return $this->html( $node );
@@ -436,34 +555,25 @@ class Block_Converter {
 	 * @return bool
 	 */
 	protected function is_supported_figure( Node $node ): bool {
-		$children = $node->childNodes;
+		$children = static::significant_child_nodes( $node );
 
-		if ( ! $children->length ) {
+		if ( empty( $children ) || count( $children ) > 2 ) {
 			return false;
 		}
 
-		if ( $children->length > 2 ) {
+		if ( 2 === count( $children ) && 'figcaption' !== strtolower( $children[1]->nodeName ) ) {
 			return false;
 		}
 
-		$second_child = $children->item( 1 );
-
-		if ( 2 === $children->length && ( ! $second_child || 'figcaption' !== strtolower( $second_child->nodeName ) ) ) {
-			return false;
-		}
-
-		$first_child = $children->item( 0 );
+		$first_child = $children[0];
 
 		// Check if the first child is an <img> or an <a> with an <img> child.
-		if ( $first_child && ( 'img' === strtolower( $first_child->nodeName ) || $this->is_anchor_wrapped_image( $first_child ) ) ) {
-			return true;
-		}
-
-		return false;
+		return 'img' === strtolower( $first_child->nodeName ) || $this->is_anchor_wrapped_image( $first_child );
 	}
 
 	/**
-	 * Check if the figure node is an anchor wrapped image.
+	 * Check if the node's only meaningful child is an <img>, e.g. an <a>
+	 * wrapping a single image.
 	 *
 	 * @param Node|null $node The node.
 	 * @return bool
@@ -473,19 +583,47 @@ class Block_Converter {
 			return false;
 		}
 
-		$children = $node->childNodes;
+		$children = static::significant_child_nodes( $node );
 
-		if ( ! $children->length ) {
-			return false;
+		return 1 === count( $children ) && 'img' === strtolower( $children[0]->nodeName );
+	}
+
+	/**
+	 * Get a node's child nodes, ignoring whitespace-only text nodes (e.g. the
+	 * indentation/newlines between tags in pretty-printed source HTML), so
+	 * child-counting checks only see meaningfully different markup.
+	 *
+	 * @param Node $node The node.
+	 * @return Node[]
+	 */
+	protected static function significant_child_nodes( Node $node ): array {
+		$children = [];
+
+		foreach ( $node->childNodes as $child ) {
+			if ( '#text' === $child->nodeName && '' === trim( (string) $child->nodeValue ) ) {
+				continue;
+			}
+
+			$children[] = $child;
 		}
 
-		$first_child = $children->item( 0 );
+		return $children;
+	}
 
-		if ( 1 === $children->length && $first_child && 'img' === strtolower( $first_child->nodeName ) ) {
-			return true;
+	/**
+	 * Remove whitespace-only text node children from an element in place,
+	 * e.g. the indentation/newlines between tags in pretty-printed source
+	 * HTML that the block editor's own markup doesn't have.
+	 *
+	 * @param Element $element The element.
+	 * @return void
+	 */
+	protected static function remove_whitespace_only_child_text_nodes( Element $element ): void {
+		foreach ( iterator_to_array( $element->childNodes ) as $child ) {
+			if ( '#text' === $child->nodeName && '' === trim( (string) $child->nodeValue ) ) {
+				$element->removeChild( $child );
+			}
 		}
-
-		return false;
 	}
 
 	/**
@@ -495,26 +633,25 @@ class Block_Converter {
 	 * @return Block
 	 */
 	protected function ul( Node $node ): Block {
-		$this->sideload_child_images( $node );
-
-		return new Block(
-			block_name: 'list',
-			content: static::get_node_html( $node ),
-		);
+		return $this->list( $node, false );
 	}
 
 	/**
 	 * Create img block.
 	 *
 	 * Supports being passed a element that is a <img> or a parent element that
-	 * contains an <img>. If it is passed a parent element that contains an
-	 * <img> tag, the resulting block will preserve the parent element and wrap
-	 * it in a <figure> tag.
+	 * contains an <img>. If the parent element is itself a <figure>, its
+	 * markup is preserved and reused as the block's outer wrapper; for any
+	 * other parent (e.g. an <a>), the resulting block wraps it in a new
+	 * <figure> tag.
 	 *
-	 * @param Element|Node $element The node.
+	 * @param Element|Node $element              The node.
+	 * @param bool         $split_from_paragraph Whether this image was split out from inline
+	 *                                           paragraph text, in which case the block editor
+	 *                                           floats it right of the remaining text.
 	 * @return Block|null
 	 */
-	protected function img( Element|Node $element ): ?Block {
+	protected function img( Element|Node $element, bool $split_from_paragraph = false ): ?Block {
 		if ( ! $element instanceof Element ) {
 			return null;
 		}
@@ -542,6 +679,9 @@ class Block_Converter {
 			return null;
 		}
 
+		$attributes        = [];
+		$wrapped_in_anchor = $image_node->parentNode instanceof Element && 'a' === strtolower( $image_node->parentNode->nodeName );
+
 		if ( $this->sideload_images ) {
 			try {
 				$image_src = $this->upload_image( $image_src, $alt );
@@ -555,18 +695,74 @@ class Block_Converter {
 			} catch ( Exception ) {
 				return null;
 			}
+
+			$attachment_id = (int) attachment_url_to_postid( $image_src ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.attachment_url_to_postid_attachment_url_to_postid
+
+			if ( $attachment_id ) {
+				$image_node->setAttribute( 'class', 'wp-image-' . $attachment_id );
+			}
+
+			// The block editor's exact attribute shape for a sideloaded
+			// image, confirmed against a live WP 7.0 install: a link
+			// disables the lightbox and points the image at its custom
+			// href, while a bare image split out of paragraph text keeps
+			// its (default) "none" link destination explicit and floats
+			// right of the remaining text.
+			if ( $wrapped_in_anchor ) {
+				$attributes['lightbox'] = [ 'enabled' => false ];
+			}
+
+			$attributes['id']       = $attachment_id;
+			$attributes['sizeSlug'] = 'full';
+
+			if ( $wrapped_in_anchor ) {
+				$attributes['linkDestination'] = 'custom';
+			} elseif ( $split_from_paragraph ) {
+				$attributes['linkDestination'] = 'none';
+			}
+
+			if ( $split_from_paragraph ) {
+				$attributes['align'] = 'right';
+			}
+		} elseif ( ! ( $this->convert_ms_word_content && $this->is_ms_word_html( $this->html ) ) ) {
+			// Without a known attachment, default to the block editor's
+			// "Large" image size option — unless this is a Microsoft Word
+			// paste, which the editor handles as a distinct import path
+			// that doesn't assign a size slug.
+			$attributes['sizeSlug'] = 'large';
 		}
 
 		if ( empty( $image_src ) ) {
 			return null;
 		}
 
+		$class = 'wp-block-image'
+			. ( $split_from_paragraph ? ' alignright' : '' )
+			. ( isset( $attributes['sizeSlug'] ) ? ' size-' . $attributes['sizeSlug'] : '' );
+
+		if ( 'figure' === strtolower( $element->nodeName ) ) {
+			$element->setAttribute( 'class', $class );
+
+			$figcaption = $element->getElementsByTagName( 'figcaption' )->item( 0 );
+
+			if ( $figcaption instanceof Element ) {
+				$figcaption->setAttribute( 'class', 'wp-element-caption' );
+			}
+
+			// Drop the indentation/newline text nodes a pretty-printed
+			// <figure> has between its children — the block editor's own
+			// figure markup has no whitespace between its child elements.
+			static::remove_whitespace_only_child_text_nodes( $element );
+
+			$content = static::get_node_html( $element );
+		} else {
+			$content = sprintf( '<figure class="%s">%s</figure>', $class, static::get_node_html( $element ) );
+		}
+
 		return new Block(
 			block_name: 'image',
-			content: sprintf(
-				'<figure class="wp-block-image">%s</figure>',
-				static::get_node_html( $element ),
-			),
+			attributes: $attributes,
+			content: static::self_close_void_elements( $content ),
 		);
 	}
 
@@ -577,14 +773,55 @@ class Block_Converter {
 	 * @return Block
 	 */
 	protected function ol( Node $node ): Block {
+		return $this->list( $node, true );
+	}
+
+	/**
+	 * Create list blocks, wrapping each <li> child in a nested "list-item"
+	 * block to match the block editor's markup.
+	 *
+	 * @param Node $node    The node.
+	 * @param bool $ordered Whether the list is ordered (<ol>).
+	 * @return Block
+	 */
+	protected function list( Node $node, bool $ordered ): Block {
 		$this->sideload_child_images( $node );
+
+		if ( $node instanceof Element ) {
+			$node->setAttribute( 'class', 'wp-block-list' );
+		}
+
+		$items = [];
+
+		foreach ( $node->childNodes as $child ) {
+			if ( 'li' !== strtolower( $child->nodeName ) ) {
+				continue;
+			}
+
+			$items[] = (string) $this->list_item( $child );
+		}
+
+		$node->textContent = '__CHILDREN__';
+
+		$content = str_replace( '__CHILDREN__', implode( "\n\n", $items ), static::get_node_html( $node ) );
 
 		return new Block(
 			block_name: 'list',
-			attributes: [
-				'ordered' => true,
-			],
-			content: static::get_node_html( $node ),
+			attributes: $ordered ? [ 'ordered' => true ] : [],
+			content: $content,
+		);
+	}
+
+	/**
+	 * Create list-item blocks for a <li>.
+	 *
+	 * @param Node $node The node.
+	 * @return Block
+	 */
+	protected function list_item( Node $node ): Block {
+		return new Block(
+			block_name: 'list-item',
+			content: $this->convert_with_children( $node ),
 		);
 	}
 
@@ -637,6 +874,32 @@ class Block_Converter {
 	}
 
 	/**
+	 * Create Twitter/X embed blocks.
+	 *
+	 * @param string $url The URL.
+	 * @return Block
+	 */
+	protected function twitter_embed( string $url ): Block {
+		$atts = [
+			'url'              => $url,
+			'type'             => 'rich',
+			'providerNameSlug' => 'x',
+			'responsive'       => true,
+		];
+
+		return new Block(
+			block_name: 'embed',
+			attributes: $atts,
+			content: sprintf(
+				'<figure class="wp-block-embed is-type-rich is-provider-x wp-block-embed-x"><div class="wp-block-embed__wrapper">
+				%s
+				</div></figure>',
+				$url
+			),
+		);
+	}
+
+	/**
 	 * Create Instagram embed blocks.
 	 *
 	 * @param string $url The URL.
@@ -663,7 +926,7 @@ class Block_Converter {
 	}
 
 	/**
-	 * Create Instagram embed blocks.
+	 * Create Facebook embed blocks.
 	 *
 	 * @param string $url The URL.
 	 * @return Block
@@ -672,7 +935,7 @@ class Block_Converter {
 		$atts = [
 			'url'              => $url,
 			'type'             => 'rich',
-			'providerNameSlug' => 'embed-handler',
+			'providerNameSlug' => 'facebook',
 			'responsive'       => true,
 			'previewable'      => false,
 		];
@@ -681,7 +944,7 @@ class Block_Converter {
 			block_name: 'embed',
 			attributes: $atts,
 			content: sprintf(
-				'<figure class="wp-block-embed is-type-rich is-provider-embed-handler wp-block-embed-embed-handler"><div class="wp-block-embed__wrapper">
+				'<figure class="wp-block-embed is-type-rich is-provider-facebook wp-block-embed-facebook"><div class="wp-block-embed__wrapper">
 				%s
 				</div></figure>',
 				$url
@@ -698,6 +961,28 @@ class Block_Converter {
 		return new Block(
 			block_name: 'separator',
 			content: '<hr class="wp-block-separator has-alpha-channel-opacity"/>'
+		);
+	}
+
+	/**
+	 * Create preformatted blocks.
+	 *
+	 * @param Node $node The node.
+	 * @return Block|null
+	 */
+	protected function preformatted( Node $node ): ?Block {
+		$content = trim( (string) $node->textContent );
+
+		if ( empty( $content ) ) {
+			return null;
+		}
+
+		return new Block(
+			block_name: 'preformatted',
+			content: sprintf(
+				'<pre class="wp-block-preformatted">%s</pre>',
+				str_replace( "\n", '<br>', htmlspecialchars( $content, ENT_NOQUOTES ) ),
+			),
 		);
 	}
 
@@ -719,8 +1004,34 @@ class Block_Converter {
 
 		return new Block(
 			block_name: 'html',
-			content: $html,
+			content: static::self_close_void_elements( $html ),
 		);
+	}
+
+	/**
+	 * Restore the self-closing "/>" syntax on void elements.
+	 *
+	 * WordPress intentionally self-closes void elements in its block output
+	 * (e.g. the image block's `<img .../>`), with no space before the `/>`.
+	 * `Dom\HTMLDocument::saveHtml()` doesn't do this — it always serializes
+	 * void elements per the HTML5 spec (e.g. `<embed ...>`, no trailing
+	 * slash) — so restore that syntax here to match.
+	 *
+	 * @param string $html The HTML to restore self-closing syntax in.
+	 * @return string
+	 */
+	protected static function self_close_void_elements( string $html ): string {
+		$void_elements = [ 'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr' ];
+
+		return preg_replace_callback(
+			'/<(' . implode( '|', $void_elements ) . ')\b[^>]*>/i',
+			static function ( array $matches ): string {
+				$tag = rtrim( trim( $matches[0], '>' ) );
+
+				return str_ends_with( $tag, '/' ) ? $matches[0] : $tag . '/>';
+			},
+			$html
+		) ?? $html;
 	}
 
 	/**
@@ -773,6 +1084,73 @@ class Block_Converter {
 		$owner_document = $node->ownerDocument;
 
 		return $owner_document instanceof HTMLDocument ? $owner_document->saveHtml( $node ) : '';
+	}
+
+	/**
+	 * Collapse runs of whitespace in a node's descendant text nodes down to a
+	 * single space, matching how a browser (and the block editor's rich text
+	 * fields) render collapsible whitespace.
+	 *
+	 * @param Node $node The node to collapse whitespace within.
+	 * @return void
+	 */
+	protected static function collapse_whitespace( Node $node ): void {
+		foreach ( $node->childNodes as $child ) {
+			if ( '#text' === $child->nodeName ) {
+				$child->nodeValue = preg_replace( '/\s+/', ' ', (string) $child->nodeValue );
+
+				continue;
+			}
+
+			if ( $child->hasChildNodes() ) {
+				static::collapse_whitespace( $child );
+			}
+		}
+	}
+
+	/**
+	 * Trim leading whitespace from a node's first descendant text node and
+	 * trailing whitespace from its last, matching how a browser trims edge
+	 * whitespace when rendering `white-space: normal` content.
+	 *
+	 * @param Node $node The node to trim edge whitespace within.
+	 * @return void
+	 */
+	protected static function trim_edge_whitespace( Node $node ): void {
+		$text_nodes = [];
+
+		static::collect_text_nodes( $node, $text_nodes );
+
+		if ( empty( $text_nodes ) ) {
+			return;
+		}
+
+		$first            = reset( $text_nodes );
+		$first->nodeValue = ltrim( (string) $first->nodeValue );
+
+		$last            = end( $text_nodes );
+		$last->nodeValue = rtrim( (string) $last->nodeValue );
+	}
+
+	/**
+	 * Collect a node's descendant text nodes, in document order.
+	 *
+	 * @param Node   $node       The node to collect text nodes from.
+	 * @param Node[] $text_nodes The collected text nodes, passed by reference.
+	 * @return void
+	 */
+	protected static function collect_text_nodes( Node $node, array &$text_nodes ): void {
+		foreach ( $node->childNodes as $child ) {
+			if ( '#text' === $child->nodeName ) {
+				$text_nodes[] = $child;
+
+				continue;
+			}
+
+			if ( $child->hasChildNodes() ) {
+				static::collect_text_nodes( $child, $text_nodes );
+			}
+		}
 	}
 
 	/**
