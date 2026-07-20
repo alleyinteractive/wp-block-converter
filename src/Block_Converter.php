@@ -415,8 +415,8 @@ class Block_Converter {
 		// TODO: Account for Twitter/Facebook embeds being inline links in
 		// content and not full embeds.
 		if ( ! empty( filter_var( $text_content, FILTER_VALIDATE_URL ) ) ) {
-			if ( \str_contains( $text_content, '//x.com' ) || \str_contains( $text_content, '//www.x.com' ) ) {
-				$text_content      = str_replace( 'x.com', 'twitter.com', $text_content );
+			if ( \str_contains( $text_content, '//x.com/' ) || \str_contains( $text_content, '//www.x.com/' ) ) {
+				$text_content      = str_replace( [ '//x.com/', '//www.x.com/' ], '//twitter.com/', $text_content );
 				$node->textContent = $text_content;
 			}
 
