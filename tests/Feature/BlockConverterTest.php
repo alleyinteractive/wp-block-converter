@@ -10,6 +10,7 @@ namespace Alley\WP\Block_Converter\Tests\Feature;
 use Alley\WP\Block_Converter\Block;
 use Alley\WP\Block_Converter\Block_Converter;
 use Alley\WP\Block_Converter\Tests\TestCase;
+use Alley\WP\Block_Converter\WordPress_Image_Uploader;
 use Dom\Node;
 use Mantle\Testing\Concerns\Prevent_Remote_Requests;
 use Mantle\Support\Str;
@@ -38,8 +39,6 @@ class BlockConverterTest extends TestCase {
 		$dir = wp_upload_dir();
 
 		shell_exec( "rm -rf {$dir['path']}/*" );
-
-		remove_all_actions( 'add_attachment' );
 	}
 
 	#[DataProvider( 'converter_data_provider' )]
@@ -242,7 +241,7 @@ HTML,
 	public function test_image( string $html, string $expected ) {
 		$converter = new Block_Converter(
 			html: $html,
-			sideload_images: true,
+			uploader: new WordPress_Image_Uploader(),
 		);
 		$block     = $converter->convert();
 
@@ -274,7 +273,7 @@ HTML,
 <img src="https://example.org/image.jpg" alt="Sample alt text" />
 HTML;
 
-		$result = ( new Block_Converter( $html, false ) )->convert();
+		$result = ( new Block_Converter( $html ) )->convert();
 
 		$this->assertEquals(
 			expected: <<<HTML
@@ -774,7 +773,7 @@ HTML,
 <img border="0" src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Screen Shot 2022-01-19 at 2.51.37 PM" width="300" style="width:225.0pt;border:none;mso-border-alt:solid #000000 .5pt;mso-border-alt:solid windowtext .5pt;mso-padding-alt:0in 0in 0in 0in" />
 HTML;
 
-		$converted = ( new Block_Converter( $html, false ) )->convert();
+		$converted = ( new Block_Converter( $html ) )->convert();
 
 		$this->assertSame(
 			expected: <<<HTML

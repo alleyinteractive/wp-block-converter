@@ -38,10 +38,7 @@
     "autoload": {
         "psr-4": {
             "Alley\\WP\\Block_Converter\\": "src"
-        },
-        "files": [
-            "src/helpers.php"
-        ]
+        }
     },
     "autoload-dev": {
         "psr-4": {

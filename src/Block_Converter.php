@@ -26,7 +26,6 @@ use Throwable;
  * Mirrors the `htmlToBlocks()`/`rawHandler()` from the `@wordpress/blocks` package.
  */
 class Block_Converter {
-	use Concerns\Listens_For_Attachments;
 	use Concerns\Microsoft_Word_Content;
 	use Macroable {
 		__call as macro_call;
@@ -35,10 +34,7 @@ class Block_Converter {
 	/**
 	 * Setup the class.
 	 *
-	 * @throws RuntimeException If WordPress is not loaded.
-	 *
 	 * @param string               $html                     The HTML to parse.
-	 * @param bool                 $sideload_images          Whether to sideload images or not. Defaults to false.
 	 * @param LoggerInterface|null $logger            The logger to use.
 	 * @param Closure|null         $on_skip_minify_block     Called with ( bool $skip_minify_block, string $block, Node $node ): bool
 	 *                                                        to decide whether a block should skip minification.
@@ -53,10 +49,13 @@ class Block_Converter {
 	 *                                                        image has been sideloaded.
 	 * @param Closure|null         $on_sanitized_image_url   Called with ( string $sanitized_url, string $url ): string to
 	 *                                                        filter the reconstructed image URL used for sideloading.
+	 * @param Image_Uploader|null  $uploader                 The image uploader to use for sideloading images. Images are
+	 *                                                        left untouched (no sideloading) unless an uploader is
+	 *                                                        supplied here — e.g. `new WordPress_Image_Uploader()` to
+	 *                                                        sideload into the WordPress media library.
 	 */
 	public function __construct(
 		public string $html,
-		public bool $sideload_images = false,
 		protected ?LoggerInterface $logger = null,
 		protected ?Closure $on_skip_minify_block = null,
 		protected ?Closure $on_document_html = null,
@@ -64,10 +63,8 @@ class Block_Converter {
 		protected ?Closure $on_pre_sideload_image = null,
 		protected ?Closure $on_sideloaded_image = null,
 		protected ?Closure $on_sanitized_image_url = null,
+		protected ?Image_Uploader $uploader = null,
 	) {
-		if ( ! function_exists( 'do_action' ) ) {
-			throw new RuntimeException( 'WordPress must be loaded to use the Block_Converter class.' );
-		}
 	}
 
 	/**
@@ -92,8 +89,6 @@ class Block_Converter {
 	 * @return string The HTML.
 	 */
 	public function convert(): string {
-		$this->listen_for_attachment_creation();
-
 		// Get tags from the html.
 		$content = static::get_node_tag_from_html( $this->html );
 
@@ -136,9 +131,27 @@ class Block_Converter {
 		$filtered_html = $this->apply( $this->on_document_html, $html, $content );
 		$html          = trim( is_string( $filtered_html ) ? $filtered_html : $html );
 
-		$this->detach_attachment_creation_listener();
-
 		return $html;
+	}
+
+	/**
+	 * Retrieve the attachment IDs created while sideloading images during the
+	 * conversion, if any. Empty if sideloading was never enabled.
+	 *
+	 * @return array<int>
+	 */
+	public function get_created_attachment_ids(): array {
+		return $this->uploader?->get_created_attachment_ids() ?? [];
+	}
+
+	/**
+	 * Assign a parent post ID to the attachments created during the
+	 * conversion. No-op if sideloading was never enabled.
+	 *
+	 * @param int $parent_post_id Parent post ID.
+	 */
+	public function assign_parent_to_attachments( int $parent_post_id ): void {
+		$this->uploader?->assign_parent_to_attachments( $parent_post_id );
 	}
 
 	/**
@@ -210,7 +223,7 @@ class Block_Converter {
 	 * @return void
 	 */
 	protected function sideload_child_images( Node $node ): void {
-		if ( ! $this->sideload_images ) {
+		if ( ! $this->uploader ) {
 			return;
 		}
 
@@ -671,7 +684,7 @@ class Block_Converter {
 		$attributes        = [];
 		$wrapped_in_anchor = $image_node->parentNode instanceof Element && 'a' === strtolower( $image_node->parentNode->nodeName );
 
-		if ( $this->sideload_images ) {
+		if ( $this->uploader ) {
 			try {
 				$image_src = $this->upload_image( $image_src, $alt );
 
@@ -685,7 +698,7 @@ class Block_Converter {
 				return null;
 			}
 
-			$attachment_id = (int) attachment_url_to_postid( $image_src ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.attachment_url_to_postid_attachment_url_to_postid
+			$attachment_id = $this->uploader->attachment_id_for( $image_src );
 
 			if ( $attachment_id ) {
 				$image_node->setAttribute( 'class', 'wp-image-' . $attachment_id );
@@ -701,7 +714,10 @@ class Block_Converter {
 				$attributes['lightbox'] = [ 'enabled' => false ];
 			}
 
-			$attributes['id']       = $attachment_id;
+			if ( null !== $attachment_id ) {
+				$attributes['id'] = $attachment_id;
+			}
+
 			$attributes['sizeSlug'] = 'full';
 
 			if ( $wrapped_in_anchor ) {
@@ -1251,19 +1267,19 @@ class Block_Converter {
 	}
 
 	/**
-	 * Upload image.
+	 * Upload an image via the configured Image_Uploader.
 	 *
 	 * @param string $src Image url.
 	 * @param string $alt Image alt.
 	 *
-	 * @throws Exception If the image was not able to be created.
+	 * @throws Exception If the image was not able to be uploaded.
 	 *
-	 * @return string The WordPress image URL.
+	 * @return string The uploaded image URL.
 	 */
 	public function upload_image( string $src, string $alt ): string {
 		$src = $this->remove_image_args( $src );
 
-		return (string) wp_get_attachment_url( create_or_get_attachment_from_url( $src, [ 'alt' => $alt ] ) );
+		return $this->uploader?->upload( $src, $alt ) ?? $src;
 	}
 
 	/**
