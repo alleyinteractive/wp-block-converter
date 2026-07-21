@@ -1192,7 +1192,7 @@ class Block_Converter {
 	 * @return string A reconstructed image URL containing only the scheme, host, port, and path.
 	 */
 	public function remove_image_args( $url ): string {
-		$url_parts = wp_parse_url( $url );
+		$url_parts = parse_url( $url );
 		$scheme    = $url_parts['scheme'] ?? 'https';
 		$host      = $url_parts['host'] ?? '';
 		$port      = ! empty( $url_parts['port'] ) ? ':' . $url_parts['port'] : '';
