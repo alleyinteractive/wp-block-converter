@@ -354,7 +354,7 @@ class Block_Converter {
 		return new Block(
 			block_name: 'heading',
 			attributes: [
-				'level' => absint( str_replace( 'h', '', strtolower( $node->nodeName ) ) ),
+				'level' => (int) str_replace( 'h', '', strtolower( $node->nodeName ) ),
 			],
 			content: $content,
 		);
