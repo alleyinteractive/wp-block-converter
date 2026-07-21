@@ -675,6 +675,17 @@ class Block_Converter {
 			$image_src = $image_node->getAttribute( 'src' );
 		}
 
+		// The block editor's image block always derives responsive sizes
+		// from the attachment itself, so a copied-in srcset/sizes pair is
+		// never valid on a converted image regardless of sideloading.
+		if ( $image_node->hasAttribute( 'srcset' ) ) {
+			$image_node->removeAttribute( 'srcset' );
+		}
+
+		if ( $image_node->hasAttribute( 'sizes' ) ) {
+			$image_node->removeAttribute( 'sizes' );
+		}
+
 		if ( empty( $image_src ) ) {
 			return null;
 		}
@@ -687,11 +698,6 @@ class Block_Converter {
 				$image_src = $this->upload_image( $image_src, $alt );
 
 				$image_node->setAttribute( 'src', $image_src );
-
-				// Remove any srcset attributes.
-				if ( $image_node->hasAttribute( 'srcset' ) ) {
-					$image_node->removeAttribute( 'srcset' );
-				}
 			} catch ( Exception ) {
 				return null;
 			}

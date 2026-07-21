@@ -288,6 +288,23 @@ HTML,
 		);
 	}
 
+	public function test_image_with_srcset_and_sizes_attributes_removed(): void {
+		$html = <<<HTML
+<img src="https://example.org/image.jpg" srcset="https://example.org/image.jpg 1x, https://example.org/image-2x.jpg 2x" sizes="(max-width: 600px) 100vw, 600px" alt="Sample alt text" />
+HTML;
+
+		$result = ( new Block_Converter( $html, false ) )->convert();
+
+		$this->assertEquals(
+			expected: <<<HTML
+<!-- wp:image {"sizeSlug":"large"} -->
+<figure class="wp-block-image size-large"><img src="https://example.org/image.jpg" alt="Sample alt text"/></figure>
+<!-- /wp:image -->
+HTML,
+			actual: $result,
+		);
+	}
+
 	public static function image_dataprovider(): array {
 		return [
 			'image wrapped with figure/a' => [
@@ -364,6 +381,16 @@ HTML,
 			'image not wrapped' => [
 				<<<HTML
 <img src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Sample alt text">
+HTML,
+				<<<HTML
+<!-- wp:image {"id":{{IMAGE_ID}},"sizeSlug":"full"} -->
+<figure class="wp-block-image size-full"><img src="{{IMAGE_SRC}}" alt="Sample alt text" class="wp-image-{{IMAGE_ID}}"/></figure>
+<!-- /wp:image -->
+HTML,
+			],
+			'image with srcset and sizes attributes' => [
+				<<<HTML
+<img src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" srcset="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png 300w" sizes="100vw" alt="Sample alt text">
 HTML,
 				<<<HTML
 <!-- wp:image {"id":{{IMAGE_ID}},"sizeSlug":"full"} -->
