@@ -393,29 +393,22 @@ HTML,
 	}
 
 	public function test_convert_with_filter_override_single_tag() {
-		$this->expectApplied( 'wp_block_converter_document_html' )->once();
-		$this->expectApplied( 'wp_block_converter_block' )->once()->andReturnInstanceOf( Block::class );
-
 		$html = <<<HTML
 <p>Content to migrate</p>
 <h1>Heading 01</h1>
 HTML;
 
-		add_filter(
-			'wp_block_converter_block',
-			function ( Block $block ) {
-				remove_all_filters( 'wp_block_converter_block' );
-
-				$block->content = 'Override content';
+		$converter = new Block_Converter(
+			html: $html,
+			on_block: function ( ?Block $block, Node $node ) {
+				if ( $block instanceof Block && 'p' === strtolower( $node->nodeName ) ) {
+					$block->content = 'Override content';
+				}
 
 				return $block;
-			}
+			},
 		);
-
-
-		$converter = new Block_Converter( $html );
-		$block     = $converter->convert();
-
+		$block = $converter->convert();
 
 		$this->assertSame(
 			expected: <<<HTML
@@ -432,19 +425,25 @@ HTML,
 	}
 
 	public function test_convert_with_filter_override_entire_content() {
-		$this->expectApplied( 'wp_block_converter_block' )->twice();
-		$this->expectApplied( 'wp_block_converter_document_html' )->once();
+		$on_block_calls = 0;
 
 		$html = <<<HTML
 <p>Content to migrate</p>
 <h1>Heading 01</h1>
 HTML;
 
-		add_filter( 'wp_block_converter_document_html', fn () => 'Override' );
+		$converter = new Block_Converter(
+			html: $html,
+			on_block: function ( ?Block $block, Node $node ) use ( &$on_block_calls ) {
+				$on_block_calls++;
 
-		$converter = new Block_Converter( $html );
-		$block     = $converter->convert();
+				return $block;
+			},
+			on_document_html: fn () => 'Override',
+		);
+		$block = $converter->convert();
 
+		$this->assertSame( expected: 2, actual: $on_block_calls );
 		$this->assertSame(
 			expected: 'Override',
 			actual: $block,

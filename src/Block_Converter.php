@@ -9,6 +9,7 @@
 
 namespace Alley\WP\Block_Converter;
 
+use Closure;
 use Dom\Element;
 use Dom\HTMLCollection;
 use Dom\HTMLDocument;
@@ -38,14 +39,53 @@ class Block_Converter {
 	 *
 	 * @throws RuntimeException If WordPress is not loaded.
 	 *
-	 * @param string               $html The HTML to parse.
-	 * @param bool                 $sideload_images Whether to sideload images or not. Defaults to false.
-	 * @param LoggerInterface|null $logger The logger to use.
+	 * @param string               $html                     The HTML to parse.
+	 * @param bool                 $sideload_images          Whether to sideload images or not. Defaults to false.
+	 * @param LoggerInterface|null $logger            The logger to use.
+	 * @param Closure|null         $on_skip_minify_block     Called with ( bool $skip_minify_block, string $block, Node $node ): bool
+	 *                                                        to decide whether a block should skip minification.
+	 * @param Closure|null         $on_document_html         Called with ( string $html, HTMLCollection $content ): string
+	 *                                                        to filter the final converted HTML for the whole document.
+	 * @param Closure|null         $on_block                 Called with ( ?Block $block, Node $node ): ?Block to filter
+	 *                                                        each generated block.
+	 * @param Closure|null         $on_pre_sideload_image    Called with ( bool $pre, string $src, Node $child_node,
+	 *                                                        Block_Converter $converter ): bool to decide whether a given
+	 *                                                        image should be sideloaded.
+	 * @param Closure|null         $on_sideloaded_image      Called with ( string $src, Node $child_node ): void after an
+	 *                                                        image has been sideloaded.
+	 * @param Closure|null         $on_sanitized_image_url   Called with ( string $sanitized_url, string $url ): string to
+	 *                                                        filter the reconstructed image URL used for sideloading.
 	 */
-	public function __construct( public string $html, public bool $sideload_images = false, protected ?LoggerInterface $logger = null ) {
+	public function __construct(
+		public string $html,
+		public bool $sideload_images = false,
+		protected ?LoggerInterface $logger = null,
+		protected ?Closure $on_skip_minify_block = null,
+		protected ?Closure $on_document_html = null,
+		protected ?Closure $on_block = null,
+		protected ?Closure $on_pre_sideload_image = null,
+		protected ?Closure $on_sideloaded_image = null,
+		protected ?Closure $on_sanitized_image_url = null,
+	) {
 		if ( ! function_exists( 'do_action' ) ) {
 			throw new RuntimeException( 'WordPress must be loaded to use the Block_Converter class.' );
 		}
+	}
+
+	/**
+	 * Invoke an optional hook callback, returning $value unchanged if none is set.
+	 *
+	 * Replaces the `apply_filters()` call sites this library used to have,
+	 * since callers now supply these as constructor callbacks instead of
+	 * registering WordPress filters.
+	 *
+	 * @param Closure|null $callback The optional callback.
+	 * @param mixed        $value    The value to pass as the callback's first argument.
+	 * @param mixed        ...$args  Additional arguments to pass to the callback.
+	 * @return mixed
+	 */
+	protected function apply( ?Closure $callback, mixed $value, mixed ...$args ): mixed {
+		return $callback ? $callback( $value, ...$args ) : $value;
 	}
 
 	/**
@@ -79,14 +119,8 @@ class Block_Converter {
 				$skip_minify_block = true;
 			}
 
-			/**
-			 * Skip minifying certain blocks.
-			 *
-			 * @param bool      $skip_minify_block Whether to skip minifying the block.
-			 * @param string    $block The block HTML.
-			 * @param \Dom\Node $node The DOM node being converted.
-			 */
-			$skip_minify_block = apply_filters( 'wp_block_converter_skip_minify_block', $skip_minify_block, $block, $node );
+			// Allow the caller to decide whether this block should skip minification.
+			$skip_minify_block = (bool) $this->apply( $this->on_skip_minify_block, $skip_minify_block, $block, $node );
 
 			if ( ! $skip_minify_block ) {
 				$block = $this->minify_block( $block );
@@ -100,15 +134,9 @@ class Block_Converter {
 		// Remove empty blocks.
 		$html = $this->remove_empty_blocks( $html );
 
-		/**
-		 * Content converted into blocks.
-		 *
-		 * @since 1.0.0
-		 *
-		 * @param string                            $html    HTML converted into Gutenberg blocks.
-		 * @param \Dom\HTMLCollection<\Dom\Element>  $content The original HTMLCollection.
-		 */
-		$html = trim( (string) apply_filters( 'wp_block_converter_document_html', $html, $content ) );
+		// Allow the caller to filter the fully converted HTML for the whole document.
+		$filtered_html = $this->apply( $this->on_document_html, $html, $content );
+		$html          = trim( is_string( $filtered_html ) ? $filtered_html : $html );
 
 		$this->detach_attachment_creation_listener();
 
@@ -154,7 +182,7 @@ class Block_Converter {
 	}
 
 	/**
-	 * Apply the `wp_block_converter_block` filter to a generated block.
+	 * Run the `on_block` callback against a generated block.
 	 *
 	 * Shared by `convert_node()` and any method that builds `Block` instances
 	 * outside of the normal per-node dispatch (e.g. splitting a single node
@@ -172,15 +200,7 @@ class Block_Converter {
 			throw new RuntimeException( 'Returned block must be an instance of Block or null.' );
 		}
 
-		/**
-		 * Hook to allow output customizations.
-		 *
-		 * @since 1.0.0
-		 *
-		 * @param Block|null $block The generated block object.
-		 * @param Node       $node  The node being converted.
-		 */
-		$block = apply_filters( 'wp_block_converter_block', $block, $node );
+		$block = $this->apply( $this->on_block, $block, $node );
 
 		return $block instanceof Block ? $block : null;
 	}
@@ -213,19 +233,10 @@ class Block_Converter {
 				continue;
 			}
 
-			/**
-			 * Filter if the image should be preloaded.
-			 *
-			 * @since 1.6.0
-			 *
-			 * @param bool            $pre        Whether to sideload the image.
-			 * @param string          $src        The image source URL.
-			 * @param Node            $child_node The child node.
-			 * @param Block_Converter $converter The converter instance.
-			 */
-			$pre = apply_filters( 'wp_block_converter_pre_sideload_image', true, $child_node->getAttribute( 'src' ) ?? '', $child_node, $this );
+			// Allow the caller to decide whether this image should be sideloaded.
+			$pre = (bool) $this->apply( $this->on_pre_sideload_image, true, $child_node->getAttribute( 'src' ) ?? '', $child_node, $this );
 
-			// Re-read the src attribute in case it was modified by the filter.
+			// Re-read the src attribute in case it was modified by the callback.
 			$src = $child_node->getAttribute( 'src' ) ?? '';
 
 			if ( ! $pre || empty( $src ) ) {
@@ -250,15 +261,10 @@ class Block_Converter {
 						$node->setAttribute( 'href', $src );
 					}
 
-					/**
-					 * Fires after a child image has been sideloaded.
-					 *
-					 * @since 1.5.0
-					 *
-					 * @param string $src        The image source URL.
-					 * @param Node   $child_node The child node.
-					 */
-					do_action( 'wp_block_converter_sideloaded_image', $src, $child_node );
+					// Notify the caller that a child image has been sideloaded.
+					if ( $this->on_sideloaded_image ) {
+						( $this->on_sideloaded_image )( $src, $child_node );
+					}
 				}
 			} catch ( Throwable $e ) { // phpcs:ignore Squiz.Commenting.EmptyCatchComment.Missing, Generic.CodeAnalysis.EmptyStatement.DetectedCatch
 				$this->logger?->error(
@@ -1204,13 +1210,10 @@ class Block_Converter {
 			$sanitized_url = sprintf( '%s://%s%s%s', $scheme, $host, $port, $path );
 		}
 
-		/**
-		 * Allow the reconstructed URL to be filtered before being returned.
-		 *
-		 * @param string $sanitized_url The reconstructed URL.
-		 * @param string $original_url  The original URL before sanitization was applied.
-		 */
-		return apply_filters( 'wp_block_converter_sanitized_image_url', $sanitized_url, $url );
+		// Allow the caller to filter the reconstructed URL before it's returned.
+		$filtered_url = $this->apply( $this->on_sanitized_image_url, $sanitized_url, $url );
+
+		return is_string( $filtered_url ) ? $filtered_url : $sanitized_url;
 	}
 
 	/**
