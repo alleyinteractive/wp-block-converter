@@ -28,10 +28,8 @@ class BlockConverterTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->fake_request( [
-			'https://publish.twitter.com/oembed?maxwidth=500&maxheight=750&url=https%3A%2F%2Ftwitter.com%2Falleyco%2Fstatus%2F1679189879086018562&dnt=1&format=json' => mock_http_response()->with_json( '{"url":"https:\/\/twitter.com\/alleyco\/status\/1679189879086018562","author_name":"Alley","author_url":"https:\/\/twitter.com\/alleyco","html":"\u003Cblockquote class=\"twitter-tweet\" data-width=\"500\" data-dnt=\"true\"\u003E\u003Cp lang=\"en\" dir=\"ltr\"\u003EWe’re a full-service digital agency with the foresight, perspective, and grit to power your brightest ideas and build solutions for your most evasive problems. Learn more about our services here:\u003Ca href=\"https:\/\/t.co\/8zZ5zP1Oyc\"\u003Ehttps:\/\/t.co\/8zZ5zP1Oyc\u003C\/a\u003E\u003C\/p\u003E&mdash; Alley (@alleyco) \u003Ca href=\"https:\/\/twitter.com\/alleyco\/status\/1679189879086018562?ref_src=twsrc%5Etfw\"\u003EJuly 12, 2023\u003C\/a\u003E\u003C\/blockquote\u003E\n\u003Cscript async src=\"https:\/\/platform.twitter.com\/widgets.js\" charset=\"utf-8\"\u003E\u003C\/script\u003E\n\n","width":500,"height":null,"type":"rich","cache_age":"3153600000","provider_name":"Twitter","provider_url":"https:\/\/twitter.com","version":"1.0"}' ),
-			'https://www.tiktok.com/oembed?maxwidth=500&maxheight=750&url=https%3A%2F%2Fwww.tiktok.com%2F%40atribecalledval%2Fvideo%2F7348705314746699054&dnt=1&format=json' => mock_http_response()->with_json( '{"version":"1.0","type":"video","title":"Andre 3000 performing at Luna Luna was such an incredible night. I will never forget this night. #losangeles #andre3000 #fyp #foryou #foryoupage ","author_url":"https://www.tiktok.com/@atribecalledval","author_name":"Valeria Cardona","width":"100%","height":"100%","html":"<blockquote class=\"tiktok-embed\" cite=\"https://www.tiktok.com/@atribecalledval/video/7348705314746699054\" data-video-id=\"7348705314746699054\" data-embed-from=\"oembed\" style=\"max-width:605px; min-width:325px;\"> <section> <a target=\"_blank\" title=\"@atribecalledval\" href=\"https://www.tiktok.com/@atribecalledval?refer=embed\">@atribecalledval</a> <p>Andre 3000 performing at Luna Luna was such an incredible night. I will never forget this night. <a title=\"losangeles\" target=\"_blank\" href=\"https://www.tiktok.com/tag/losangeles?refer=embed\">#losangeles</a> <a title=\"andre3000\" target=\"_blank\" href=\"https://www.tiktok.com/tag/andre3000?refer=embed\">#andre3000</a> <a title=\"fyp\" target=\"_blank\" href=\"https://www.tiktok.com/tag/fyp?refer=embed\">#fyp</a> <a title=\"foryou\" target=\"_blank\" href=\"https://www.tiktok.com/tag/foryou?refer=embed\">#foryou</a> <a title=\"foryoupage\" target=\"_blank\" href=\"https://www.tiktok.com/tag/foryoupage?refer=embed\">#foryoupage</a> </p> <a target=\"_blank\" title=\"♬ I swear, I Really Wanted To Make A\" href=\"https://www.tiktok.com/music/I-swear-I-Really-Wanted-To-Make-A-Rap-Album-But-This-Is-Literally-The-Way-The-Wind-Blew-Me-This-Time-7302364812792547330?refer=embed\">♬ I swear, I Really Wanted To Make A \"Rap\" Album But This Is Literally The Way The Wind Blew Me This Time - André 3000</a> </section> </blockquote> <script async src=\"https://www.tiktok.com/embed.js\"></script>","thumbnail_width":576,"thumbnail_height":1024,"thumbnail_url":"https://p19-pu-sign-useast8.tiktokcdn-us.com/obj/tos-useast5-p-0068-tx/afac3ae6ea3343c890e12e3cbbca1218_1711003872?lk3s=b59d6b55&nonce=81617&refresh_token=bf81ce66fb4d648cbd499791f37a6354&x-expires=1722110400&x-signature=tpTiBYwvSXjjAEgNRU2F%2BUAz7jo%3D&shp=b59d6b55&shcp=-","provider_url":"https://www.tiktok.com","provider_name":"TikTok","author_unique_id":"atribecalledval","embed_product_id":"7348705314746699054","embed_type":"video"}' ),
-		] );
+		$this->fake_request( 'https://publish.twitter.com/oembed?maxwidth=500&maxheight=750&url=https%3A%2F%2Ftwitter.com%2Falleyco%2Fstatus%2F1679189879086018562&dnt=1&format=json' )
+			->with_json( '{"url":"https:\/\/twitter.com\/alleyco\/status\/1679189879086018562","author_name":"Alley","author_url":"https:\/\/twitter.com\/alleyco","html":"\u003Cblockquote class=\"twitter-tweet\" data-width=\"500\" data-dnt=\"true\"\u003E\u003Cp lang=\"en\" dir=\"ltr\"\u003EWe’re a full-service digital agency with the foresight, perspective, and grit to power your brightest ideas and build solutions for your most evasive problems. Learn more about our services here:\u003Ca href=\"https:\/\/t.co\/8zZ5zP1Oyc\"\u003Ehttps:\/\/t.co\/8zZ5zP1Oyc\u003C\/a\u003E\u003C\/p\u003E&mdash; Alley (@alleyco) \u003Ca href=\"https:\/\/twitter.com\/alleyco\/status\/1679189879086018562?ref_src=twsrc%5Etfw\"\u003EJuly 12, 2023\u003C\/a\u003E\u003C\/blockquote\u003E\n\u003Cscript async src=\"https:\/\/platform.twitter.com\/widgets.js\" charset=\"utf-8\"\u003E\u003C\/script\u003E\n\n","width":500,"height":null,"type":"rich","cache_age":"3153600000","provider_name":"Twitter","provider_url":"https:\/\/twitter.com","version":"1.0"}' );
 
 		$this->fake_request( 'https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png' )
 			->with_file( __DIR__ . '/../fixtures/image.png' );
@@ -532,9 +530,150 @@ https://www.youtube.com/watch?v=dQw4w9WgXcQ
 </div></figure>
 <!-- /wp:embed -->
 HTML,
-				[
-					'https://www.youtube.com/oembed?maxwidth=500&maxheight=750&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DdQw4w9WgXcQ&dnt=1&format=json' => '{"title":"Rick Astley - Never Gonna Give You Up (Official Music Video)","author_name":"Rick Astley","author_url":"https://www.youtube.com/@RickAstleyYT","type":"video","height":281,"width":500,"version":"1.0","provider_name":"YouTube","provider_url":"https://www.youtube.com/","thumbnail_height":360,"thumbnail_width":480,"thumbnail_url":"https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg","html":"\u003ciframe width=\u0022500\u0022 height=\u0022281\u0022 src=\u0022https://www.youtube.com/embed/dQw4w9WgXcQ?feature=oembed\u0022 frameborder=\u00220\u0022 allow=\u0022accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\u0022 allowfullscreen title=\u0022Rick Astley - Never Gonna Give You Up (Official Music Video)\u0022\u003e\u003c/iframe\u003e"}',
-				],
+			],
+			'youtube shorts' => [
+				<<<HTML
+<p>https://www.youtube.com/shorts/dQw4w9WgXcQ</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://www.youtube.com/shorts/dQw4w9WgXcQ","type":"video","providerNameSlug":"youtube","responsive":true,"className":"wp-embed-aspect-9-16 wp-has-aspect-ratio"} -->
+<figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube wp-embed-aspect-9-16 wp-has-aspect-ratio"><div class="wp-block-embed__wrapper">
+https://www.youtube.com/shorts/dQw4w9WgXcQ
+</div></figure>
+<!-- /wp:embed -->
+HTML,
+			],
+			'vimeo' => [
+				<<<HTML
+<p>https://vimeo.com/76979871</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://vimeo.com/76979871","type":"video","providerNameSlug":"vimeo","responsive":true,"className":"wp-embed-aspect-16-9 wp-has-aspect-ratio"} -->
+<figure class="wp-block-embed is-type-video is-provider-vimeo wp-block-embed-vimeo wp-embed-aspect-16-9 wp-has-aspect-ratio"><div class="wp-block-embed__wrapper">
+https://vimeo.com/76979871
+</div></figure>
+<!-- /wp:embed -->
+HTML,
+			],
+			'dailymotion' => [
+				<<<HTML
+<p>https://www.dailymotion.com/video/x7tgplay</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://www.dailymotion.com/video/x7tgplay","type":"video","providerNameSlug":"dailymotion","responsive":true,"className":"wp-embed-aspect-16-9 wp-has-aspect-ratio"} -->
+<figure class="wp-block-embed is-type-video is-provider-dailymotion wp-block-embed-dailymotion wp-embed-aspect-16-9 wp-has-aspect-ratio"><div class="wp-block-embed__wrapper">
+https://www.dailymotion.com/video/x7tgplay
+</div></figure>
+<!-- /wp:embed -->
+HTML,
+			],
+			'wordpress-tv' => [
+				<<<HTML
+<p>https://wordpress.tv/2023/01/01/example-video/</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://wordpress.tv/2023/01/01/example-video/","type":"video","providerNameSlug":"wordpress-tv","responsive":true,"className":"wp-embed-aspect-16-9 wp-has-aspect-ratio"} -->
+<figure class="wp-block-embed is-type-video is-provider-wordpress-tv wp-block-embed-wordpress-tv wp-embed-aspect-16-9 wp-has-aspect-ratio"><div class="wp-block-embed__wrapper">
+https://wordpress.tv/2023/01/01/example-video/
+</div></figure>
+<!-- /wp:embed -->
+HTML,
+			],
+			'videopress' => [
+				<<<HTML
+<p>https://videopress.com/v/abc123XY</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://videopress.com/v/abc123XY","type":"video","providerNameSlug":"videopress","responsive":true,"className":"wp-embed-aspect-16-9 wp-has-aspect-ratio"} -->
+<figure class="wp-block-embed is-type-video is-provider-videopress wp-block-embed-videopress wp-embed-aspect-16-9 wp-has-aspect-ratio"><div class="wp-block-embed__wrapper">
+https://videopress.com/v/abc123XY
+</div></figure>
+<!-- /wp:embed -->
+HTML,
+			],
+			'flickr' => [
+				<<<HTML
+<p>https://www.flickr.com/photos/example/1234567890/</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://www.flickr.com/photos/example/1234567890/","type":"rich","providerNameSlug":"flickr","responsive":true} -->
+<figure class="wp-block-embed is-type-rich is-provider-flickr wp-block-embed-flickr"><div class="wp-block-embed__wrapper">
+https://www.flickr.com/photos/example/1234567890/
+</div></figure>
+<!-- /wp:embed -->
+HTML,
+			],
+			'soundcloud' => [
+				<<<HTML
+<p>https://soundcloud.com/example-artist/example-track</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://soundcloud.com/example-artist/example-track","type":"rich","providerNameSlug":"soundcloud","responsive":true} -->
+<figure class="wp-block-embed is-type-rich is-provider-soundcloud wp-block-embed-soundcloud"><div class="wp-block-embed__wrapper">
+https://soundcloud.com/example-artist/example-track
+</div></figure>
+<!-- /wp:embed -->
+HTML,
+			],
+			'spotify' => [
+				<<<HTML
+<p>https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT","type":"rich","providerNameSlug":"spotify","responsive":true} -->
+<figure class="wp-block-embed is-type-rich is-provider-spotify wp-block-embed-spotify"><div class="wp-block-embed__wrapper">
+https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT
+</div></figure>
+<!-- /wp:embed -->
+HTML,
+			],
+			'slideshare' => [
+				<<<HTML
+<p>https://www.slideshare.net/example/example-presentation</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://www.slideshare.net/example/example-presentation","type":"rich","providerNameSlug":"slideshare","responsive":true} -->
+<figure class="wp-block-embed is-type-rich is-provider-slideshare wp-block-embed-slideshare"><div class="wp-block-embed__wrapper">
+https://www.slideshare.net/example/example-presentation
+</div></figure>
+<!-- /wp:embed -->
+HTML,
+			],
+			'scribd' => [
+				<<<HTML
+<p>https://www.scribd.com/document/123456789/Example-Document</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://www.scribd.com/document/123456789/Example-Document","type":"rich","providerNameSlug":"scribd","responsive":true} -->
+<figure class="wp-block-embed is-type-rich is-provider-scribd wp-block-embed-scribd"><div class="wp-block-embed__wrapper">
+https://www.scribd.com/document/123456789/Example-Document
+</div></figure>
+<!-- /wp:embed -->
+HTML,
+			],
+			'reddit' => [
+				<<<HTML
+<p>https://www.reddit.com/r/wordpress/comments/abc123/example_post/</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://www.reddit.com/r/wordpress/comments/abc123/example_post/","type":"rich","providerNameSlug":"reddit","responsive":true} -->
+<figure class="wp-block-embed is-type-rich is-provider-reddit wp-block-embed-reddit"><div class="wp-block-embed__wrapper">
+https://www.reddit.com/r/wordpress/comments/abc123/example_post/
+</div></figure>
+<!-- /wp:embed -->
+HTML,
+			],
+			'imgur' => [
+				<<<HTML
+<p>https://imgur.com/gallery/abc123</p>
+HTML,
+				<<<HTML
+<!-- wp:embed {"url":"https://imgur.com/gallery/abc123","type":"rich","providerNameSlug":"imgur","responsive":true} -->
+<figure class="wp-block-embed is-type-rich is-provider-imgur wp-block-embed-imgur"><div class="wp-block-embed__wrapper">
+https://imgur.com/gallery/abc123
+</div></figure>
+<!-- /wp:embed -->
+HTML,
 			],
 			'twitter' => [
 				<<<HTML

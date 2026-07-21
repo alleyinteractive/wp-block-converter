@@ -20,8 +20,6 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
 
-use function Mantle\Support\Helpers\mixed;
-
 /**
  * Converts a Dom\HTMLDocument to Gutenberg block HTML.
  *
@@ -426,25 +424,10 @@ class Block_Converter {
 				$node->textContent = $text_content;
 			}
 
-			// Twitter/X, Instagram, and Facebook's embed shape is hardcoded
-			// here instead of making an oEmbed request, since the block
-			// converter avoids depending on live oEmbed HTTP calls where a
-			// sensible shape can be determined from the URL alone.
-			if ( \str_contains( $text_content, 'twitter.com' ) ) {
-				return $this->twitter_embed( $text_content );
-			}
+			$embed = $this->embed_for_url( $text_content );
 
-			if ( \str_contains( $text_content, 'instagram.com' ) ) {
-				return $this->instagram_embed( $text_content );
-			}
-
-			if ( \str_contains( $text_content, 'facebook.com' ) ) {
-				return $this->facebook_embed( $text_content );
-			}
-
-			// Check if the URL is an oEmbed URL and return the oEmbed block if it is.
-			if ( false !== wp_oembed_get( $text_content ) ) {
-				return $this->oembed( $text_content );
+			if ( $embed ) {
+				return $embed;
 			}
 		}
 
@@ -832,130 +815,181 @@ class Block_Converter {
 	}
 
 	/**
-	 * Create embed blocks.
+	 * Known oEmbed provider matchers, in priority order.
+	 *
+	 * Reshapes a subset of WordPress core's built-in oEmbed provider list
+	 * (`WP_oEmbed::$providers` in `wp-includes/class-wp-oembed.php`) into
+	 * the block editor's embed variation shape, hardcoded with no HTTP
+	 * request involved — the same approach this library already used for
+	 * Twitter/Instagram/Facebook. Parameters that can vary per URL and
+	 * would normally only be known from a live oEmbed response (e.g. the
+	 * exact aspect ratio of a given video) are approximated with a fixed
+	 * default per provider rather than fetched.
+	 *
+	 * @var array<int, array{pattern: string, slug: string, type: string, aspect_ratio?: string, extra_attributes?: array<string, mixed>}>
+	 */
+	private const OEMBED_PROVIDERS = [
+		[
+			// YouTube Shorts are consistently vertical, unlike standard
+			// YouTube videos, so this must be matched before the general
+			// youtube.com pattern below.
+			'pattern'      => '#https?://(www\.)?youtube\.com/shorts#i',
+			'slug'         => 'youtube',
+			'type'         => 'video',
+			'aspect_ratio' => '9-16',
+		],
+		[
+			'pattern'      => '#https?://(www\.)?youtube\.com/(watch|playlist)#i',
+			'slug'         => 'youtube',
+			'type'         => 'video',
+			'aspect_ratio' => '16-9',
+		],
+		[
+			'pattern'      => '#https?://youtu\.be/#i',
+			'slug'         => 'youtube',
+			'type'         => 'video',
+			'aspect_ratio' => '16-9',
+		],
+		[
+			'pattern'      => '#https?://(www\.|player\.)?vimeo\.com/#i',
+			'slug'         => 'vimeo',
+			'type'         => 'video',
+			'aspect_ratio' => '16-9',
+		],
+		[
+			'pattern'      => '#https?://(www\.)?dailymotion\.com/#i',
+			'slug'         => 'dailymotion',
+			'type'         => 'video',
+			'aspect_ratio' => '16-9',
+		],
+		[
+			'pattern'      => '#https?://dai\.ly/#i',
+			'slug'         => 'dailymotion',
+			'type'         => 'video',
+			'aspect_ratio' => '16-9',
+		],
+		[
+			'pattern' => '#https?://(www\.|vm\.|vt\.)?tiktok\.com/#i',
+			'slug'    => 'tiktok',
+			'type'    => 'video',
+		],
+		[
+			'pattern'      => '#https?://wordpress\.tv/#i',
+			'slug'         => 'wordpress-tv',
+			'type'         => 'video',
+			'aspect_ratio' => '16-9',
+		],
+		[
+			'pattern'      => '#https?://videopress\.com/v/#i',
+			'slug'         => 'videopress',
+			'type'         => 'video',
+			'aspect_ratio' => '16-9',
+		],
+		[
+			'pattern' => '#https?://(www\.)?flickr\.com/#i',
+			'slug'    => 'flickr',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://flic\.kr/#i',
+			'slug'    => 'flickr',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://((m|www)\.)?soundcloud\.com/#i',
+			'slug'    => 'soundcloud',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://(open|play)\.spotify\.com/#i',
+			'slug'    => 'spotify',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://(www\.)?slideshare\.net/#i',
+			'slug'    => 'slideshare',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://(www\.)?scribd\.com/#i',
+			'slug'    => 'scribd',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://(www\.)?reddit\.com/r/[^/]+/comments/#i',
+			'slug'    => 'reddit',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://(www\.)?imgur\.com/#i',
+			'slug'    => 'imgur',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://(www\.)?twitter\.com/\w{1,15}/status(es)?/#i',
+			'slug'    => 'x',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://(www\.)?instagram\.com/#i',
+			'slug'    => 'instagram',
+			'type'    => 'rich',
+		],
+		[
+			'pattern'          => '#https?://(www\.)?facebook\.com/#i',
+			'slug'             => 'facebook',
+			'type'             => 'rich',
+			'extra_attributes' => [ 'previewable' => false ],
+		],
+	];
+
+	/**
+	 * Create an embed block for a URL matching a known oEmbed provider.
 	 *
 	 * @param string $url The URL.
-	 * @return Block
+	 * @return Block|null
 	 */
-	protected function oembed( string $url ): Block {
-		// This would probably be better as an internal request to /wp-json/oembed/1.0/proxy?url=...
-		$data = _wp_oembed_get_object()->get_data( $url, [] );
+	protected function embed_for_url( string $url ): ?Block {
+		foreach ( self::OEMBED_PROVIDERS as $provider ) {
+			if ( ! preg_match( $provider['pattern'], $url ) ) {
+				continue;
+			}
 
-		$aspect_ratio = '';
-		if ( ! empty( $data->height ) && ! empty( $data->width ) && is_numeric( $data->height ) && is_numeric( $data->width ) ) {
-			if ( 1.78 === round( $data->width / $data->height, 2 ) ) {
-				$aspect_ratio = '16-9';
+			$attributes = [
+				'url'              => $url,
+				'type'             => $provider['type'],
+				'providerNameSlug' => $provider['slug'],
+				'responsive'       => true,
+			];
+
+			foreach ( $provider['extra_attributes'] ?? [] as $key => $value ) {
+				$attributes[ $key ] = $value;
 			}
-			if ( 1.33 === round( $data->width / $data->height, 2 ) ) {
-				$aspect_ratio = '4-3';
+
+			$class_name = '';
+
+			if ( ! empty( $provider['aspect_ratio'] ) ) {
+				$class_name              = sprintf( 'wp-embed-aspect-%s wp-has-aspect-ratio', $provider['aspect_ratio'] );
+				$attributes['className'] = $class_name;
 			}
+
+			return new Block(
+				block_name: 'embed',
+				attributes: $attributes,
+				content: sprintf(
+					'<figure class="wp-block-embed is-type-%s is-provider-%s wp-block-embed-%s%s"><div class="wp-block-embed__wrapper">
+					%s
+					</div></figure>',
+					$provider['type'],
+					$provider['slug'],
+					$provider['slug'],
+					$class_name ? ' ' . $class_name : '',
+					$url
+				),
+			);
 		}
 
-		$atts = [
-			'url'              => $url,
-			'type'             => mixed( $data->type ?? '' )->string(),
-			'providerNameSlug' => sanitize_title( mixed( $data->provider_name ?? '' )->string() ),
-			'responsive'       => true,
-		];
-
-		if ( ! empty( $aspect_ratio ) ) {
-			$aspect_ratio      = sprintf( 'wp-embed-aspect-%s wp-has-aspect-ratio', $aspect_ratio );
-			$atts['className'] = $aspect_ratio;
-		}
-
-		return new Block(
-			block_name: 'embed',
-			attributes: $atts,
-			content: sprintf(
-				'<figure class="wp-block-embed is-type-%s is-provider-%s wp-block-embed-%s%s"><div class="wp-block-embed__wrapper">
-				%s
-				</div></figure>',
-				mixed( $data->type ?? '' )->string(),
-				sanitize_title( mixed( $data->provider_name ?? '' )->string() ),
-				sanitize_title( mixed( $data->provider_name ?? '' )->string() ),
-				$aspect_ratio ? ' ' . $aspect_ratio : '',
-				$url
-			),
-		);
-	}
-
-	/**
-	 * Create Twitter/X embed blocks.
-	 *
-	 * @param string $url The URL.
-	 * @return Block
-	 */
-	protected function twitter_embed( string $url ): Block {
-		$atts = [
-			'url'              => $url,
-			'type'             => 'rich',
-			'providerNameSlug' => 'x',
-			'responsive'       => true,
-		];
-
-		return new Block(
-			block_name: 'embed',
-			attributes: $atts,
-			content: sprintf(
-				'<figure class="wp-block-embed is-type-rich is-provider-x wp-block-embed-x"><div class="wp-block-embed__wrapper">
-				%s
-				</div></figure>',
-				$url
-			),
-		);
-	}
-
-	/**
-	 * Create Instagram embed blocks.
-	 *
-	 * @param string $url The URL.
-	 * @return Block
-	 */
-	protected function instagram_embed( string $url ): Block {
-		$atts = [
-			'url'              => $url,
-			'type'             => 'rich',
-			'providerNameSlug' => 'instagram',
-			'responsive'       => true,
-		];
-
-		return new Block(
-			block_name: 'embed',
-			attributes: $atts,
-			content: sprintf(
-				'<figure class="wp-block-embed is-type-rich is-provider-instagram wp-block-embed-instagram"><div class="wp-block-embed__wrapper">
-				%s
-				</div></figure>',
-				$url
-			),
-		);
-	}
-
-	/**
-	 * Create Facebook embed blocks.
-	 *
-	 * @param string $url The URL.
-	 * @return Block
-	 */
-	protected function facebook_embed( string $url ): Block {
-		$atts = [
-			'url'              => $url,
-			'type'             => 'rich',
-			'providerNameSlug' => 'facebook',
-			'responsive'       => true,
-			'previewable'      => false,
-		];
-
-		return new Block(
-			block_name: 'embed',
-			attributes: $atts,
-			content: sprintf(
-				'<figure class="wp-block-embed is-type-rich is-provider-facebook wp-block-embed-facebook"><div class="wp-block-embed__wrapper">
-				%s
-				</div></figure>',
-				$url
-			),
-		);
+		return null;
 	}
 
 	/**
