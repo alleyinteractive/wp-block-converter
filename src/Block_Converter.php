@@ -15,7 +15,7 @@ use Dom\HTMLCollection;
 use Dom\HTMLDocument;
 use Dom\Node;
 use Exception;
-use Mantle\Support\Traits\Macroable;
+use Illuminate\Support\Traits\Macroable;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -27,9 +27,7 @@ use Throwable;
  */
 class Block_Converter {
 	use Concerns\Microsoft_Word_Content;
-	use Macroable {
-		__call as macro_call;
-	}
+	use Macroable;
 
 	/**
 	 * Setup the class.
@@ -171,8 +169,12 @@ class Block_Converter {
 			$this->clean_ms_word_node( $node );
 		}
 
-		if ( static::has_macro( strtolower( $node->nodeName ) ) ) {
-			$block = static::macro_call( strtolower( $node->nodeName ), [ $node ] );
+		if ( static::hasMacro( strtolower( $node->nodeName ) ) ) {
+			// Registered tag macros may be invoked by an arbitrary string
+			// name (e.g. a hyphenated custom element like <special-tag>),
+			// which isn't valid PHP method call syntax and can never trigger
+			// __call() automatically — so call it directly instead.
+			$block = $this->__call( strtolower( $node->nodeName ), [ $node ] );
 		} else {
 			$block = match ( strtolower( $node->nodeName ) ) {
 				'ul' => $this->ul( $node ),

@@ -11,6 +11,7 @@ use Alley\WP\Block_Converter\Block;
 use Alley\WP\Block_Converter\Block_Converter;
 use Alley\WP\Block_Converter\Tests\TestCase;
 use Alley\WP\Block_Converter\WordPress_Image_Uploader;
+use BadMethodCallException;
 use Dom\Node;
 use Mantle\Testing\Concerns\Prevent_Remote_Requests;
 use Mantle\Support\Str;
@@ -857,6 +858,26 @@ HTML,
 HTML,
 			actual: $block,
 		);
+	}
+
+	public function test_macroable_magic_call(): void {
+		Block_Converter::macro(
+			'shout',
+			fn ( string $text ) => strtoupper( $text ),
+		);
+
+		$converter = new Block_Converter( '<p>content</p>' );
+
+		$this->assertSame( 'HELLO', $converter->shout( 'hello' ) );
+		$this->assertSame( 'HELLO', Block_Converter::shout( 'hello' ) );
+	}
+
+	public function test_macroable_magic_call_throws_for_unregistered_macro(): void {
+		$converter = new Block_Converter( '<p>content</p>' );
+
+		$this->expectException( BadMethodCallException::class );
+
+		$converter->not_a_registered_macro(); // @phpstan-ignore-line method.notFound
 	}
 
 	/**

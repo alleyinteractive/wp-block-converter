@@ -18,7 +18,7 @@
         "php": "^8.4",
         "ext-dom": "*",
         "alleyinteractive/wp-bulk-task": "^1.0",
-        "mantle-framework/support": "^1.6",
+        "illuminate/macroable": "^13.21",
         "psr/log": "^2.0 || ^3.0"
     },
     "require-dev": {
