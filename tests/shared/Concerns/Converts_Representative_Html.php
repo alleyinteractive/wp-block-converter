@@ -233,7 +233,9 @@ HTML,
 
 	public function test_images_are_left_untouched_without_an_uploader(): void {
 		$converter = new Block_Converter(
-			html: '<img src="https://example.org/image.jpg" alt="Sample alt text" />',
+			html: <<<HTML
+<img src="https://example.org/image.jpg" alt="Sample alt text" />
+HTML,
 		);
 
 		$this->assertSame(
@@ -245,6 +247,23 @@ HTML,
 			actual: $converter->convert(),
 		);
 		$this->assertSame( [], $converter->get_created_attachment_ids() );
+	}
+
+	public function test_image_with_srcset_and_sizes_attributes_removed(): void {
+		$converter = new Block_Converter(
+			html: <<<HTML
+<img src="https://example.org/image.jpg" srcset="https://example.org/image.jpg 1x, https://example.org/image-2x.jpg 2x" sizes="(max-width: 600px) 100vw, 600px" alt="Sample alt text" />
+HTML,
+		);
+
+		$this->assertSame(
+			expected: <<<HTML
+<!-- wp:image {"sizeSlug":"large"} -->
+<figure class="wp-block-image size-large"><img src="https://example.org/image.jpg" alt="Sample alt text"/></figure>
+<!-- /wp:image -->
+HTML,
+			actual: $converter->convert(),
+		);
 	}
 
 	#[DataProvider( 'multi_line_pre_tag_data_provider' )]

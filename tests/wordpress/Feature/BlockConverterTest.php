@@ -161,6 +161,16 @@ HTML,
 <!-- /wp:image -->
 HTML,
 			],
+			'image with srcset and sizes attributes' => [
+				<<<HTML
+<img src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" srcset="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png 300w" sizes="100vw" alt="Sample alt text">
+HTML,
+				<<<HTML
+<!-- wp:image {"id":{{IMAGE_ID}},"sizeSlug":"full"} -->
+<figure class="wp-block-image size-full"><img src="{{IMAGE_SRC}}" alt="Sample alt text" class="wp-image-{{IMAGE_ID}}"/></figure>
+<!-- /wp:image -->
+HTML,
+			],
 		];
 	}
 }
