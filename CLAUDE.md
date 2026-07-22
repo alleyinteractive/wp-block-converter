@@ -24,8 +24,11 @@ This is a library for converting HTML to WordPress blocks (sometimes referred to
 
 ## Testing
 
-- Tests run against a real WordPress environment via `mantle-framework/testkit` (see `tests/bootstrap.php`, `tests/TestCase.php`), not plain PHPUnit with mocks.
-- `tests/Feature/BlockConverterTest.php` combines PHPUnit data providers with a couple of snapshot assertions (`tests/Feature/__snapshots__/`); regenerate snapshots deliberately rather than hand-editing them.
+- Two independent PHPUnit suites live under `tests/`, each with its own bootstrap/config/base `TestCase` (neither extends the other's), but they share their actual test coverage via traits in `tests/shared/Concerns/` (plus fixtures in `tests/shared/Fixtures/`, e.g. `Noop_Image_Uploader.php` and `image.png`) rather than duplicating assertions or fixture files:
+  - `tests/wordpress/` (config: `phpunit.xml`, script: `composer phpunit`) runs against a real WordPress environment via `mantle-framework/testkit` (see `tests/wordpress/bootstrap.php`, `tests/wordpress/TestCase.php`), not plain PHPUnit with mocks. Its `BlockConverterTest` `use`s every trait in `tests/shared/Concerns/` and adds only the one thing that genuinely needs WordPress loaded: real sideloading via `WordPress_Image_Uploader` (`test_image`).
+  - `tests/standalone/` (config: `phpunit-standalone.xml`, script: `composer phpunit-standalone`) never bootstraps WordPress — plain `PHPUnit\Framework\TestCase` (see `tests/standalone/TestCase.php`) — and exists to prove `Block_Converter` actually runs with no WordPress loaded. Its `BlockConverterTest` is nothing but the same shared traits.
+  - When adding coverage: if it doesn't require WordPress to be loaded, add it to a trait in `tests/shared/Concerns/` (or a new one) so both suites run it and prove parity — don't add it directly to either suite's `BlockConverterTest`. Only add directly to `tests/wordpress/Feature/BlockConverterTest.php` if the behavior is genuinely WordPress-specific (i.e. it wouldn't work under `tests/standalone/`).
+  - `Concerns/Supports_Macros`'s `tearDown()` calls `Block_Converter::flushMacros()` so macro-registering tests (including one that overrides every built-in tag) are safe to run in any order — don't remove that without checking whether trait composition order still guarantees cleanup some other way.
 
 ## Working with Claude
 
