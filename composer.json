@@ -54,12 +54,12 @@
         "phpcs": "phpcs .",
         "phpstan": "phpstan --memory-limit=512M",
         "phpunit": "phpunit",
-        "phpunit-standalone": "phpunit -c phpunit-standalone.xml",
+        "phpunit-wordpress": "phpunit -c phpunit-wordpress.xml",
         "test": [
             "@phpcs",
             "@phpstan",
             "@phpunit",
-            "@phpunit-standalone"
+            "@phpunit-wordpress"
         ]
     }
 }
