@@ -239,9 +239,12 @@ class Block_Converter {
 				if ( $src ) {
 					$child_node->setAttribute( 'src', $src );
 
-					// Remove any srcset attributes.
+					// Remove any srcset and sizes attributes.
 					if ( $child_node->hasAttribute( 'srcset' ) ) {
 						$child_node->removeAttribute( 'srcset' );
+					}
+					if ( $child_node->hasAttribute( 'sizes' ) ) {
+						$child_node->removeAttribute( 'sizes' );
 					}
 
 					// Update the parent node with the new link if the parent
@@ -679,6 +682,17 @@ class Block_Converter {
 			return null;
 		}
 
+		// The block editor's image block always derives responsive sizes
+		// from the attachment itself, so a copied-in srcset/sizes pair is
+		// never valid on a converted image regardless of sideloading.
+		if ( $image_node->hasAttribute( 'srcset' ) ) {
+			$image_node->removeAttribute( 'srcset' );
+		}
+
+		if ( $image_node->hasAttribute( 'sizes' ) ) {
+			$image_node->removeAttribute( 'sizes' );
+		}
+
 		$attributes        = [];
 		$wrapped_in_anchor = $image_node->parentNode instanceof Element && 'a' === strtolower( $image_node->parentNode->nodeName );
 
@@ -687,11 +701,6 @@ class Block_Converter {
 				$image_src = $this->upload_image( $image_src, $alt );
 
 				$image_node->setAttribute( 'src', $image_src );
-
-				// Remove any srcset attributes.
-				if ( $image_node->hasAttribute( 'srcset' ) ) {
-					$image_node->removeAttribute( 'srcset' );
-				}
 			} catch ( Exception ) {
 				return null;
 			}
