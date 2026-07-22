@@ -239,9 +239,12 @@ class Block_Converter {
 				if ( $src ) {
 					$child_node->setAttribute( 'src', $src );
 
-					// Remove any srcset attributes.
+					// Remove any srcset and sizes attributes.
 					if ( $child_node->hasAttribute( 'srcset' ) ) {
 						$child_node->removeAttribute( 'srcset' );
+					}
+					if ( $child_node->hasAttribute( 'sizes' ) ) {
+						$child_node->removeAttribute( 'sizes' );
 					}
 
 					// Update the parent node with the new link if the parent
@@ -675,6 +678,10 @@ class Block_Converter {
 			$image_src = $image_node->getAttribute( 'src' );
 		}
 
+		if ( empty( $image_src ) ) {
+			return null;
+		}
+
 		// The block editor's image block always derives responsive sizes
 		// from the attachment itself, so a copied-in srcset/sizes pair is
 		// never valid on a converted image regardless of sideloading.
@@ -684,10 +691,6 @@ class Block_Converter {
 
 		if ( $image_node->hasAttribute( 'sizes' ) ) {
 			$image_node->removeAttribute( 'sizes' );
-		}
-
-		if ( empty( $image_src ) ) {
-			return null;
 		}
 
 		$attributes        = [];
