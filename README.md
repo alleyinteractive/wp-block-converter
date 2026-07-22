@@ -31,13 +31,22 @@ $converter = new Block_Converter( '<p>Some HTML</p>' );
 $blocks = $converter->convert(); // Returns a string of converted blocks.
 ```
 
-### Filtering the Blocks
+### Logging
 
-> [!IMPORTANT]
-> As of 2.0.0, the `wp_block_converter_*` WordPress filters/actions no longer exist. Each hook
-> point is now an optional `?Closure` constructor parameter on `Block_Converter`, passed directly
-> instead of registered globally with `add_filter()`/`add_action()`. This also means each hook
-> only accepts a single callback, rather than any number of WordPress listeners.
+Pass a PSR-3 `LoggerInterface` into the `logger` constructor parameter to receive error-level log
+entries when an individual image fails to sideload (the conversion otherwise continues without
+that image):
+
+```php
+use Alley\WP\Block_Converter\Block_Converter;
+
+$converter = new Block_Converter(
+	html: '<p>Some HTML</p>',
+	logger: $psr_logger,
+);
+```
+
+### Filtering the Blocks
 
 The blocks can be filtered on a block-by-block basis or for an entire HTML body by passing
 closures into the `Block_Converter` constructor.
@@ -79,8 +88,7 @@ $converter = new Block_Converter(
 
 #### Other hooks
 
-The remaining hook points work the same way — pass a closure into the constructor in place of
-the WordPress filter/action of the same name (minus the `wp_block_converter_` prefix):
+The remaining hook points work the same way — pass a closure into the constructor:
 
 | Constructor parameter | Called with |
 |---|---|
@@ -89,12 +97,15 @@ the WordPress filter/action of the same name (minus the `wp_block_converter_` pr
 | `on_sideloaded_image` | `( string $src, \Dom\Node $child_node ): void` |
 | `on_sanitized_image_url` | `( string $sanitized_url, string $url ): string` |
 
+Each hook accepts a single closure; if you need multiple listeners for the same hook, compose them
+into one closure yourself.
+
 ### Sideloading Images
 
 By default, `Block_Converter` leaves `<img>` sources untouched — no HTTP requests are made and no
 images are downloaded. To sideload images, pass an `Image_Uploader` implementation into the
 `uploader` constructor parameter. Inside WordPress, pass `WordPress_Image_Uploader`, which
-sideloads into the media library exactly as this package always has:
+sideloads into the media library:
 
 ```php
 use Alley\WP\Block_Converter\Block_Converter;
@@ -194,6 +205,19 @@ Block_Converter::macro( 'p', function ( \Dom\Node $node ) {
 } );
 ```
 
+### Rich Embeds
+
+URLs on their own line (e.g. a link to a tweet or a YouTube video) are converted into the
+corresponding embed block (Twitter/X, Instagram, Facebook, YouTube, Vimeo, and other providers
+WordPress core supports via oEmbed) using a static, hardcoded provider table rather than a live
+oEmbed HTTP request — so embed URLs convert identically with or without WordPress loaded. The
+trade-off: some providers (notably YouTube) vary details like aspect ratio per-URL in ways that
+normally require an oEmbed response to detect; the provider table uses sensible fixed defaults
+instead. URLs that don't match a known provider fall back to a plain link/paragraph. If you need
+live oEmbed responses, you can do this yourself by filtering the block output using a closure
+passed to the constructor, either using core WordPress functions if you are running your
+conversion in a WordPress install, or using pure PHP.
+
 ## Using outside of WordPress
 
 `Block_Converter` has no WordPress dependency of its own — the only WordPress-specific code in
@@ -207,17 +231,19 @@ classes, globals, or database access, and no HTTP calls.
 - If you do need image sideloading outside of WordPress, supply your own `Image_Uploader`
   implementation (see [Sideloading Images](#sideloading-images)) instead of
   `WordPress_Image_Uploader`, which throws if WordPress isn't loaded.
-- Rich embeds (Twitter/X, Instagram, Facebook, YouTube, Vimeo, and other providers WordPress core
-  supports via oEmbed) are generated from a static, hardcoded provider table rather than a live
-  oEmbed HTTP request, so embed URLs convert identically with or without WordPress loaded. The
-  trade-off: some providers (notably YouTube) vary details like aspect ratio per-URL in ways that
-  normally require the oEmbed response to detect; the provider table uses sensible fixed defaults
-  instead. URLs that don't match a known provider fall back to a plain link/paragraph, same as
-  before.
 
 ## WP-CLI Command
 
-This package includes a WP-CLI command to bulk convert posts from HTML to Gutenberg blocks. The command uses [wp-bulk-task](https://github.com/alleyinteractive/wp-bulk-task) for efficient processing of large numbers of posts with resume support.
+This package includes a `Convert_To_Blocks_Command` class to bulk convert posts from HTML to
+Gutenberg blocks, using [wp-bulk-task](https://github.com/alleyinteractive/wp-bulk-task) for
+efficient processing of large numbers of posts with resume support. The class is not registered
+with WP-CLI automatically — register it yourself (e.g. in your plugin or theme's `functions.php`):
+
+```php
+if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( '\Alley\WP\Block_Converter\Convert_To_Blocks_Command' ) ) {
+	\WP_CLI::add_command( 'block-converter', \Alley\WP\Block_Converter\Convert_To_Blocks_Command::class );
+}
+```
 
 ### Basic Usage
 
@@ -261,6 +287,52 @@ wp block-converter --rewind
 - **Smart Skipping**: Automatically skips posts that already have blocks or have empty content
 - **Error Handling**: Continues processing even if individual posts fail, with detailed error reporting
 - **Statistics**: Displays a summary of processed, converted, skipped, and failed posts
+
+## Upgrading from v1.x
+
+Version 2.0.0 contains several breaking changes related to a shift in philosophy: this package no
+longer assumes WordPress is loaded. Previously, `Block_Converter` threw a `RuntimeException`
+unless WordPress was present, used WordPress hooks and `wp_oembed_get()` internally, and always
+sideloaded through the media library. Now WordPress is entirely optional, and every
+WordPress-specific behavior is something you opt into explicitly rather than something the library
+assumes.
+
+Specifically:
+
+- **PHP 8.4 is now required**, updated from 8.2 in v1.x.
+- **The constructor no longer requires WordPress to be loaded.** `new Block_Converter( $html )`
+  previously threw a `RuntimeException` outside of WordPress; it now works standalone.
+- **`wp_block_converter_*` filters/actions were replaced with constructor closures.** Each
+  WordPress hook is now an optional `?Closure` constructor parameter on `Block_Converter`, passed
+  directly instead of registered globally with `add_filter()`/`add_action()`. This also means each
+  hook accepts only a single callback, rather than any number of WordPress listeners. Update your
+  code as follows:
+
+  | v1.x | v2.0.0 |
+  |---|---|
+  | `add_filter( 'wp_block_converter_skip_minify_block', ... )` | `on_skip_minify_block` constructor parameter |
+  | `add_filter( 'wp_block_converter_document_html', ... )` | `on_document_html` constructor parameter |
+  | `add_filter( 'wp_block_converter_block', ... )` | `on_block` constructor parameter |
+  | `add_filter( 'wp_block_converter_pre_sideload_image', ... )` | `on_pre_sideload_image` constructor parameter |
+  | `add_action( 'wp_block_converter_sideloaded_image', ... )` | `on_sideloaded_image` constructor parameter |
+  | `add_filter( 'wp_block_converter_sanitized_image_url', ... )` | `on_sanitized_image_url` constructor parameter |
+
+- **Image sideloading is now driven by an `Image_Uploader` implementation, not a `sideload_images`
+  boolean.** The `sideload_images` constructor parameter is gone. Pass `uploader: new
+  WordPress_Image_Uploader()` to keep sideloading into the media library exactly as before, pass
+  your own `Image_Uploader` implementation to sideload somewhere else, or omit `uploader` entirely
+  to leave images untouched (the new default — v1.x defaulted `sideload_images` to `false` as
+  well, but always required WordPress to be loaded even when not sideloading). See
+  [Sideloading Images](#sideloading-images).
+- **Rich embeds no longer make a live oEmbed HTTP request.** `wp_oembed_get()` has been replaced
+  with a static, hardcoded provider table. See [Rich Embeds](#rich-embeds) for the trade-offs.
+- **Macros now use Illuminate's `Macroable`** (`illuminate/macroable`) instead of Mantle's. The
+  public `Block_Converter::macro()` API is unchanged, so existing macro registrations don't need
+  to be rewritten.
+- **`Concerns\Listens_For_Attachments` was removed** along with `src/helpers.php`. Their
+  attachment-tracking logic moved into `WordPress_Image_Uploader`, which implements the new
+  `Image_Uploader` interface. If you called either directly rather than going through
+  `Block_Converter`, switch to `WordPress_Image_Uploader`.
 
 ## Changelog
 
