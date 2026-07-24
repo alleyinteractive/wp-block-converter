@@ -1,5 +1,5 @@
 <?php
-namespace Alley\WP\Block_Converter\Tests;
+namespace Alley\WP\Block_Converter\Tests\WordPress;
 
 use Mantle\Testkit\Test_Case as TestkitTest_Case;
 
