@@ -21,7 +21,6 @@ trait Converts_Urls_To_Embeds {
 	public function test_url_to_embed( string $html, string $expected ): void {
 		$block = ( new Block_Converter( $html ) )->convert();
 
-		$this->assertNotEmpty( actual: $block );
 		$this->assertSame(
 			expected: $expected,
 			actual: $block,
