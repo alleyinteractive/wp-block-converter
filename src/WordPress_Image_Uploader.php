@@ -59,9 +59,9 @@ class WordPress_Image_Uploader implements Image_Uploader {
 	 * @return int|null
 	 */
 	public function attachment_id_for( string $url ): ?int {
-		$attachment_id = (int) attachment_url_to_postid( $url ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.attachment_url_to_postid_attachment_url_to_postid
+		$attachment_id = attachment_url_to_postid( $url ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.attachment_url_to_postid_attachment_url_to_postid
 
-		return $attachment_id ?: null;
+		return is_int( $attachment_id ) ? $attachment_id : null;
 	}
 
 	/**
@@ -152,10 +152,14 @@ class WordPress_Image_Uploader implements Image_Uploader {
 			// translators: 1: URL, 2: Error message.
 			$message = sprintf( __( 'media_sideload_image failed for URL %1$s; error message: %2$s', 'wp-block-converter' ), $src, $attachment_id->get_error_message() );
 			throw new Exception( esc_html( $message ) );
+		} elseif ( ! is_int( $attachment_id ) ) {
+			// translators: 1: URL.
+			$message = sprintf( __( 'media_sideload_image failed for URL %1$s; returned value was not an integer', 'wp-block-converter' ), $src );
+			throw new Exception( esc_html( $message ) );
 		}
 
 		// Store the original URL for future reference.
-		update_post_meta( (int) $attachment_id, $meta_key, $src );
+		update_post_meta( $attachment_id, $meta_key, $src );
 
 		$postarr = [
 			'post_content' => $args['description'] ?? '',
@@ -178,8 +182,8 @@ class WordPress_Image_Uploader implements Image_Uploader {
 			wp_update_post( wp_slash( $postarr ) ); // @phpstan-ignore-line argument.type
 		}
 
-		$this->created_attachment_ids[] = (int) $attachment_id;
+		$this->created_attachment_ids[] = $attachment_id;
 
-		return (int) $attachment_id;
+		return $attachment_id;
 	}
 }
