@@ -175,7 +175,7 @@ class WordPress_Image_Uploader implements Image_Uploader {
 		if ( ! empty( array_filter( $postarr ) ) ) {
 			$postarr['ID'] = $attachment_id;
 
-			\wp_update_post( $postarr ); // @phpstan-ignore-line argument.type
+			wp_update_post( wp_slash( $postarr ) ); // @phpstan-ignore-line argument.type
 		}
 
 		$this->created_attachment_ids[] = (int) $attachment_id;
