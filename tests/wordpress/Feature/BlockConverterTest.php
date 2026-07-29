@@ -35,6 +35,11 @@ class BlockConverterTest extends TestCase {
 	use Exercises_Constructor_Callbacks;
 	use Supports_Macros;
 
+	/**
+	 * Fakes the remote request for the test image so sideloading it never hits
+	 * the network, and clears the uploads directory before each test so
+	 * attachment IDs and filenames don't leak between tests.
+	 */
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -47,6 +52,17 @@ class BlockConverterTest extends TestCase {
 		shell_exec( "rm -rf {$dir['path']}/*" );
 	}
 
+	/**
+	 * Tests that images from image_dataprovider() are sideloaded into the
+	 * media library via WordPress_Image_Uploader, that exactly one attachment
+	 * is created, and that the resulting block markup matches the expected
+	 * output once the real attachment ID and URL are substituted in.
+	 *
+	 * @param string $html     The source HTML to convert.
+	 * @param string $expected The expected converted block markup, with
+	 *                         {{IMAGE_ID}}/{{IMAGE_SRC}} placeholders for the
+	 *                         real attachment ID/URL.
+	 */
 	#[DataProvider( 'image_dataprovider' )]
 	public function test_image( string $html, string $expected ) {
 		$converter = new Block_Converter(
@@ -78,6 +94,16 @@ class BlockConverterTest extends TestCase {
 		);
 	}
 
+	/**
+	 * Data provider of images in different surrounding markup (bare, wrapped
+	 * in a figure/anchor, with a caption, inline within a paragraph) and
+	 * their expected sideloaded image block markup.
+	 *
+	 * @return array<string, array{0: string, 1: string}> Each item is
+	 *                                                     [ $html, $expected ]
+	 *                                                     matching
+	 *                                                     test_image()'s parameters.
+	 */
 	public static function image_dataprovider(): array {
 		return [
 			'image wrapped with figure/a' => [

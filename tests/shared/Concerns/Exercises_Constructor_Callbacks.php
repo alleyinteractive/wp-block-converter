@@ -21,6 +21,11 @@ use Dom\Node;
  * WordPress and standalone suites rather than duplicated.
  */
 trait Exercises_Constructor_Callbacks {
+	/**
+	 * Tests that the on_block callback can rewrite the content of a single
+	 * generated block (here, only paragraph blocks) while leaving others
+	 * (the heading block) untouched.
+	 */
 	public function test_on_block_can_modify_a_single_block(): void {
 		$html = <<<HTML
 <p>Content to migrate</p>
@@ -52,6 +57,11 @@ HTML,
 		);
 	}
 
+	/**
+	 * Tests that the on_document_html callback can override the entire
+	 * converted output for the document, while on_block is still invoked once
+	 * per top-level node before that override is applied.
+	 */
 	public function test_on_document_html_can_override_the_whole_output(): void {
 		$on_block_calls = 0;
 
@@ -69,6 +79,11 @@ HTML,
 		$this->assertSame( 2, $on_block_calls );
 	}
 
+	/**
+	 * Tests that the on_skip_minify_block callback is invoked once per
+	 * top-level node with the tentative skip-minify flag, the block's HTML,
+	 * and the source node, and that its return value is honored.
+	 */
 	public function test_on_skip_minify_block_is_invoked_per_top_level_node(): void {
 		$calls = [];
 
@@ -92,6 +107,10 @@ HTML,
 		}
 	}
 
+	/**
+	 * Tests that the on_sanitized_image_url callback can append to the
+	 * sanitized image URL produced by remove_image_args().
+	 */
 	public function test_on_sanitized_image_url_filters_the_reconstructed_url(): void {
 		$converter = new Block_Converter(
 			html: '<p>Unused</p>',
@@ -104,6 +123,12 @@ HTML,
 		);
 	}
 
+	/**
+	 * Tests that on_pre_sideload_image is invoked for every child image (and
+	 * can veto sideloading a specific one), and that on_sideloaded_image then
+	 * fires only for the images that were actually sideloaded, with the
+	 * vetoed image left untouched in the output.
+	 */
 	public function test_on_pre_sideload_image_and_on_sideloaded_image_are_invoked_for_child_images(): void {
 		$uploader             = new Noop_Image_Uploader();
 		$pre_sideload_sources = [];
@@ -144,6 +169,11 @@ HTML,
 		$this->assertStringNotContainsString( 'https://example.org/b.jpg#uploaded', $result );
 	}
 
+	/**
+	 * Tests that supplying a custom Image_Uploader causes an image to be
+	 * sideloaded through it end-to-end, with the uploader's rewritten source
+	 * reflected in the resulting image block.
+	 */
 	public function test_a_custom_uploader_sideloads_images_end_to_end(): void {
 		$uploader = new Noop_Image_Uploader();
 
@@ -173,6 +203,12 @@ HTML,
 		);
 	}
 
+	/**
+	 * Tests that get_created_attachment_ids() and assign_parent_to_attachments()
+	 * proxy through to the configured uploader rather than assuming a
+	 * WordPress-shaped uploader, using an uploader with no attachment concept
+	 * of its own to prove neither call throws or requires one.
+	 */
 	public function test_get_created_attachment_ids_and_assign_parent_proxy_to_the_uploader(): void {
 		$uploader = new Noop_Image_Uploader();
 

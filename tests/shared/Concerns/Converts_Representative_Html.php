@@ -17,6 +17,13 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * maintaining two copies of the same assertions.
  */
 trait Converts_Representative_Html {
+	/**
+	 * Tests that each representative HTML snippet from converter_data_provider()
+	 * converts to its exact expected block markup.
+	 *
+	 * @param string $html     The source HTML to convert.
+	 * @param string $expected The expected converted block markup.
+	 */
 	#[DataProvider( 'converter_data_provider' )]
 	public function test_convert_to_blocks( string $html, string $expected ): void {
 		$this->assertSame(
@@ -25,6 +32,16 @@ trait Converts_Representative_Html {
 		);
 	}
 
+	/**
+	 * Data provider of representative HTML-to-block conversions, one per tag
+	 * or edge case (paragraphs, headings, lists, quotes, non-oembed embeds,
+	 * whitespace collapsing).
+	 *
+	 * @return array<string, array{0: string, 1: string}> Each item is
+	 *                                                     [ $html, $expected ]
+	 *                                                     matching
+	 *                                                     test_convert_to_blocks()'s parameters.
+	 */
 	public static function converter_data_provider(): array {
 		return [
 			'paragraph' => [
@@ -213,6 +230,11 @@ HTML,
 		];
 	}
 
+	/**
+	 * Tests that a paragraph consisting only of a random amount of whitespace
+	 * and newlines is treated as empty and dropped, while a sibling paragraph
+	 * with real content is still converted.
+	 */
 	public function test_convert_with_empty_paragraphs_of_arbitrary_length_to_block(): void {
 		$arbitraryNewLines = str_repeat( "\n\r", mt_rand( 1, 1000 ) );
 		$arbitrarySpaces   = str_repeat( ' ', mt_rand( 1, 1000 ) );
@@ -231,6 +253,11 @@ HTML,
 		);
 	}
 
+	/**
+	 * Tests that an image is converted to an image block with its source and
+	 * alt text left as-is, and no attachment IDs are recorded, when the
+	 * converter has no image uploader configured.
+	 */
 	public function test_images_are_left_untouched_without_an_uploader(): void {
 		$converter = new Block_Converter(
 			html: <<<HTML
@@ -249,6 +276,10 @@ HTML,
 		$this->assertSame( [], $converter->get_created_attachment_ids() );
 	}
 
+	/**
+	 * Tests that an image's srcset and sizes attributes are stripped from the
+	 * resulting image block markup.
+	 */
 	public function test_image_with_srcset_and_sizes_attributes_removed(): void {
 		$converter = new Block_Converter(
 			html: <<<HTML
@@ -266,6 +297,14 @@ HTML,
 		);
 	}
 
+	/**
+	 * Tests that a multi-line <pre> tag from multi_line_pre_tag_data_provider()
+	 * converts to a preformatted block with internal newlines replaced by
+	 * <br> tags.
+	 *
+	 * @param string $html     The source HTML to convert.
+	 * @param string $expected The expected converted block markup.
+	 */
 	#[DataProvider( 'multi_line_pre_tag_data_provider' )]
 	public function test_converting_multi_line_pre_tag( string $html, string $expected ): void {
 		$this->assertSame(
@@ -274,6 +313,14 @@ HTML,
 		);
 	}
 
+	/**
+	 * Data provider of multi-line <pre> tag conversions.
+	 *
+	 * @return array<int, array{0: string, 1: string}> Each item is
+	 *                                                  [ $html, $expected ]
+	 *                                                  matching
+	 *                                                  test_converting_multi_line_pre_tag()'s parameters.
+	 */
 	public static function multi_line_pre_tag_data_provider(): array {
 		return [
 			[
@@ -317,6 +364,11 @@ HTML,
 		];
 	}
 
+	/**
+	 * Tests that HTML pasted from Microsoft Word — with its MSO conditional
+	 * comments, inline styles, and meta/link tags — is cleaned up and
+	 * converted to plain paragraph, list, and image blocks.
+	 */
 	public function test_microsoft_word_importing(): void {
 		$html = <<<HTML
 <meta content="text/html; charset=utf-8" http-equiv="Content-Type"><meta content="Word.Document" name="ProgId"><meta content="Microsoft Word 12" name="Generator"><meta content="Microsoft Word 12" name="Originator"><link href="file:///C:%5CDOCUME%7E1%5C{{REDACTED}}%5CLOCALS%7E1%5CTemp%5Cmsohtmlclip1%5C01%5Cclip_filelist.xml" rel="File-List"><link href="file:///C:%5CDOCUME%7E1%5C{{REDACTED}}%5CLOCALS%7E1%5CTemp%5Cmsohtmlclip1%5C01%5Cclip_themedata.thmx" rel="themeData"><link href="file:///C:%5CDOCUME%7E1%5C{{REDACTED}}%5CLOCALS%7E1%5CTemp%5Cmsohtmlclip1%5C01%5Cclip_colorschememapping.xml" rel="colorSchemeMapping">\n
@@ -369,6 +421,10 @@ HTML,
 		);
 	}
 
+	/**
+	 * Tests that nested blockquotes convert correctly, with each level's
+	 * paragraph and quote block content nested inside its parent quote block.
+	 */
 	public function test_convert_with_children(): void {
 		$html = <<<HTML
 <blockquote><p><em>Sint sint nulla voluptate nulla adipisicing non proident excepteur duis fugiat fugiat qui minim reprehenderit. Irure adipisicing mollit ipsum eiusmod consequat reprehenderit elit anim irure deserunt in deserunt. In dolore ut quis ex quis laboris ex eu. Minim culpa cillum eu.</em></p>
