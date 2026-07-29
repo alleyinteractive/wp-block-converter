@@ -61,7 +61,7 @@ class WordPress_Image_Uploader implements Image_Uploader {
 	public function attachment_id_for( string $url ): ?int {
 		$attachment_id = attachment_url_to_postid( $url ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.attachment_url_to_postid_attachment_url_to_postid
 
-		return is_int( $attachment_id ) ? $attachment_id : null;
+		return $attachment_id > 0 ? $attachment_id : null;
 	}
 
 	/**
@@ -179,7 +179,7 @@ class WordPress_Image_Uploader implements Image_Uploader {
 		if ( ! empty( array_filter( $postarr ) ) ) {
 			$postarr['ID'] = $attachment_id;
 
-			wp_update_post( wp_slash( $postarr ) ); // @phpstan-ignore-line argument.type
+			wp_update_post( wp_slash( $postarr ) );
 		}
 
 		$this->created_attachment_ids[] = $attachment_id;
