@@ -17,6 +17,14 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * specific and is shared between the WordPress and standalone suites.
  */
 trait Converts_Urls_To_Embeds {
+	/**
+	 * Tests that a bare or linked URL from embed_data_provider() converts to
+	 * the expected embed block for its provider, generated from the static
+	 * OEMBED_PROVIDERS table rather than a live oEmbed request.
+	 *
+	 * @param string $html     The source HTML to convert.
+	 * @param string $expected The expected converted embed block markup.
+	 */
 	#[DataProvider( 'embed_data_provider' )]
 	public function test_url_to_embed( string $html, string $expected ): void {
 		$block = ( new Block_Converter( $html ) )->convert();
@@ -27,6 +35,16 @@ trait Converts_Urls_To_Embeds {
 		);
 	}
 
+	/**
+	 * Data provider of URLs for each supported oEmbed provider (YouTube,
+	 * Vimeo, Twitter/X, Instagram, Facebook, TikTok, etc.) and their expected
+	 * embed block markup.
+	 *
+	 * @return array<string, array{0: string, 1: string}> Each item is
+	 *                                                     [ $html, $expected ]
+	 *                                                     matching
+	 *                                                     test_url_to_embed()'s parameters.
+	 */
 	public static function embed_data_provider(): array {
 		return [
 			'youtube' => [
