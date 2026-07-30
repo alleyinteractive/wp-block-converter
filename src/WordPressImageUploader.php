@@ -1,40 +1,43 @@
 <?php
+
 /**
- * WordPress_Image_Uploader class file
+ * WordPressImageUploader class file
  *
  * @package wp-block-converter
  */
 
-namespace Alley\WP\Block_Converter;
+namespace Alley\WP\BlockConverter;
 
 use Exception;
 use RuntimeException;
 
 /**
- * Image_Uploader implementation that sideloads images into the WordPress
+ * ImageUploader implementation that sideloads images into the WordPress
  * media library.
  *
  * This is the only WordPress-specific code in this library — everything
  * else runs without WordPress loaded. It is not applied automatically;
- * pass an instance to Block_Converter's constructor to enable sideloading
+ * pass an instance to BlockConverter's constructor to enable sideloading
  * via WordPress.
  */
-class WordPress_Image_Uploader implements Image_Uploader {
+class WordPressImageUploader implements ImageUploader
+{
     /**
      * The attachment IDs created during the conversion.
      *
      * @var array<int>
      */
-    protected array $created_attachment_ids = [];
+    protected array $createdAttachmentIds = [];
 
     /**
      * Setup the class.
      *
      * @throws RuntimeException If WordPress is not loaded.
      */
-    public function __construct() {
-        if ( ! function_exists( 'do_action' ) ) {
-            throw new RuntimeException( 'WordPress must be loaded to use the WordPress_Image_Uploader class.' );
+    public function __construct()
+    {
+        if (! function_exists('do_action')) {
+            throw new RuntimeException('WordPress must be loaded to use the WordPressImageUploader class.');
         }
     }
 
@@ -48,8 +51,9 @@ class WordPress_Image_Uploader implements Image_Uploader {
      * @param string $alt Image alt text.
      * @return string The WordPress attachment URL.
      */
-    public function upload( string $src, string $alt ): string {
-        return (string) wp_get_attachment_url( $this->create_or_get_attachment_from_url( $src, [ 'alt' => $alt ] ) );
+    public function upload(string $src, string $alt): string
+    {
+        return (string) wp_get_attachment_url($this->createOrGetAttachmentFromUrl($src, [ 'alt' => $alt ]));
     }
 
     /**
@@ -58,10 +62,11 @@ class WordPress_Image_Uploader implements Image_Uploader {
      * @param string $url Image URL.
      * @return int|null
      */
-    public function attachment_id_for( string $url ): ?int {
-        $attachment_id = attachment_url_to_postid( $url ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.attachment_url_to_postid_attachment_url_to_postid
+    public function attachmentIdFor(string $url): ?int
+    {
+        $attachmentId = attachment_url_to_postid($url);
 
-        return $attachment_id > 0 ? $attachment_id : null;
+        return $attachmentId > 0 ? $attachmentId : null;
     }
 
     /**
@@ -69,21 +74,23 @@ class WordPress_Image_Uploader implements Image_Uploader {
      *
      * @return array<int>
      */
-    public function get_created_attachment_ids(): array {
-        return $this->created_attachment_ids;
+    public function getCreatedAttachmentIds(): array
+    {
+        return $this->createdAttachmentIds;
     }
 
     /**
      * Assign a parent post ID to the attachments created during the conversion.
      *
-     * @param int $parent_post_id Parent post ID.
+     * @param int $parentPostId Parent post ID.
      */
-    public function assign_parent_to_attachments( int $parent_post_id ): void {
-        foreach ( $this->created_attachment_ids as $attachment_id ) {
+    public function assignParentToAttachments(int $parentPostId): void
+    {
+        foreach ($this->createdAttachmentIds as $attachmentId) {
             wp_update_post(
                 [
-                    'ID'          => $attachment_id,
-                    'post_parent' => $parent_post_id,
+                    'ID'          => $attachmentId,
+                    'post_parent' => $parentPostId,
                 ]
             );
         }
@@ -117,18 +124,22 @@ class WordPress_Image_Uploader implements Image_Uploader {
      *   parent_post_id?: null|int,
      *   title?: null|string,
      * } $args
-     * @param string $meta_key Meta key to store the original URL.
+     * @param string $metaKey Meta key to store the original URL.
      *
      * @throws Exception If the image was not able to be uploaded.
      *
      * @return int Attachment ID.
      */
-    protected function create_or_get_attachment_from_url( string $src, array $args = [], string $meta_key = 'original_url' ): int {
-        $attachment_ids = get_posts( // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts
+    protected function createOrGetAttachmentFromUrl(
+        string $src,
+        array $args = [],
+        string $metaKey = 'original_url'
+    ): int {
+        $attachmentIds = get_posts(
             [
                 'fields'           => 'ids',
-                'meta_key'         => $meta_key,
-                'meta_value'       => $src, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+                'meta_key'         => $metaKey,
+                'meta_value'       => $src,
                 'post_status'      => 'any',
                 'post_type'        => 'attachment',
                 'posts_per_page'   => 1,
@@ -136,32 +147,39 @@ class WordPress_Image_Uploader implements Image_Uploader {
             ]
         );
 
-        if ( ! empty( $attachment_ids ) ) {
-            return array_shift( $attachment_ids );
+        if (! empty($attachmentIds)) {
+            return array_shift($attachmentIds);
         }
 
-        if ( ! function_exists( 'media_sideload_image' ) ) {
+        if (! function_exists('media_sideload_image')) {
             require_once ABSPATH . 'wp-admin/includes/file.php';
             require_once ABSPATH . 'wp-admin/includes/image.php';
             require_once ABSPATH . 'wp-admin/includes/media.php';
         }
 
-        $attachment_id = media_sideload_image( $src, $args['parent_post_id'] ?? 0, $args['description'] ?? '', 'id' );
+        $attachmentId = media_sideload_image($src, $args['parent_post_id'] ?? 0, $args['description'] ?? '', 'id');
 
-        if ( is_wp_error( $attachment_id ) ) {
+        if (is_wp_error($attachmentId)) {
             // translators: 1: URL, 2: Error message.
-            $message = sprintf( __( 'media_sideload_image failed for URL %1$s; error message: %2$s', 'wp-block-converter' ), $src, $attachment_id->get_error_message() );
-            throw new Exception( esc_html( $message ) );
-        } elseif ( ! is_int( $attachment_id ) ) {
+            $message = sprintf(
+                __('media_sideload_image failed for URL %1$s; error message: %2$s', 'wp-block-converter'),
+                $src,
+                $attachmentId->get_error_message()
+            );
+            throw new Exception(esc_html($message));
+        } elseif (! is_int($attachmentId)) {
             // translators: 1: URL.
-            $message = sprintf( __( 'media_sideload_image failed for URL %1$s; returned value was not an integer', 'wp-block-converter' ), $src );
-            throw new Exception( esc_html( $message ) );
+            $message = sprintf(
+                __('media_sideload_image failed for URL %1$s; returned value was not an integer', 'wp-block-converter'),
+                $src
+            );
+            throw new Exception(esc_html($message));
         }
 
         // Store the original URL for future reference.
-        update_post_meta( $attachment_id, $meta_key, $src );
+        update_post_meta($attachmentId, $metaKey, $src);
 
-        $postarr = [
+        $postArr = [
             'post_content' => $args['description'] ?? '',
             'post_excerpt' => $args['caption'] ?? '',
             'post_title'   => $args['title'] ?? '',
@@ -176,14 +194,14 @@ class WordPress_Image_Uploader implements Image_Uploader {
         ];
 
         // Update the rest of the arguments if they were passed.
-        if ( ! empty( array_filter( $postarr ) ) ) {
-            $postarr['ID'] = $attachment_id;
+        if (! empty(array_filter($postArr))) {
+            $postArr['ID'] = $attachmentId;
 
-            wp_update_post( wp_slash( $postarr ) );
+            wp_update_post(wp_slash($postArr));
         }
 
-        $this->created_attachment_ids[] = $attachment_id;
+        $this->createdAttachmentIds[] = $attachmentId;
 
-        return $attachment_id;
+        return $attachmentId;
     }
 }

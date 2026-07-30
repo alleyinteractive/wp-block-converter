@@ -1,13 +1,12 @@
 <?php
+
 /**
- * Convert_To_Blocks_Command class file
- *
- * phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+ * ConvertToBlocksCommand class file
  *
  * @package wp-block-converter
  */
 
-namespace Alley\WP\Block_Converter;
+namespace Alley\WP\BlockConverter;
 
 use Alley\WP_Bulk_Task\Bulk_Task;
 use Alley\WP_Bulk_Task\Bulk_Task_Side_Effects;
@@ -19,7 +18,8 @@ use WP_CLI_Command;
 /**
  * WP-CLI command to convert posts to Gutenberg blocks.
  */
-class Convert_To_Blocks_Command extends WP_CLI_Command {
+class ConvertToBlocksCommand extends WP_CLI_Command
+{
     use Bulk_Task_Side_Effects;
 
     /**
@@ -68,14 +68,15 @@ class Convert_To_Blocks_Command extends WP_CLI_Command {
      *     # Reset the cursor to start from the beginning
      *     $ wp block-converter --rewind
      *
-     * @param array $args       Positional arguments.
-     * @param array $assoc_args Associative arguments.
+     * @param array $args      Positional arguments.
+     * @param array $assocArgs Associative arguments.
      */
-    public function __invoke( $args, $assoc_args ) {
-        $bulk_task = new Bulk_Task(
+    public function __invoke($args, $assocArgs)
+    {
+        $bulkTask = new Bulk_Task(
             'convert_to_blocks',
             new PHP_CLI_Progress_Bar(
-                __( 'Converting posts to blocks', 'wp-block-converter' )
+                __('Converting posts to blocks', 'wp-block-converter')
             )
         );
 
@@ -87,34 +88,40 @@ class Convert_To_Blocks_Command extends WP_CLI_Command {
         ];
 
         // Confirm if no arguments are provided.
-        if ( empty( $assoc_args ) || ( count( $assoc_args ) === count( $default ) && ! array_diff_key( $assoc_args, $default ) ) ) {
-            WP_CLI::confirm( __( 'You have not provided any arguments. This will process all published posts. Do you want to continue?', 'wp-block-converter' ) );
+        if (empty($assocArgs) || ( count($assocArgs) === count($default) && ! array_diff_key($assocArgs, $default) )) {
+            WP_CLI::confirm(__(
+                'You have not provided any arguments. This will process all published posts. Do you want to continue?',
+                'wp-block-converter'
+            ));
         }
 
-        $dry_run         = ! empty( $assoc_args['dry-run'] );
-        $sideload_images = ! empty( $assoc_args['sideload-images'] );
-        $post_type       = $assoc_args['post-type'] ?? 'post';
-        $post_status     = $assoc_args['post-status'] ?? 'publish';
+        $dryRun         = ! empty($assocArgs['dry-run']);
+        $sideloadImages = ! empty($assocArgs['sideload-images']);
+        $postType       = $assocArgs['post-type'] ?? 'post';
+        $postStatus     = $assocArgs['post-status'] ?? 'publish';
 
         // Use in-memory cursor for dry run to avoid saving progress.
-        if ( $dry_run ) {
-            $bulk_task->cursor = new Memory_Cursor();
-        } elseif ( ! empty( $assoc_args['rewind'] ) ) {
-            $bulk_task->cursor->reset();
-            WP_CLI::success( __( 'Rewound the cursor. Run again without the --rewind flag to process posts.', 'wp-block-converter' ) );
+        if ($dryRun) {
+            $bulkTask->cursor = new Memory_Cursor();
+        } elseif (! empty($assocArgs['rewind'])) {
+            $bulkTask->cursor->reset();
+            WP_CLI::success(__(
+                'Rewound the cursor. Run again without the --rewind flag to process posts.',
+                'wp-block-converter'
+            ));
             return;
         }
 
         // Build query arguments.
-        $query_args = [
-            'post_type'   => $post_type,
-            'post_status' => $post_status,
+        $queryArgs = [
+            'post_type'   => $postType,
+            'post_status' => $postStatus,
         ];
 
         // If specific post IDs are provided, only process those posts.
-        if ( ! empty( $assoc_args['post-id'] ) ) {
-            $post_ids               = array_map( 'intval', explode( ',', $assoc_args['post-id'] ) );
-            $query_args['post__in'] = $post_ids;
+        if (! empty($assocArgs['post-id'])) {
+            $postIds               = array_map('intval', explode(',', $assocArgs['post-id']));
+            $queryArgs['post__in'] = $postIds;
         }
 
         // Track statistics.
@@ -126,41 +133,41 @@ class Convert_To_Blocks_Command extends WP_CLI_Command {
         ];
 
         // Run the bulk task.
-        $bulk_task->run(
-            $query_args,
-            function ( $post ) use ( $dry_run, $sideload_images, &$stats ) {
+        $bulkTask->run(
+            $queryArgs,
+            function ($post) use ($dryRun, $sideloadImages, &$stats) {
                 $stats['processed']++;
 
                 try {
                     // Skip if post content is empty.
-                    if ( empty( $post->post_content ) ) {
+                    if (empty($post->post_content)) {
                         $stats['skipped']++;
-                        WP_CLI::debug( sprintf( 'Post %d has empty content, skipping.', $post->ID ) );
+                        WP_CLI::debug(sprintf('Post %d has empty content, skipping.', $post->ID));
                         return;
                     }
 
                     // Skip if content already contains block markers.
-                    if ( has_blocks( $post->post_content ) ) {
+                    if (has_blocks($post->post_content)) {
                         $stats['skipped']++;
-                        WP_CLI::debug( sprintf( 'Post %d already has blocks, skipping.', $post->ID ) );
+                        WP_CLI::debug(sprintf('Post %d already has blocks, skipping.', $post->ID));
                         return;
                     }
 
                     // Convert the post content to blocks.
-                    $converter = new Block_Converter(
+                    $converter = new BlockConverter(
                         $post->post_content,
-                        uploader: $sideload_images ? new WordPress_Image_Uploader() : null,
+                        uploader: $sideloadImages ? new WordPressImageUploader() : null,
                     );
                     $blocks    = $converter->convert();
 
-                    if ( $dry_run ) {
-                        WP_CLI::log( sprintf( 'Would convert post %d (%s)', $post->ID, $post->post_title ) );
-                        WP_CLI::log( 'Original content length: ' . strlen( $post->post_content ) );
-                        WP_CLI::log( 'Converted content length: ' . strlen( $blocks ) );
+                    if ($dryRun) {
+                        WP_CLI::log(sprintf('Would convert post %d (%s)', $post->ID, $post->post_title));
+                        WP_CLI::log('Original content length: ' . strlen($post->post_content));
+                        WP_CLI::log('Converted content length: ' . strlen($blocks));
 
                         // Show a preview of the blocks (first 200 characters).
-                        if ( strlen( $blocks ) > 0 ) {
-                            WP_CLI::log( 'Preview: ' . substr( $blocks, 0, 200 ) . '...' );
+                        if (strlen($blocks) > 0) {
+                            WP_CLI::log('Preview: ' . substr($blocks, 0, 200) . '...');
                         }
                     } else {
                         // Update the post content.
@@ -172,24 +179,28 @@ class Convert_To_Blocks_Command extends WP_CLI_Command {
                             true
                         );
 
-                        if ( is_wp_error( $result ) ) {
+                        if (is_wp_error($result)) {
                             $stats['errors']++;
-                            WP_CLI::warning( sprintf( 'Failed to update post %d: %s', $post->ID, $result->get_error_message() ) );
+                            WP_CLI::warning(sprintf(
+                                'Failed to update post %d: %s',
+                                $post->ID,
+                                $result->get_error_message()
+                            ));
                             return;
                         }
 
                         // Assign parent to attachments if images were sideloaded.
-                        if ( $sideload_images ) {
-                            $converter->assign_parent_to_attachments( $post->ID );
+                        if ($sideloadImages) {
+                            $converter->assignParentToAttachments($post->ID);
                         }
 
-                        WP_CLI::debug( sprintf( 'Converted post %d (%s)', $post->ID, $post->post_title ) );
+                        WP_CLI::debug(sprintf('Converted post %d (%s)', $post->ID, $post->post_title));
                     }
 
                     $stats['converted']++;
-                } catch ( \Exception $e ) {
+                } catch (\Exception $e) {
                     $stats['errors']++;
-                    WP_CLI::warning( sprintf( 'Error converting post %d: %s', $post->ID, $e->getMessage() ) );
+                    WP_CLI::warning(sprintf('Error converting post %d: %s', $post->ID, $e->getMessage()));
                 }
             }
         );
@@ -197,21 +208,21 @@ class Convert_To_Blocks_Command extends WP_CLI_Command {
         $this->resume_side_effects();
 
         // Display summary.
-        WP_CLI::line( '' );
-        WP_CLI::success( sprintf(
+        WP_CLI::line('');
+        WP_CLI::success(sprintf(
             '%s %d posts. Converted: %d, Skipped: %d, Errors: %d',
-            $dry_run ? 'Would process' : 'Processed',
+            $dryRun ? 'Would process' : 'Processed',
             $stats['processed'],
             $stats['converted'],
             $stats['skipped'],
             $stats['errors']
-        ) );
+        ));
 
-        if ( $dry_run ) {
-            WP_CLI::line( 'This was a dry run. Run without --dry-run to make actual changes.' );
+        if ($dryRun) {
+            WP_CLI::line('This was a dry run. Run without --dry-run to make actual changes.');
         } else {
-            $bulk_task->cursor->reset();
-            WP_CLI::line( 'Cursor has been reset. Run the command again to reprocess posts if needed.' );
+            $bulkTask->cursor->reset();
+            WP_CLI::line('Cursor has been reset. Run the command again to reprocess posts if needed.');
         }
     }
 }

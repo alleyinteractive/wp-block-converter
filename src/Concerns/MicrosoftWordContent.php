@@ -1,20 +1,20 @@
 <?php
+
 /**
- * Microsoft_Word_Content trait file
- *
- * phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+ * MicrosoftWordContent trait file
  *
  * @package wp-block-converter
  */
 
 declare(strict_types=1);
 
-namespace Alley\WP\Block_Converter\Concerns;
+namespace Alley\WP\BlockConverter\Concerns;
 
 /**
  * Trait for handling Microsoft Word content detection.
  */
-trait Microsoft_Word_Content {
+trait MicrosoftWordContent
+{
     /**
      * Patterns based on TinyMCE Word filter detection.
      *
@@ -37,7 +37,7 @@ trait Microsoft_Word_Content {
      *
      * @var bool
      */
-    protected bool $convert_ms_word_content = true;
+    protected bool $convertMsWordContent = true;
 
     /**
      * Enable or disable Microsoft Word content conversion.
@@ -45,8 +45,9 @@ trait Microsoft_Word_Content {
      * @param bool $convert Whether to convert Microsoft Word content.
      * @return static
      */
-    public function should_convert_ms_word_content( bool $convert = true ): static {
-        $this->convert_ms_word_content = $convert;
+    public function shouldConvertMsWordContent(bool $convert = true): static
+    {
+        $this->convertMsWordContent = $convert;
 
         return $this;
     }
@@ -57,16 +58,17 @@ trait Microsoft_Word_Content {
      * @param \Dom\Node $node The DOM node to check.
      * @return bool True if the node contains Microsoft Word content, false otherwise.
      */
-    protected function is_ms_word_content( \Dom\Node $node ): bool {
-        if ( $node->nodeType !== XML_ELEMENT_NODE || ! $node instanceof \Dom\Element ) {
+    protected function isMsWordContent(\Dom\Node $node): bool
+    {
+        if ($node->nodeType !== XML_ELEMENT_NODE || ! $node instanceof \Dom\Element) {
             return false;
         }
 
-        $owner_document = $node->ownerDocument;
+        $ownerDocument = $node->ownerDocument;
 
-        $html = $owner_document instanceof \Dom\HTMLDocument ? $owner_document->saveHtml( $node ) : '';
+        $html = $ownerDocument instanceof \Dom\HTMLDocument ? $ownerDocument->saveHtml($node) : '';
 
-        return $this->is_ms_word_html( $html );
+        return $this->isMsWordHtml($html);
     }
 
     /**
@@ -75,9 +77,10 @@ trait Microsoft_Word_Content {
      * @param string $html The HTML to check.
      * @return bool True if the HTML contains Microsoft Word markers, false otherwise.
      */
-    protected function is_ms_word_html( string $html ): bool {
-        foreach ( self::MS_WORD_PATTERNS as $pattern ) {
-            if ( preg_match( $pattern . 'i', $html ) ) {
+    protected function isMsWordHtml(string $html): bool
+    {
+        foreach (self::MS_WORD_PATTERNS as $pattern) {
+            if (preg_match($pattern . 'i', $html)) {
                 return true;
             }
         }
@@ -88,32 +91,33 @@ trait Microsoft_Word_Content {
     /**
      * Clean MS Word specific styles from a style string.
      *
-     * @param string $style_string The style attribute value.
+     * @param string $styleString The style attribute value.
      * @return string The cleaned style string.
      */
-    protected function clean_ms_word_styles( string $style_string ): string {
+    protected function cleanMsWordStyles(string $styleString): string
+    {
         // Parse style string into individual properties.
-        $styles      = [];
-        $style_pairs = explode( ';', $style_string );
+        $styles     = [];
+        $stylePairs = explode(';', $styleString);
 
-        foreach ( $style_pairs as $pair ) {
-            $pair = trim( $pair );
-            if ( empty( $pair ) ) {
+        foreach ($stylePairs as $pair) {
+            $pair = trim($pair);
+            if (empty($pair)) {
                 continue;
             }
 
-            if ( strpos( $pair, ':' ) !== false ) {
-                list( $property, $value ) = explode( ':', $pair, 2 );
-                $property                 = trim( $property );
-                $value                    = trim( $value );
+            if (strpos($pair, ':') !== false) {
+                list( $property, $value ) = explode(':', $pair, 2);
+                $property                 = trim($property);
+                $value                    = trim($value);
 
                 // Skip MS Word specific properties.
-                if ( strpos( $property, 'mso-' ) === 0 ) {
+                if (strpos($property, 'mso-') === 0) {
                     continue;
                 }
 
                 // Skip problematic Word styles.
-                $skip_properties = [
+                $skipProperties = [
                     'font-family', // Often contains non-web fonts.
                     'font-size', // Usually incorrect from Word.
                     'margin',
@@ -122,12 +126,12 @@ trait Microsoft_Word_Content {
                     'text-indent',
                 ];
 
-                if ( in_array( $property, $skip_properties, true ) ) {
+                if (in_array($property, $skipProperties, true)) {
                     continue;
                 }
 
                 // Keep only essential properties.
-                $allowed_properties = [
+                $allowedProperties = [
                     'color',
                     'background-color',
                     'font-weight',
@@ -136,19 +140,19 @@ trait Microsoft_Word_Content {
                     'text-align',
                 ];
 
-                if ( in_array( $property, $allowed_properties, true ) ) {
+                if (in_array($property, $allowedProperties, true)) {
                     $styles[ $property ] = $value;
                 }
             }
         }
 
         // Rebuild style string.
-        $cleaned_styles = [];
-        foreach ( $styles as $property => $value ) {
-            $cleaned_styles[] = $property . ': ' . $value;
+        $cleanedStyles = [];
+        foreach ($styles as $property => $value) {
+            $cleanedStyles[] = $property . ': ' . $value;
         }
 
-        return implode( '; ', $cleaned_styles );
+        return implode('; ', $cleanedStyles);
     }
 
     /**
@@ -156,31 +160,32 @@ trait Microsoft_Word_Content {
      *
      * @param \Dom\Node $node The DOM node to clean up.
      */
-    protected function clean_ms_word_node( \Dom\Node $node ): void {
-        if ( $node->nodeType !== XML_ELEMENT_NODE || ! $node instanceof \Dom\Element ) {
+    protected function cleanMsWordNode(\Dom\Node $node): void
+    {
+        if ($node->nodeType !== XML_ELEMENT_NODE || ! $node instanceof \Dom\Element) {
             return;
         }
 
         // Remove MsoNormal class from class attribute.
-        if ( $node->hasAttribute( 'class' ) ) {
-            $classes = $node->getAttribute( 'class' ) ?? '';
-            $classes = preg_replace( '/\bMsoNormal\b/', '', $classes ) ?? '';
-            $classes = trim( preg_replace( '/\s+/', ' ', $classes ) ?? '' );
+        if ($node->hasAttribute('class')) {
+            $classes = $node->getAttribute('class') ?? '';
+            $classes = preg_replace('/\bMsoNormal\b/', '', $classes) ?? '';
+            $classes = trim(preg_replace('/\s+/', ' ', $classes) ?? '');
 
-            if ( empty( $classes ) ) {
-                $node->removeAttribute( 'class' );
+            if (empty($classes)) {
+                $node->removeAttribute('class');
             } else {
-                $node->setAttribute( 'class', $classes );
+                $node->setAttribute('class', $classes);
             }
         }
 
         // Remove style attribute from ALL elements (as requested - complete removal).
-        if ( $node->hasAttribute( 'style' ) ) {
-            $node->removeAttribute( 'style' );
+        if ($node->hasAttribute('style')) {
+            $node->removeAttribute('style');
         }
 
         // Remove MS Word specific attributes.
-        $ms_word_attributes = [
+        $msWordAttributes = [
             'border',
             'mso-border-alt',
             'face', // Often "Times New Roman" from Word.
@@ -189,144 +194,144 @@ trait Microsoft_Word_Content {
             'type', // Presentational list-style attribute Word adds to <ul>/<ol>.
             'width', // Presentational sizing Word adds to <img> and other elements.
         ];
-        foreach ( $ms_word_attributes as $attr ) {
-            if ( $node->hasAttribute( $attr ) ) {
-                $node->removeAttribute( $attr );
+        foreach ($msWordAttributes as $attr) {
+            if ($node->hasAttribute($attr)) {
+                $node->removeAttribute($attr);
             }
         }
 
         // Remove attributes with MS Word specific values.
-        if ( $node->hasAttribute( 'face' ) && $node->getAttribute( 'face' ) === 'Times New Roman' ) {
-            $node->removeAttribute( 'face' );
+        if ($node->hasAttribute('face') && $node->getAttribute('face') === 'Times New Roman') {
+            $node->removeAttribute('face');
         }
 
         // Remove MS Word comment and tracking attributes.
-        $attributes_to_check = [ 'class', 'id', 'name' ];
-        foreach ( $attributes_to_check as $attr ) {
-            if ( $node->hasAttribute( $attr ) ) {
-                $value = $node->getAttribute( $attr ) ?? '';
+        $attributesToCheck = [ 'class', 'id', 'name' ];
+        foreach ($attributesToCheck as $attr) {
+            if ($node->hasAttribute($attr)) {
+                $value = $node->getAttribute($attr) ?? '';
                 // Remove comment references, tracking changes, and internal GUIDs.
-                if ( preg_match( '/^(MsoCommentReference|MsoCommentText|msoDel|docs-internal-guid-)/', $value ) ) {
-                    $node->removeAttribute( $attr );
+                if (preg_match('/^(MsoCommentReference|MsoCommentText|msoDel|docs-internal-guid-)/', $value)) {
+                    $node->removeAttribute($attr);
                 }
             }
         }
 
         // Convert <i> tags to <em> tags.
-        if ( strtolower( $node->nodeName ) === 'i' && $node->ownerDocument !== null ) {
-            $em = $node->ownerDocument->createElement( 'em' );
+        if (strtolower($node->nodeName) === 'i' && $node->ownerDocument !== null) {
+            $em = $node->ownerDocument->createElement('em');
 
             // Copy all attributes except ones we're cleaning.
-            if ( $node->hasAttributes() ) {
-                foreach ( $node->attributes as $attr ) {
-                    if ( $attr->nodeName !== 'class' && $attr->nodeName !== 'style' && $attr->nodeValue !== null ) {
-                        $em->setAttribute( $attr->nodeName, $attr->nodeValue );
+            if ($node->hasAttributes()) {
+                foreach ($node->attributes as $attr) {
+                    if ($attr->nodeName !== 'class' && $attr->nodeName !== 'style' && $attr->nodeValue !== null) {
+                        $em->setAttribute($attr->nodeName, $attr->nodeValue);
                     }
                 }
             }
 
             // Move all child nodes to the new em element.
-            while ( $node->firstChild ) {
-                $em->appendChild( $node->firstChild );
+            while ($node->firstChild) {
+                $em->appendChild($node->firstChild);
             }
 
             // Replace the i element with em element.
-            if ( $node->parentNode !== null ) {
-                $node->parentNode->replaceChild( $em, $node );
+            if ($node->parentNode !== null) {
+                $node->parentNode->replaceChild($em, $node);
                 $node = $em;
             }
         }
 
         // Convert <b> tags to <strong> tags.
-        if ( strtolower( $node->nodeName ) === 'b' && $node->ownerDocument !== null ) {
-            $strong = $node->ownerDocument->createElement( 'strong' );
+        if (strtolower($node->nodeName) === 'b' && $node->ownerDocument !== null) {
+            $strong = $node->ownerDocument->createElement('strong');
 
             // Copy all attributes except ones we're cleaning.
-            if ( $node->hasAttributes() ) {
-                foreach ( $node->attributes as $attr ) {
-                    if ( $attr->nodeName !== 'class' && $attr->nodeName !== 'style' && $attr->nodeValue !== null ) {
-                        $strong->setAttribute( $attr->nodeName, $attr->nodeValue );
+            if ($node->hasAttributes()) {
+                foreach ($node->attributes as $attr) {
+                    if ($attr->nodeName !== 'class' && $attr->nodeName !== 'style' && $attr->nodeValue !== null) {
+                        $strong->setAttribute($attr->nodeName, $attr->nodeValue);
                     }
                 }
             }
 
             // Move all child nodes to the new strong element.
-            while ( $node->firstChild ) {
-                $strong->appendChild( $node->firstChild );
+            while ($node->firstChild) {
+                $strong->appendChild($node->firstChild);
             }
 
             // Replace the b element with strong element.
-            if ( $node->parentNode !== null ) {
-                $node->parentNode->replaceChild( $strong, $node );
+            if ($node->parentNode !== null) {
+                $node->parentNode->replaceChild($strong, $node);
                 $node = $strong;
             }
         }
 
         // Remove Word tracking and comment elements completely.
-        if ( in_array( strtolower( $node->nodeName ), [ 'del', 'ins' ], true ) ) {
+        if (in_array(strtolower($node->nodeName), [ 'del', 'ins' ], true)) {
             // For tracking changes, remove del elements but keep ins content.
-            if ( strtolower( $node->nodeName ) === 'del' ) {
-                $node->parentNode?->removeChild( $node );
+            if (strtolower($node->nodeName) === 'del') {
+                $node->parentNode?->removeChild($node);
                 return;
             } else {
                 // Unwrap ins elements but keep content.
-                while ( $node->firstChild ) {
-                    $node->parentNode?->insertBefore( $node->firstChild, $node );
+                while ($node->firstChild) {
+                    $node->parentNode?->insertBefore($node->firstChild, $node);
                 }
-                $node->parentNode?->removeChild( $node );
+                $node->parentNode?->removeChild($node);
                 return;
             }
         }
 
         // Clean up font tags by removing MS Word specific attributes.
-        if ( strtolower( $node->nodeName ) === 'font' ) {
+        if (strtolower($node->nodeName) === 'font') {
             // Remove common Word font attributes but keep the element.
-            $font_attrs = [ 'face', 'size', 'color' ];
-            foreach ( $font_attrs as $attr ) {
-                if ( $node->hasAttribute( $attr ) ) {
-                    $node->removeAttribute( $attr );
+            $fontAttrs = [ 'face', 'size', 'color' ];
+            foreach ($fontAttrs as $attr) {
+                if ($node->hasAttribute($attr)) {
+                    $node->removeAttribute($attr);
                 }
             }
             // If no attributes left, unwrap the font tag.
-            if ( ! $node->hasAttributes() ) {
-                while ( $node->firstChild ) {
-                    $node->parentNode?->insertBefore( $node->firstChild, $node );
+            if (! $node->hasAttributes()) {
+                while ($node->firstChild) {
+                    $node->parentNode?->insertBefore($node->firstChild, $node);
                 }
-                $node->parentNode?->removeChild( $node );
+                $node->parentNode?->removeChild($node);
                 return;
             }
         }
 
         // Remove <span> tags by unwrapping their content.
-        if ( strtolower( $node->nodeName ) === 'span' ) {
+        if (strtolower($node->nodeName) === 'span') {
             // First, recursively clean the children before moving them.
             $children = [];
-            foreach ( $node->childNodes as $child ) {
+            foreach ($node->childNodes as $child) {
                 $children[] = $child;
             }
 
-            foreach ( $children as $child ) {
-                $this->clean_ms_word_node( $child );
+            foreach ($children as $child) {
+                $this->cleanMsWordNode($child);
             }
 
             // Move all child nodes before the span element.
-            while ( $node->firstChild ) {
-                $node->parentNode?->insertBefore( $node->firstChild, $node );
+            while ($node->firstChild) {
+                $node->parentNode?->insertBefore($node->firstChild, $node);
             }
 
             // Remove the empty span element.
-            $node->parentNode?->removeChild( $node );
+            $node->parentNode?->removeChild($node);
             return; // No need to process children again as they've been processed and moved.
         }
 
         // Recursively clean child nodes to ensure all nested elements are processed.
         $children = [];
-        foreach ( $node->childNodes as $child ) {
+        foreach ($node->childNodes as $child) {
             $children[] = $child;
         }
 
-        foreach ( $children as $child ) {
-            $this->clean_ms_word_node( $child );
+        foreach ($children as $child) {
+            $this->cleanMsWordNode($child);
         }
     }
 }
