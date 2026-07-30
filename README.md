@@ -15,7 +15,7 @@ composer require alleyinteractive/wp-block-converter
 ```
 
 This package does not use any NPM library such as `@wordpress/blocks` to convert HTML to blocks,
-and — aside from the optional `WordPress_Image_Uploader` described below — has no WordPress
+and — aside from the optional `WordPressImageUploader` described below — has no WordPress
 dependency of its own, so it can be used inside a WordPress plugin/theme or in a plain PHP
 project.
 
@@ -24,9 +24,9 @@ project.
 Use this package like so to convert HTML into Gutenberg Blocks:
 
 ```php
-use Alley\WP\Block_Converter\Block_Converter;
+use Alley\WP\BlockConverter\BlockConverter;
 
-$converter = new Block_Converter( '<p>Some HTML</p>' );
+$converter = new BlockConverter( '<p>Some HTML</p>' );
 
 $blocks = $converter->convert(); // Returns a string of converted blocks.
 ```
@@ -38,30 +38,30 @@ entries when an individual image fails to sideload (the conversion otherwise con
 that image):
 
 ```php
-use Alley\WP\Block_Converter\Block_Converter;
+use Alley\WP\BlockConverter\BlockConverter;
 
-$converter = new Block_Converter(
+$converter = new BlockConverter(
 	html: '<p>Some HTML</p>',
-	logger: $psr_logger,
+	logger: $psrLogger,
 );
 ```
 
 ### Filtering the Blocks
 
 The blocks can be filtered on a block-by-block basis or for an entire HTML body by passing
-closures into the `Block_Converter` constructor.
+closures into the `BlockConverter` constructor.
 
-#### `on_block`
+#### `onBlock`
 
 Filter the generated block for a specific node.
 
 ```php
-use Alley\WP\Block_Converter\Block;
-use Alley\WP\Block_Converter\Block_Converter;
+use Alley\WP\BlockConverter\Block;
+use Alley\WP\BlockConverter\BlockConverter;
 
-$converter = new Block_Converter(
+$converter = new BlockConverter(
 	html: '<p>Some HTML</p>',
-	on_block: function ( ?Block $block, \Dom\Node $node ): ?Block {
+	onBlock: function ( ?Block $block, \Dom\Node $node ): ?Block {
 		// Modify the block before it is serialized.
 		$block->content = '...';
 		$block->blockName = '...';
@@ -72,14 +72,14 @@ $converter = new Block_Converter(
 );
 ```
 
-#### `on_document_html`
+#### `onDocumentHtml`
 
 Filter the generated blocks for an entire HTML body.
 
 ```php
-$converter = new Block_Converter(
+$converter = new BlockConverter(
 	html: '<p>Some HTML</p>',
-	on_document_html: function ( string $blocks, \Dom\HTMLCollection $content ): string {
+	onDocumentHtml: function ( string $blocks, \Dom\HTMLCollection $content ): string {
 		// ...
 		return $blocks;
 	},
@@ -92,56 +92,56 @@ The remaining hook points work the same way — pass a closure into the construc
 
 | Constructor parameter | Called with |
 |---|---|
-| `on_skip_minify_block` | `( bool $skip_minify_block, string $block, \Dom\Node $node ): bool` |
-| `on_pre_sideload_image` | `( bool $pre, string $src, \Dom\Node $child_node, Block_Converter $converter ): bool` |
-| `on_sideloaded_image` | `( string $src, \Dom\Node $child_node ): void` |
-| `on_sanitized_image_url` | `( string $sanitized_url, string $url ): string` |
+| `onSkipMinifyBlock` | `( bool $skipMinifyBlock, string $block, \Dom\Node $node ): bool` |
+| `onPreSideloadImage` | `( bool $pre, string $src, \Dom\Node $childNode, BlockConverter $converter ): bool` |
+| `onSideloadedImage` | `( string $src, \Dom\Node $childNode ): void` |
+| `onSanitizedImageUrl` | `( string $sanitizedUrl, string $url ): string` |
 
 Each hook accepts a single closure; if you need multiple listeners for the same hook, compose them
 into one closure yourself.
 
 ### Sideloading Images
 
-By default, `Block_Converter` leaves `<img>` sources untouched — no HTTP requests are made and no
-images are downloaded. To sideload images, pass an `Image_Uploader` implementation into the
-`uploader` constructor parameter. Inside WordPress, pass `WordPress_Image_Uploader`, which
+By default, `BlockConverter` leaves `<img>` sources untouched — no HTTP requests are made and no
+images are downloaded. To sideload images, pass an `ImageUploader` implementation into the
+`uploader` constructor parameter. Inside WordPress, pass `WordPressImageUploader`, which
 sideloads into the media library:
 
 ```php
-use Alley\WP\Block_Converter\Block_Converter;
-use Alley\WP\Block_Converter\WordPress_Image_Uploader;
+use Alley\WP\BlockConverter\BlockConverter;
+use Alley\WP\BlockConverter\WordPressImageUploader;
 
-$converter = new Block_Converter(
+$converter = new BlockConverter(
 	html: '<p>Some HTML <img src="https://example.org/image.jpg" /></p>',
-	uploader: new WordPress_Image_Uploader(),
+	uploader: new WordPressImageUploader(),
 );
 
 $blocks = $converter->convert();
 ```
 
 Outside of WordPress (or if you want different sideloading behavior inside WordPress), implement
-the `Image_Uploader` interface yourself:
+the `ImageUploader` interface yourself:
 
 ```php
-use Alley\WP\Block_Converter\Image_Uploader;
+use Alley\WP\BlockConverter\ImageUploader;
 
-class My_Image_Uploader implements Image_Uploader {
+class MyImageUploader implements ImageUploader {
 	public function upload( string $src, string $alt ): string {
 		// Download $src and return the URL where it now lives.
 		return $src;
 	}
 
-	public function attachment_id_for( string $url ): ?int {
+	public function attachmentIdFor( string $url ): ?int {
 		// Return an ID for the uploaded image if your storage has one, or null.
 		return null;
 	}
 
-	public function get_created_attachment_ids(): array {
+	public function getCreatedAttachmentIds(): array {
 		// No-op if your storage has no "attachment" concept.
 		return [];
 	}
 
-	public function assign_parent_to_attachments( int $parent_post_id ): void {
+	public function assignParentToAttachments( int $parentPostId ): void {
 		// No-op if your storage has no "attachment" concept.
 	}
 }
@@ -149,24 +149,24 @@ class My_Image_Uploader implements Image_Uploader {
 
 ### Attachment Parents
 
-When converting HTML to blocks with a `WordPress_Image_Uploader` (or any `Image_Uploader` that
+When converting HTML to blocks with a `WordPressImageUploader` (or any `ImageUploader` that
 tracks attachment IDs), you may need to attach the images that were sideloaded to a post parent.
 After the HTML is converted to blocks, you can get the attachment IDs that were created or simply
 attach them to a post.
 
 ```php
-$converter = new Block_Converter(
+$converter = new BlockConverter(
 	html: '<p>Some HTML <img src="https://example.org/" /></p>',
-	uploader: new WordPress_Image_Uploader(),
+	uploader: new WordPressImageUploader(),
 );
 $blocks = $converter->convert();
 
 // Get the attachment IDs that were created.
-$attachment_ids = $converter->get_created_attachment_ids();
+$attachmentIds = $converter->getCreatedAttachmentIds();
 
 // Attach the images to a post.
-$parent_id = 123;
-$converter->assign_parent_to_attachments( $parent_id );
+$parentId = 123;
+$converter->assignParentToAttachments( $parentId );
 ```
 
 ### Extending the Converter with Macros
@@ -175,16 +175,16 @@ You can extend the converter with macros to add custom tags that are not yet
 supported by the converter.
 
 ```php
-use Alley\WP\Block_Converter\Block_Converter;
-use Alley\WP\Block_Converter\Block;
+use Alley\WP\BlockConverter\BlockConverter;
+use Alley\WP\BlockConverter\Block;
 
-Block_Converter::macro( 'special-tag', function ( \Dom\Node $node ) {
+BlockConverter::macro( 'special-tag', function ( \Dom\Node $node ) {
 	return new Block( 'core/paragraph', [], $node->textContent );
 } );
 
 // You can also use the raw HTML with a helper method from Block Converter:
-Block_Converter::macro( 'special-tag', function ( \Dom\Node $node ) {
-	return new Block( 'core/paragraph', [], Block_Converter::get_node_html( $node ) );
+BlockConverter::macro( 'special-tag', function ( \Dom\Node $node ) {
+	return new Block( 'core/paragraph', [], BlockConverter::getNodeHtml( $node ) );
 } );
 ```
 
@@ -193,15 +193,15 @@ is useful when you need to make one-off changes to the way the converter works
 for a specific tag.
 
 ```php
-use Alley\WP\Block_Converter\Block_Converter;
-use Alley\WP\Block_Converter\Block;
+use Alley\WP\BlockConverter\BlockConverter;
+use Alley\WP\BlockConverter\Block;
 
-Block_Converter::macro( 'p', function ( \Dom\Node $node ) {
+BlockConverter::macro( 'p', function ( \Dom\Node $node ) {
 	if ( special_condition() ) {
 		return new Block( 'core/paragraph', [ 'attribute' => 123 ], 'This is a paragraph' );
 	}
 
-	return Block_Converter::p( $node );
+	return BlockConverter::p( $node );
 } );
 ```
 
@@ -220,28 +220,28 @@ conversion in a WordPress install, or using pure PHP.
 
 ## Using outside of WordPress
 
-`Block_Converter` has no WordPress dependency of its own — the only WordPress-specific code in
-this package is the optional `WordPress_Image_Uploader` class described in
-[Sideloading Images](#sideloading-images) above. By default (`new Block_Converter( $html )`, no
+`BlockConverter` has no WordPress dependency of its own — the only WordPress-specific code in
+this package is the optional `WordPressImageUploader` class described in
+[Sideloading Images](#sideloading-images) above. By default (`new BlockConverter( $html )`, no
 `uploader` passed), converting HTML to blocks runs entirely in plain PHP: no WordPress functions,
 classes, globals, or database access, and no HTTP calls.
 
 - If you don't need image sideloading, no further setup is required — just require this package
-  with Composer and call `Block_Converter::convert()`.
-- If you do need image sideloading outside of WordPress, supply your own `Image_Uploader`
+  with Composer and call `BlockConverter::convert()`.
+- If you do need image sideloading outside of WordPress, supply your own `ImageUploader`
   implementation (see [Sideloading Images](#sideloading-images)) instead of
-  `WordPress_Image_Uploader`, which throws if WordPress isn't loaded.
+  `WordPressImageUploader`, which throws if WordPress isn't loaded.
 
 ## WP-CLI Command
 
-This package includes a `Convert_To_Blocks_Command` class to bulk convert posts from HTML to
+This package includes a `ConvertToBlocksCommand` class to bulk convert posts from HTML to
 Gutenberg blocks, using [wp-bulk-task](https://github.com/alleyinteractive/wp-bulk-task) for
 efficient processing of large numbers of posts with resume support. The class is not registered
 with WP-CLI automatically — register it yourself (e.g. in your plugin or theme's `functions.php`):
 
 ```php
-if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( '\Alley\WP\Block_Converter\Convert_To_Blocks_Command' ) ) {
-	\WP_CLI::add_command( 'block-converter', \Alley\WP\Block_Converter\Convert_To_Blocks_Command::class );
+if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( '\Alley\WP\BlockConverter\ConvertToBlocksCommand' ) ) {
+	\WP_CLI::add_command( 'block-converter', \Alley\WP\BlockConverter\ConvertToBlocksCommand::class );
 }
 ```
 
@@ -291,48 +291,62 @@ wp block-converter --rewind
 ## Upgrading from v1.x
 
 Version 2.0.0 contains several breaking changes related to a shift in philosophy: this package no
-longer assumes WordPress is loaded. Previously, `Block_Converter` threw a `RuntimeException`
-unless WordPress was present, used WordPress hooks and `wp_oembed_get()` internally, and always
-sideloaded through the media library. Now WordPress is entirely optional, and every
-WordPress-specific behavior is something you opt into explicitly rather than something the library
-assumes.
+longer assumes WordPress is loaded. Previously, `BlockConverter` (formerly `Block_Converter`)
+threw a `RuntimeException` unless WordPress was present, used WordPress hooks and
+`wp_oembed_get()` internally, and always sideloaded through the media library. Now WordPress is
+entirely optional, and every WordPress-specific behavior is something you opt into explicitly
+rather than something the library assumes.
 
 Specifically:
 
 - **PHP 8.4 is now required**, updated from 8.2 in v1.x.
-- **The constructor no longer requires WordPress to be loaded.** `new Block_Converter( $html )`
+- **The constructor no longer requires WordPress to be loaded.** `new BlockConverter( $html )`
   previously threw a `RuntimeException` outside of WordPress; it now works standalone.
 - **`wp_block_converter_*` filters/actions were replaced with constructor closures.** Each
-  WordPress hook is now an optional `?Closure` constructor parameter on `Block_Converter`, passed
+  WordPress hook is now an optional `?Closure` constructor parameter on `BlockConverter`, passed
   directly instead of registered globally with `add_filter()`/`add_action()`. This also means each
   hook accepts only a single callback, rather than any number of WordPress listeners. Update your
   code as follows:
 
   | v1.x | v2.0.0 |
   |---|---|
-  | `add_filter( 'wp_block_converter_skip_minify_block', ... )` | `on_skip_minify_block` constructor parameter |
-  | `add_filter( 'wp_block_converter_document_html', ... )` | `on_document_html` constructor parameter |
-  | `add_filter( 'wp_block_converter_block', ... )` | `on_block` constructor parameter |
-  | `add_filter( 'wp_block_converter_pre_sideload_image', ... )` | `on_pre_sideload_image` constructor parameter |
-  | `add_action( 'wp_block_converter_sideloaded_image', ... )` | `on_sideloaded_image` constructor parameter |
-  | `add_filter( 'wp_block_converter_sanitized_image_url', ... )` | `on_sanitized_image_url` constructor parameter |
+  | `add_filter( 'wp_block_converter_skip_minify_block', ... )` | `onSkipMinifyBlock` constructor parameter |
+  | `add_filter( 'wp_block_converter_document_html', ... )` | `onDocumentHtml` constructor parameter |
+  | `add_filter( 'wp_block_converter_block', ... )` | `onBlock` constructor parameter |
+  | `add_filter( 'wp_block_converter_pre_sideload_image', ... )` | `onPreSideloadImage` constructor parameter |
+  | `add_action( 'wp_block_converter_sideloaded_image', ... )` | `onSideloadedImage` constructor parameter |
+  | `add_filter( 'wp_block_converter_sanitized_image_url', ... )` | `onSanitizedImageUrl` constructor parameter |
 
-- **Image sideloading is now driven by an `Image_Uploader` implementation, not a `sideload_images`
+- **Image sideloading is now driven by an `ImageUploader` implementation, not a `sideload_images`
   boolean.** The `sideload_images` constructor parameter is gone. Pass `uploader: new
-  WordPress_Image_Uploader()` to keep sideloading into the media library exactly as before, pass
-  your own `Image_Uploader` implementation to sideload somewhere else, or omit `uploader` entirely
+  WordPressImageUploader()` to keep sideloading into the media library exactly as before, pass
+  your own `ImageUploader` implementation to sideload somewhere else, or omit `uploader` entirely
   to leave images untouched (the new default — v1.x defaulted `sideload_images` to `false` as
   well, but always required WordPress to be loaded even when not sideloading). See
   [Sideloading Images](#sideloading-images).
 - **Rich embeds no longer make a live oEmbed HTTP request.** `wp_oembed_get()` has been replaced
   with a static, hardcoded provider table. See [Rich Embeds](#rich-embeds) for the trade-offs.
 - **Macros now use Illuminate's `Macroable`** (`illuminate/macroable`) instead of Mantle's. The
-  public `Block_Converter::macro()` API is unchanged, so existing macro registrations don't need
+  public `BlockConverter::macro()` API is unchanged, so existing macro registrations don't need
   to be rewritten.
 - **`Concerns\Listens_For_Attachments` was removed** along with `src/helpers.php`. Their
-  attachment-tracking logic moved into `WordPress_Image_Uploader`, which implements the new
-  `Image_Uploader` interface. If you called either directly rather than going through
-  `Block_Converter`, switch to `WordPress_Image_Uploader`.
+  attachment-tracking logic moved into `WordPressImageUploader`, which implements the new
+  `ImageUploader` interface. If you called either directly rather than going through
+  `BlockConverter`, switch to `WordPressImageUploader`.
+- **Every class, method, property, and variable was renamed to StudlyCaps/camelCase** (PSR-12
+  adoption, see `docs/adr/0001-adopt-psr-12.md`), and the namespace root itself moved from
+  `Alley\WP\Block_Converter` to `Alley\WP\BlockConverter`. Notably:
+
+  | v1.x | v2.0.0 |
+  |---|---|
+  | `Alley\WP\Block_Converter\Block_Converter` | `Alley\WP\BlockConverter\BlockConverter` |
+  | `Alley\WP\Block_Converter\Image_Uploader` | `Alley\WP\BlockConverter\ImageUploader` |
+  | `Alley\WP\Block_Converter\WordPress_Image_Uploader` | `Alley\WP\BlockConverter\WordPressImageUploader` |
+  | `Alley\WP\Block_Converter\Convert_To_Blocks_Command` | `Alley\WP\BlockConverter\ConvertToBlocksCommand` |
+  | `Block::$block_name` | `Block::$blockName` |
+  | `get_created_attachment_ids()` / `assign_parent_to_attachments()` | `getCreatedAttachmentIds()` / `assignParentToAttachments()` |
+
+  Update any code that references these symbols directly, or that subclasses/extends them.
 
 ## Changelog
 
