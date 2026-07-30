@@ -147,7 +147,10 @@ class Convert_To_Blocks_Command extends WP_CLI_Command {
 					}
 
 					// Convert the post content to blocks.
-					$converter = new Block_Converter( $post->post_content, $sideload_images );
+					$converter = new Block_Converter(
+						$post->post_content,
+						uploader: $sideload_images ? new WordPress_Image_Uploader() : null,
+					);
 					$blocks    = $converter->convert();
 
 					if ( $dry_run ) {

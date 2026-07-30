@@ -9,17 +9,16 @@
 
 namespace Alley\WP\Block_Converter;
 
+use Closure;
 use Dom\Element;
 use Dom\HTMLCollection;
 use Dom\HTMLDocument;
 use Dom\Node;
 use Exception;
-use Mantle\Support\Traits\Macroable;
+use Illuminate\Support\Traits\Macroable;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
-
-use function Mantle\Support\Helpers\mixed;
 
 /**
  * Converts a Dom\HTMLDocument to Gutenberg block HTML.
@@ -27,25 +26,59 @@ use function Mantle\Support\Helpers\mixed;
  * Mirrors the `htmlToBlocks()`/`rawHandler()` from the `@wordpress/blocks` package.
  */
 class Block_Converter {
-	use Concerns\Listens_For_Attachments;
 	use Concerns\Microsoft_Word_Content;
-	use Macroable {
-		__call as macro_call;
-	}
+	use Macroable;
 
 	/**
 	 * Setup the class.
 	 *
-	 * @throws RuntimeException If WordPress is not loaded.
-	 *
-	 * @param string               $html The HTML to parse.
-	 * @param bool                 $sideload_images Whether to sideload images or not. Defaults to false.
-	 * @param LoggerInterface|null $logger The logger to use.
+	 * @param string               $html                     The HTML to parse.
+	 * @param LoggerInterface|null $logger            The logger to use.
+	 * @param Closure|null         $on_skip_minify_block     Called with ( bool $skip_minify_block, string $block, Node $node ): bool
+	 *                                                        to decide whether a block should skip minification.
+	 * @param Closure|null         $on_document_html         Called with ( string $html, HTMLCollection $content ): string
+	 *                                                        to filter the final converted HTML for the whole document.
+	 * @param Closure|null         $on_block                 Called with ( ?Block $block, Node $node ): ?Block to filter
+	 *                                                        each generated block.
+	 * @param Closure|null         $on_pre_sideload_image    Called with ( bool $pre, string $src, Node $child_node,
+	 *                                                        Block_Converter $converter ): bool to decide whether a given
+	 *                                                        image should be sideloaded.
+	 * @param Closure|null         $on_sideloaded_image      Called with ( string $src, Node $child_node ): void after an
+	 *                                                        image has been sideloaded.
+	 * @param Closure|null         $on_sanitized_image_url   Called with ( string $sanitized_url, string $url ): string to
+	 *                                                        filter the reconstructed image URL used for sideloading.
+	 * @param Image_Uploader|null  $uploader                 The image uploader to use for sideloading images. Images are
+	 *                                                        left untouched (no sideloading) unless an uploader is
+	 *                                                        supplied here — e.g. `new WordPress_Image_Uploader()` to
+	 *                                                        sideload into the WordPress media library.
 	 */
-	public function __construct( public string $html, public bool $sideload_images = false, protected ?LoggerInterface $logger = null ) {
-		if ( ! function_exists( 'do_action' ) ) {
-			throw new RuntimeException( 'WordPress must be loaded to use the Block_Converter class.' );
-		}
+	public function __construct(
+		public string $html,
+		protected ?LoggerInterface $logger = null,
+		protected ?Closure $on_skip_minify_block = null,
+		protected ?Closure $on_document_html = null,
+		protected ?Closure $on_block = null,
+		protected ?Closure $on_pre_sideload_image = null,
+		protected ?Closure $on_sideloaded_image = null,
+		protected ?Closure $on_sanitized_image_url = null,
+		protected ?Image_Uploader $uploader = null,
+	) {
+	}
+
+	/**
+	 * Invoke an optional hook callback, returning $value unchanged if none is set.
+	 *
+	 * Replaces the `apply_filters()` call sites this library used to have,
+	 * since callers now supply these as constructor callbacks instead of
+	 * registering WordPress filters.
+	 *
+	 * @param Closure|null $callback The optional callback.
+	 * @param mixed        $value    The value to pass as the callback's first argument.
+	 * @param mixed        ...$args  Additional arguments to pass to the callback.
+	 * @return mixed
+	 */
+	protected function apply( ?Closure $callback, mixed $value, mixed ...$args ): mixed {
+		return $callback ? $callback( $value, ...$args ) : $value;
 	}
 
 	/**
@@ -54,8 +87,6 @@ class Block_Converter {
 	 * @return string The HTML.
 	 */
 	public function convert(): string {
-		$this->listen_for_attachment_creation();
-
 		// Get tags from the html.
 		$content = static::get_node_tag_from_html( $this->html );
 
@@ -79,14 +110,8 @@ class Block_Converter {
 				$skip_minify_block = true;
 			}
 
-			/**
-			 * Skip minifying certain blocks.
-			 *
-			 * @param bool      $skip_minify_block Whether to skip minifying the block.
-			 * @param string    $block The block HTML.
-			 * @param \Dom\Node $node The DOM node being converted.
-			 */
-			$skip_minify_block = apply_filters( 'wp_block_converter_skip_minify_block', $skip_minify_block, $block, $node );
+			// Allow the caller to decide whether this block should skip minification.
+			$skip_minify_block = (bool) $this->apply( $this->on_skip_minify_block, $skip_minify_block, $block, $node );
 
 			if ( ! $skip_minify_block ) {
 				$block = $this->minify_block( $block );
@@ -100,19 +125,31 @@ class Block_Converter {
 		// Remove empty blocks.
 		$html = $this->remove_empty_blocks( $html );
 
-		/**
-		 * Content converted into blocks.
-		 *
-		 * @since 1.0.0
-		 *
-		 * @param string                            $html    HTML converted into Gutenberg blocks.
-		 * @param \Dom\HTMLCollection<\Dom\Element>  $content The original HTMLCollection.
-		 */
-		$html = trim( (string) apply_filters( 'wp_block_converter_document_html', $html, $content ) );
-
-		$this->detach_attachment_creation_listener();
+		// Allow the caller to filter the fully converted HTML for the whole document.
+		$filtered_html = $this->apply( $this->on_document_html, $html, $content );
+		$html          = trim( is_string( $filtered_html ) ? $filtered_html : $html );
 
 		return $html;
+	}
+
+	/**
+	 * Retrieve the attachment IDs created while sideloading images during the
+	 * conversion, if any. Empty if sideloading was never enabled.
+	 *
+	 * @return array<int>
+	 */
+	public function get_created_attachment_ids(): array {
+		return $this->uploader?->get_created_attachment_ids() ?? [];
+	}
+
+	/**
+	 * Assign a parent post ID to the attachments created during the
+	 * conversion. No-op if sideloading was never enabled.
+	 *
+	 * @param int $parent_post_id Parent post ID.
+	 */
+	public function assign_parent_to_attachments( int $parent_post_id ): void {
+		$this->uploader?->assign_parent_to_attachments( $parent_post_id );
 	}
 
 	/**
@@ -132,8 +169,12 @@ class Block_Converter {
 			$this->clean_ms_word_node( $node );
 		}
 
-		if ( static::has_macro( strtolower( $node->nodeName ) ) ) {
-			$block = static::macro_call( strtolower( $node->nodeName ), [ $node ] );
+		if ( static::hasMacro( strtolower( $node->nodeName ) ) ) {
+			// Registered tag macros may be invoked by an arbitrary string
+			// name (e.g. a hyphenated custom element like <special-tag>),
+			// which isn't valid PHP method call syntax and can never trigger
+			// __call() automatically — so call it directly instead.
+			$block = $this->__call( strtolower( $node->nodeName ), [ $node ] );
 		} else {
 			$block = match ( strtolower( $node->nodeName ) ) {
 				'ul' => $this->ul( $node ),
@@ -154,7 +195,7 @@ class Block_Converter {
 	}
 
 	/**
-	 * Apply the `wp_block_converter_block` filter to a generated block.
+	 * Run the `on_block` callback against a generated block.
 	 *
 	 * Shared by `convert_node()` and any method that builds `Block` instances
 	 * outside of the normal per-node dispatch (e.g. splitting a single node
@@ -172,15 +213,7 @@ class Block_Converter {
 			throw new RuntimeException( 'Returned block must be an instance of Block or null.' );
 		}
 
-		/**
-		 * Hook to allow output customizations.
-		 *
-		 * @since 1.0.0
-		 *
-		 * @param Block|null $block The generated block object.
-		 * @param Node       $node  The node being converted.
-		 */
-		$block = apply_filters( 'wp_block_converter_block', $block, $node );
+		$block = $this->apply( $this->on_block, $block, $node );
 
 		return $block instanceof Block ? $block : null;
 	}
@@ -192,7 +225,7 @@ class Block_Converter {
 	 * @return void
 	 */
 	protected function sideload_child_images( Node $node ): void {
-		if ( ! $this->sideload_images ) {
+		if ( ! $this->uploader ) {
 			return;
 		}
 
@@ -213,19 +246,10 @@ class Block_Converter {
 				continue;
 			}
 
-			/**
-			 * Filter if the image should be preloaded.
-			 *
-			 * @since 1.6.0
-			 *
-			 * @param bool            $pre        Whether to sideload the image.
-			 * @param string          $src        The image source URL.
-			 * @param Node            $child_node The child node.
-			 * @param Block_Converter $converter The converter instance.
-			 */
-			$pre = apply_filters( 'wp_block_converter_pre_sideload_image', true, $child_node->getAttribute( 'src' ) ?? '', $child_node, $this );
+			// Allow the caller to decide whether this image should be sideloaded.
+			$pre = (bool) $this->apply( $this->on_pre_sideload_image, true, $child_node->getAttribute( 'src' ) ?? '', $child_node, $this );
 
-			// Re-read the src attribute in case it was modified by the filter.
+			// Re-read the src attribute in case it was modified by the callback.
 			$src = $child_node->getAttribute( 'src' ) ?? '';
 
 			if ( ! $pre || empty( $src ) ) {
@@ -253,15 +277,10 @@ class Block_Converter {
 						$node->setAttribute( 'href', $src );
 					}
 
-					/**
-					 * Fires after a child image has been sideloaded.
-					 *
-					 * @since 1.5.0
-					 *
-					 * @param string $src        The image source URL.
-					 * @param Node   $child_node The child node.
-					 */
-					do_action( 'wp_block_converter_sideloaded_image', $src, $child_node );
+					// Notify the caller that a child image has been sideloaded.
+					if ( $this->on_sideloaded_image ) {
+						( $this->on_sideloaded_image )( $src, $child_node );
+					}
 				}
 			} catch ( Throwable $e ) { // phpcs:ignore Squiz.Commenting.EmptyCatchComment.Missing, Generic.CodeAnalysis.EmptyStatement.DetectedCatch
 				$this->logger?->error(
@@ -357,7 +376,7 @@ class Block_Converter {
 		return new Block(
 			block_name: 'heading',
 			attributes: [
-				'level' => absint( str_replace( 'h', '', strtolower( $node->nodeName ) ) ),
+				'level' => (int) str_replace( 'h', '', strtolower( $node->nodeName ) ),
 			],
 			content: $content,
 		);
@@ -423,25 +442,10 @@ class Block_Converter {
 				$node->textContent = $text_content;
 			}
 
-			// Twitter/X, Instagram, and Facebook's embed shape is hardcoded
-			// here instead of making an oEmbed request, since the block
-			// converter avoids depending on live oEmbed HTTP calls where a
-			// sensible shape can be determined from the URL alone.
-			if ( \str_contains( $text_content, 'twitter.com' ) ) {
-				return $this->twitter_embed( $text_content );
-			}
+			$embed = $this->embed_for_url( $text_content );
 
-			if ( \str_contains( $text_content, 'instagram.com' ) ) {
-				return $this->instagram_embed( $text_content );
-			}
-
-			if ( \str_contains( $text_content, 'facebook.com' ) ) {
-				return $this->facebook_embed( $text_content );
-			}
-
-			// Check if the URL is an oEmbed URL and return the oEmbed block if it is.
-			if ( false !== wp_oembed_get( $text_content ) ) {
-				return $this->oembed( $text_content );
+			if ( $embed ) {
+				return $embed;
 			}
 		}
 
@@ -696,7 +700,7 @@ class Block_Converter {
 		$attributes        = [];
 		$wrapped_in_anchor = $image_node->parentNode instanceof Element && 'a' === strtolower( $image_node->parentNode->nodeName );
 
-		if ( $this->sideload_images ) {
+		if ( $this->uploader ) {
 			try {
 				$image_src = $this->upload_image( $image_src, $alt );
 
@@ -705,7 +709,7 @@ class Block_Converter {
 				return null;
 			}
 
-			$attachment_id = (int) attachment_url_to_postid( $image_src ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.attachment_url_to_postid_attachment_url_to_postid
+			$attachment_id = $this->uploader->attachment_id_for( $image_src );
 
 			if ( $attachment_id ) {
 				$image_node->setAttribute( 'class', 'wp-image-' . $attachment_id );
@@ -721,7 +725,10 @@ class Block_Converter {
 				$attributes['lightbox'] = [ 'enabled' => false ];
 			}
 
-			$attributes['id']       = $attachment_id;
+			if ( null !== $attachment_id ) {
+				$attributes['id'] = $attachment_id;
+			}
+
 			$attributes['sizeSlug'] = 'full';
 
 			if ( $wrapped_in_anchor ) {
@@ -835,130 +842,181 @@ class Block_Converter {
 	}
 
 	/**
-	 * Create embed blocks.
+	 * Known oEmbed provider matchers, in priority order.
+	 *
+	 * Reshapes a subset of WordPress core's built-in oEmbed provider list
+	 * (`WP_oEmbed::$providers` in `wp-includes/class-wp-oembed.php`) into
+	 * the block editor's embed variation shape, hardcoded with no HTTP
+	 * request involved — the same approach this library already used for
+	 * Twitter/Instagram/Facebook. Parameters that can vary per URL and
+	 * would normally only be known from a live oEmbed response (e.g. the
+	 * exact aspect ratio of a given video) are approximated with a fixed
+	 * default per provider rather than fetched.
+	 *
+	 * @var array<int, array{pattern: string, slug: string, type: string, aspect_ratio?: string, extra_attributes?: array<string, mixed>}>
+	 */
+	private const OEMBED_PROVIDERS = [
+		[
+			// YouTube Shorts are consistently vertical, unlike standard
+			// YouTube videos, so this must be matched before the general
+			// youtube.com pattern below.
+			'pattern'      => '#https?://(www\.)?youtube\.com/shorts#i',
+			'slug'         => 'youtube',
+			'type'         => 'video',
+			'aspect_ratio' => '9-16',
+		],
+		[
+			'pattern'      => '#https?://(www\.)?youtube\.com/(watch|playlist)#i',
+			'slug'         => 'youtube',
+			'type'         => 'video',
+			'aspect_ratio' => '16-9',
+		],
+		[
+			'pattern'      => '#https?://youtu\.be/#i',
+			'slug'         => 'youtube',
+			'type'         => 'video',
+			'aspect_ratio' => '16-9',
+		],
+		[
+			'pattern'      => '#https?://(www\.|player\.)?vimeo\.com/#i',
+			'slug'         => 'vimeo',
+			'type'         => 'video',
+			'aspect_ratio' => '16-9',
+		],
+		[
+			'pattern'      => '#https?://(www\.)?dailymotion\.com/#i',
+			'slug'         => 'dailymotion',
+			'type'         => 'video',
+			'aspect_ratio' => '16-9',
+		],
+		[
+			'pattern'      => '#https?://dai\.ly/#i',
+			'slug'         => 'dailymotion',
+			'type'         => 'video',
+			'aspect_ratio' => '16-9',
+		],
+		[
+			'pattern' => '#https?://(www\.|vm\.|vt\.)?tiktok\.com/#i',
+			'slug'    => 'tiktok',
+			'type'    => 'video',
+		],
+		[
+			'pattern'      => '#https?://wordpress\.tv/#i',
+			'slug'         => 'wordpress-tv',
+			'type'         => 'video',
+			'aspect_ratio' => '16-9',
+		],
+		[
+			'pattern'      => '#https?://videopress\.com/v/#i',
+			'slug'         => 'videopress',
+			'type'         => 'video',
+			'aspect_ratio' => '16-9',
+		],
+		[
+			'pattern' => '#https?://(www\.)?flickr\.com/#i',
+			'slug'    => 'flickr',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://flic\.kr/#i',
+			'slug'    => 'flickr',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://((m|www)\.)?soundcloud\.com/#i',
+			'slug'    => 'soundcloud',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://(open|play)\.spotify\.com/#i',
+			'slug'    => 'spotify',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://(www\.)?slideshare\.net/#i',
+			'slug'    => 'slideshare',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://(www\.)?scribd\.com/#i',
+			'slug'    => 'scribd',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://(www\.)?reddit\.com/r/[^/]+/comments/#i',
+			'slug'    => 'reddit',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://(www\.)?imgur\.com/#i',
+			'slug'    => 'imgur',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://(www\.)?twitter\.com/\w{1,15}/status(es)?/#i',
+			'slug'    => 'x',
+			'type'    => 'rich',
+		],
+		[
+			'pattern' => '#https?://(www\.)?instagram\.com/#i',
+			'slug'    => 'instagram',
+			'type'    => 'rich',
+		],
+		[
+			'pattern'          => '#https?://(www\.)?facebook\.com/#i',
+			'slug'             => 'facebook',
+			'type'             => 'rich',
+			'extra_attributes' => [ 'previewable' => false ],
+		],
+	];
+
+	/**
+	 * Create an embed block for a URL matching a known oEmbed provider.
 	 *
 	 * @param string $url The URL.
-	 * @return Block
+	 * @return Block|null
 	 */
-	protected function oembed( string $url ): Block {
-		// This would probably be better as an internal request to /wp-json/oembed/1.0/proxy?url=...
-		$data = _wp_oembed_get_object()->get_data( $url, [] );
+	protected function embed_for_url( string $url ): ?Block {
+		foreach ( self::OEMBED_PROVIDERS as $provider ) {
+			if ( ! preg_match( $provider['pattern'], $url ) ) {
+				continue;
+			}
 
-		$aspect_ratio = '';
-		if ( ! empty( $data->height ) && ! empty( $data->width ) && is_numeric( $data->height ) && is_numeric( $data->width ) ) {
-			if ( 1.78 === round( $data->width / $data->height, 2 ) ) {
-				$aspect_ratio = '16-9';
+			$attributes = [
+				'url'              => $url,
+				'type'             => $provider['type'],
+				'providerNameSlug' => $provider['slug'],
+				'responsive'       => true,
+			];
+
+			foreach ( $provider['extra_attributes'] ?? [] as $key => $value ) {
+				$attributes[ $key ] = $value;
 			}
-			if ( 1.33 === round( $data->width / $data->height, 2 ) ) {
-				$aspect_ratio = '4-3';
+
+			$class_name = '';
+
+			if ( ! empty( $provider['aspect_ratio'] ) ) {
+				$class_name              = sprintf( 'wp-embed-aspect-%s wp-has-aspect-ratio', $provider['aspect_ratio'] );
+				$attributes['className'] = $class_name;
 			}
+
+			return new Block(
+				block_name: 'embed',
+				attributes: $attributes,
+				content: sprintf(
+					'<figure class="wp-block-embed is-type-%s is-provider-%s wp-block-embed-%s%s"><div class="wp-block-embed__wrapper">
+					%s
+					</div></figure>',
+					$provider['type'],
+					$provider['slug'],
+					$provider['slug'],
+					$class_name ? ' ' . $class_name : '',
+					$url
+				),
+			);
 		}
 
-		$atts = [
-			'url'              => $url,
-			'type'             => mixed( $data->type ?? '' )->string(),
-			'providerNameSlug' => sanitize_title( mixed( $data->provider_name ?? '' )->string() ),
-			'responsive'       => true,
-		];
-
-		if ( ! empty( $aspect_ratio ) ) {
-			$aspect_ratio      = sprintf( 'wp-embed-aspect-%s wp-has-aspect-ratio', $aspect_ratio );
-			$atts['className'] = $aspect_ratio;
-		}
-
-		return new Block(
-			block_name: 'embed',
-			attributes: $atts,
-			content: sprintf(
-				'<figure class="wp-block-embed is-type-%s is-provider-%s wp-block-embed-%s%s"><div class="wp-block-embed__wrapper">
-				%s
-				</div></figure>',
-				mixed( $data->type ?? '' )->string(),
-				sanitize_title( mixed( $data->provider_name ?? '' )->string() ),
-				sanitize_title( mixed( $data->provider_name ?? '' )->string() ),
-				$aspect_ratio ? ' ' . $aspect_ratio : '',
-				$url
-			),
-		);
-	}
-
-	/**
-	 * Create Twitter/X embed blocks.
-	 *
-	 * @param string $url The URL.
-	 * @return Block
-	 */
-	protected function twitter_embed( string $url ): Block {
-		$atts = [
-			'url'              => $url,
-			'type'             => 'rich',
-			'providerNameSlug' => 'x',
-			'responsive'       => true,
-		];
-
-		return new Block(
-			block_name: 'embed',
-			attributes: $atts,
-			content: sprintf(
-				'<figure class="wp-block-embed is-type-rich is-provider-x wp-block-embed-x"><div class="wp-block-embed__wrapper">
-				%s
-				</div></figure>',
-				$url
-			),
-		);
-	}
-
-	/**
-	 * Create Instagram embed blocks.
-	 *
-	 * @param string $url The URL.
-	 * @return Block
-	 */
-	protected function instagram_embed( string $url ): Block {
-		$atts = [
-			'url'              => $url,
-			'type'             => 'rich',
-			'providerNameSlug' => 'instagram',
-			'responsive'       => true,
-		];
-
-		return new Block(
-			block_name: 'embed',
-			attributes: $atts,
-			content: sprintf(
-				'<figure class="wp-block-embed is-type-rich is-provider-instagram wp-block-embed-instagram"><div class="wp-block-embed__wrapper">
-				%s
-				</div></figure>',
-				$url
-			),
-		);
-	}
-
-	/**
-	 * Create Facebook embed blocks.
-	 *
-	 * @param string $url The URL.
-	 * @return Block
-	 */
-	protected function facebook_embed( string $url ): Block {
-		$atts = [
-			'url'              => $url,
-			'type'             => 'rich',
-			'providerNameSlug' => 'facebook',
-			'responsive'       => true,
-			'previewable'      => false,
-		];
-
-		return new Block(
-			block_name: 'embed',
-			attributes: $atts,
-			content: sprintf(
-				'<figure class="wp-block-embed is-type-rich is-provider-facebook wp-block-embed-facebook"><div class="wp-block-embed__wrapper">
-				%s
-				</div></figure>',
-				$url
-			),
-		);
+		return null;
 	}
 
 	/**
@@ -1201,7 +1259,7 @@ class Block_Converter {
 	 * @return string A reconstructed image URL containing only the scheme, host, port, and path.
 	 */
 	public function remove_image_args( $url ): string {
-		$url_parts = wp_parse_url( $url );
+		$url_parts = parse_url( $url );
 		$scheme    = $url_parts['scheme'] ?? 'https';
 		$host      = $url_parts['host'] ?? '';
 		$port      = ! empty( $url_parts['port'] ) ? ':' . $url_parts['port'] : '';
@@ -1213,29 +1271,26 @@ class Block_Converter {
 			$sanitized_url = sprintf( '%s://%s%s%s', $scheme, $host, $port, $path );
 		}
 
-		/**
-		 * Allow the reconstructed URL to be filtered before being returned.
-		 *
-		 * @param string $sanitized_url The reconstructed URL.
-		 * @param string $original_url  The original URL before sanitization was applied.
-		 */
-		return apply_filters( 'wp_block_converter_sanitized_image_url', $sanitized_url, $url );
+		// Allow the caller to filter the reconstructed URL before it's returned.
+		$filtered_url = $this->apply( $this->on_sanitized_image_url, $sanitized_url, $url );
+
+		return is_string( $filtered_url ) ? $filtered_url : $sanitized_url;
 	}
 
 	/**
-	 * Upload image.
+	 * Upload an image via the configured Image_Uploader.
 	 *
 	 * @param string $src Image url.
 	 * @param string $alt Image alt.
 	 *
-	 * @throws Exception If the image was not able to be created.
+	 * @throws Exception If the image was not able to be uploaded.
 	 *
-	 * @return string The WordPress image URL.
+	 * @return string The uploaded image URL.
 	 */
 	public function upload_image( string $src, string $alt ): string {
 		$src = $this->remove_image_args( $src );
 
-		return (string) wp_get_attachment_url( create_or_get_attachment_from_url( $src, [ 'alt' => $alt ] ) );
+		return $this->uploader?->upload( $src, $alt ) ?? $src;
 	}
 
 	/**
