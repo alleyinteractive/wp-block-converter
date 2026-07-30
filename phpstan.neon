@@ -9,4 +9,4 @@ parameters:
 		- src/
 
 	excludePaths:
-		- ./src/Convert_To_Blocks_Command.php
+		- ./src/ConvertToBlocksCommand.php

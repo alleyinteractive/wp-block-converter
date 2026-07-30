@@ -22,9 +22,11 @@
         "psr/log": "^2.0 || ^3.0"
     },
     "require-dev": {
-        "alleyinteractive/alley-coding-standards": "^2.0",
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
         "mantle-framework/testkit": "^1.22",
         "php-stubs/wp-cli-stubs": "^2.12",
+        "slevomat/coding-standard": "^8.31",
+        "squizlabs/php_codesniffer": "^4.0",
         "szepeviktor/phpstan-wordpress": "^2.0"
     },
     "config": {
@@ -37,14 +39,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Alley\\WP\\Block_Converter\\": "src"
+            "Alley\\WP\\BlockConverter\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Alley\\WP\\Block_Converter\\Tests\\WordPress\\": "tests/wordpress",
-            "Alley\\WP\\Block_Converter\\Tests\\Standalone\\": "tests/standalone",
-            "Alley\\WP\\Block_Converter\\Tests\\Shared\\": "tests/shared"
+            "Alley\\WP\\BlockConverter\\Tests\\": "tests"
         }
     },
     "minimum-stability": "dev",
