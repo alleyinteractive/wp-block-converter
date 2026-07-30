@@ -13,43 +13,43 @@ use Alley\WP\Block_Converter\Image_Uploader;
  * WordPress-specific.
  */
 class Noop_Image_Uploader implements Image_Uploader {
-	/**
-	 * Images passed to upload(), in call order.
-	 *
-	 * @var array<int, array{src: string, alt: string}>
-	 */
-	public array $uploaded = [];
+    /**
+     * Images passed to upload(), in call order.
+     *
+     * @var array<int, array{src: string, alt: string}>
+     */
+    public array $uploaded = [];
 
-	/**
-	 * {@inheritDoc}
-	 */
-	public function upload( string $src, string $alt ): string {
-		$this->uploaded[] = [
-			'src' => $src,
-			'alt' => $alt,
-		];
+    /**
+     * {@inheritDoc}
+     */
+    public function upload( string $src, string $alt ): string {
+        $this->uploaded[] = [
+            'src' => $src,
+            'alt' => $alt,
+        ];
 
-		return $src . '#uploaded';
-	}
+        return $src . '#uploaded';
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	public function attachment_id_for( string $url ): ?int {
-		return null;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    public function attachment_id_for( string $url ): ?int {
+        return null;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	public function get_created_attachment_ids(): array {
-		return [];
-	}
+    /**
+     * {@inheritDoc}
+     */
+    public function get_created_attachment_ids(): array {
+        return [];
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	public function assign_parent_to_attachments( int $parent_post_id ): void {
-		// No-op: this test double has no "attachment" concept of its own.
-	}
+    /**
+     * {@inheritDoc}
+     */
+    public function assign_parent_to_attachments( int $parent_post_id ): void {
+        // No-op: this test double has no "attachment" concept of its own.
+    }
 }

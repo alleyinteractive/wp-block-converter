@@ -21,36 +21,36 @@ use Exception;
  * assign_parent_to_attachments() as no-ops.
  */
 interface Image_Uploader {
-	/**
-	 * Upload (or otherwise resolve) an image, returning its final URL.
-	 *
-	 * @throws Exception If the image was not able to be uploaded.
-	 *
-	 * @param string $src Image URL.
-	 * @param string $alt Image alt text.
-	 * @return string The final image URL.
-	 */
-	public function upload( string $src, string $alt ): string;
+    /**
+     * Upload (or otherwise resolve) an image, returning its final URL.
+     *
+     * @throws Exception If the image was not able to be uploaded.
+     *
+     * @param string $src Image URL.
+     * @param string $alt Image alt text.
+     * @return string The final image URL.
+     */
+    public function upload( string $src, string $alt ): string;
 
-	/**
-	 * Resolve the attachment ID for a previously uploaded image, if known.
-	 *
-	 * @param string $url Image URL.
-	 * @return int|null
-	 */
-	public function attachment_id_for( string $url ): ?int;
+    /**
+     * Resolve the attachment ID for a previously uploaded image, if known.
+     *
+     * @param string $url Image URL.
+     * @return int|null
+     */
+    public function attachment_id_for( string $url ): ?int;
 
-	/**
-	 * Retrieve the attachment IDs created during the conversion.
-	 *
-	 * @return array<int>
-	 */
-	public function get_created_attachment_ids(): array;
+    /**
+     * Retrieve the attachment IDs created during the conversion.
+     *
+     * @return array<int>
+     */
+    public function get_created_attachment_ids(): array;
 
-	/**
-	 * Assign a parent post ID to the attachments created during the conversion.
-	 *
-	 * @param int $parent_post_id Parent post ID.
-	 */
-	public function assign_parent_to_attachments( int $parent_post_id ): void;
+    /**
+     * Assign a parent post ID to the attachments created during the conversion.
+     *
+     * @param int $parent_post_id Parent post ID.
+     */
+    public function assign_parent_to_attachments( int $parent_post_id ): void;
 }

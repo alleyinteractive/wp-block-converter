@@ -23,8 +23,8 @@ use Alley\WP\Block_Converter\Tests\Standalone\TestCase;
  * can't run without WordPress loaded.
  */
 class BlockConverterTest extends TestCase {
-	use Converts_Representative_Html;
-	use Converts_Urls_To_Embeds;
-	use Exercises_Constructor_Callbacks;
-	use Supports_Macros;
+    use Converts_Representative_Html;
+    use Converts_Urls_To_Embeds;
+    use Exercises_Constructor_Callbacks;
+    use Supports_Macros;
 }
