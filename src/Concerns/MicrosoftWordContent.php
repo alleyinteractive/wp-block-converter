@@ -16,13 +16,6 @@ namespace Alley\WP\Block_Converter\Concerns;
  */
 trait Microsoft_Word_Content {
     /**
-     * Flag to enable or disable Microsoft Word content conversion.
-     *
-     * @var bool
-     */
-    protected bool $convert_ms_word_content = true;
-
-    /**
      * Patterns based on TinyMCE Word filter detection.
      *
      * @var string[]
@@ -38,6 +31,13 @@ trait Microsoft_Word_Content {
         '/mso-border-alt/',
         '/MsoNormal/',
     ];
+
+    /**
+     * Flag to enable or disable Microsoft Word content conversion.
+     *
+     * @var bool
+     */
+    protected bool $convert_ms_word_content = true;
 
     /**
      * Enable or disable Microsoft Word content conversion.
