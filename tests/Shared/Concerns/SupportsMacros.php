@@ -25,14 +25,45 @@ use PHPUnit\Framework\Attributes\DataProvider;
  */
 trait Supports_Macros {
     /**
-     * Flushes all macros registered on Block_Converter after every test, so
-     * a macro registered by one test (including one that overrides every
-     * built-in tag) can never leak into another regardless of test order.
+     * Data provider of every built-in tag name that Block_Converter natively
+     * handles.
+     *
+     * @return array<string, array{0: string}> Each item is [ $tag ] matching
+     *                                          test_macroable_override_built_in()'s
+     *                                          parameter.
      */
-    protected function tearDown(): void {
-        Block_Converter::flushMacros();
+    public static function macroable_dataprovider(): array {
+        $tags = [
+            'ul',
+            'ol',
+            'img',
+            'blockquote',
+            'h1',
+            'h2',
+            'h3',
+            'h4',
+            'h5',
+            'h6',
+            'p',
+            'a',
+            'abbr',
+            'b',
+            'code',
+            'em',
+            'i',
+            'strong',
+            'sub',
+            'sup',
+            'span',
+            'u',
+            'figure',
+            'br',
+            'cite',
+            'source',
+            'hr',
+        ];
 
-        parent::tearDown();
+        return array_combine( $tags, array_map( fn ( string $tag ) => [ $tag ], $tags ) );
     }
 
     /**
@@ -128,44 +159,13 @@ HTML,
     }
 
     /**
-     * Data provider of every built-in tag name that Block_Converter natively
-     * handles.
-     *
-     * @return array<string, array{0: string}> Each item is [ $tag ] matching
-     *                                          test_macroable_override_built_in()'s
-     *                                          parameter.
+     * Flushes all macros registered on Block_Converter after every test, so
+     * a macro registered by one test (including one that overrides every
+     * built-in tag) can never leak into another regardless of test order.
      */
-    public static function macroable_dataprovider(): array {
-        $tags = [
-            'ul',
-            'ol',
-            'img',
-            'blockquote',
-            'h1',
-            'h2',
-            'h3',
-            'h4',
-            'h5',
-            'h6',
-            'p',
-            'a',
-            'abbr',
-            'b',
-            'code',
-            'em',
-            'i',
-            'strong',
-            'sub',
-            'sup',
-            'span',
-            'u',
-            'figure',
-            'br',
-            'cite',
-            'source',
-            'hr',
-        ];
+    protected function tearDown(): void {
+        Block_Converter::flushMacros();
 
-        return array_combine( $tags, array_map( fn ( string $tag ) => [ $tag ], $tags ) );
+        parent::tearDown();
     }
 }

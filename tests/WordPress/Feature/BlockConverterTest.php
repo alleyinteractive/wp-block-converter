@@ -36,65 +36,6 @@ class BlockConverterTest extends TestCase {
     use Supports_Macros;
 
     /**
-     * Fakes the remote request for the test image so sideloading it never hits
-     * the network, and clears the uploads directory before each test so
-     * attachment IDs and filenames don't leak between tests.
-     */
-    protected function setUp(): void {
-        parent::setUp();
-
-        $this->fake_request( 'https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png' )
-            ->with_file( __DIR__ . '/../../shared/Fixtures/image.png' );
-
-        // Delete all uploaded files between tests.
-        $dir = wp_upload_dir();
-
-        shell_exec( "rm -rf {$dir['path']}/*" );
-    }
-
-    /**
-     * Tests that images from image_dataprovider() are sideloaded into the
-     * media library via WordPress_Image_Uploader, that exactly one attachment
-     * is created, and that the resulting block markup matches the expected
-     * output once the real attachment ID and URL are substituted in.
-     *
-     * @param string $html     The source HTML to convert.
-     * @param string $expected The expected converted block markup, with
-     *                         {{IMAGE_ID}}/{{IMAGE_SRC}} placeholders for the
-     *                         real attachment ID/URL.
-     */
-    #[DataProvider( 'image_dataprovider' )]
-    public function test_image( string $html, string $expected ) {
-        $converter = new Block_Converter(
-            html: $html,
-            uploader: new WordPress_Image_Uploader(),
-        );
-        $block     = $converter->convert();
-
-        $this->assertCount(
-            expectedCount: 1,
-            haystack: $converter->get_created_attachment_ids(),
-        );
-
-        $attachment_id = $converter->get_created_attachment_ids()[0];
-
-        $expected = str_replace(
-            search: [ '{{IMAGE_ID}}', '{{IMAGE_SRC}}' ],
-            replace: [ $attachment_id, wp_get_attachment_url( $attachment_id ) ],
-            subject: $expected,
-        );
-
-        $this->assertEquals(
-            expected: $expected,
-            actual: $block,
-        );
-        $this->assertRequestSent(
-            url_or_callback: 'https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png',
-            expected_times: 1,
-        );
-    }
-
-    /**
      * Data provider of images in different surrounding markup (bare, wrapped
      * in a figure/anchor, with a caption, inline within a paragraph) and
      * their expected sideloaded image block markup.
@@ -198,5 +139,64 @@ HTML,
 HTML,
             ],
         ];
+    }
+
+    /**
+     * Tests that images from image_dataprovider() are sideloaded into the
+     * media library via WordPress_Image_Uploader, that exactly one attachment
+     * is created, and that the resulting block markup matches the expected
+     * output once the real attachment ID and URL are substituted in.
+     *
+     * @param string $html     The source HTML to convert.
+     * @param string $expected The expected converted block markup, with
+     *                         {{IMAGE_ID}}/{{IMAGE_SRC}} placeholders for the
+     *                         real attachment ID/URL.
+     */
+    #[DataProvider( 'image_dataprovider' )]
+    public function test_image( string $html, string $expected ) {
+        $converter = new Block_Converter(
+            html: $html,
+            uploader: new WordPress_Image_Uploader(),
+        );
+        $block     = $converter->convert();
+
+        $this->assertCount(
+            expectedCount: 1,
+            haystack: $converter->get_created_attachment_ids(),
+        );
+
+        $attachment_id = $converter->get_created_attachment_ids()[0];
+
+        $expected = str_replace(
+            search: [ '{{IMAGE_ID}}', '{{IMAGE_SRC}}' ],
+            replace: [ $attachment_id, wp_get_attachment_url( $attachment_id ) ],
+            subject: $expected,
+        );
+
+        $this->assertEquals(
+            expected: $expected,
+            actual: $block,
+        );
+        $this->assertRequestSent(
+            url_or_callback: 'https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png',
+            expected_times: 1,
+        );
+    }
+
+    /**
+     * Fakes the remote request for the test image so sideloading it never hits
+     * the network, and clears the uploads directory before each test so
+     * attachment IDs and filenames don't leak between tests.
+     */
+    protected function setUp(): void {
+        parent::setUp();
+
+        $this->fake_request( 'https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png' )
+            ->with_file( __DIR__ . '/../../shared/Fixtures/image.png' );
+
+        // Delete all uploaded files between tests.
+        $dir = wp_upload_dir();
+
+        shell_exec( "rm -rf {$dir['path']}/*" );
     }
 }

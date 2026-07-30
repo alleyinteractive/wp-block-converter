@@ -22,6 +22,13 @@ class Block {
     }
 
     /**
+     * Convert the block to HTML.
+     */
+    public function __toString() {
+        return $this->render();
+    }
+
+    /**
      * Render the block.
      *
      * Reimplements WordPress' get_comment_delimited_block_content() without
@@ -53,13 +60,6 @@ class Block {
             $content,
             $block_name,
         );
-    }
-
-    /**
-     * Convert the block to HTML.
-     */
-    public function __toString() {
-        return $this->render();
     }
 
     /**

@@ -18,21 +18,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
  */
 trait Converts_Representative_Html {
     /**
-     * Tests that each representative HTML snippet from converter_data_provider()
-     * converts to its exact expected block markup.
-     *
-     * @param string $html     The source HTML to convert.
-     * @param string $expected The expected converted block markup.
-     */
-    #[DataProvider( 'converter_data_provider' )]
-    public function test_convert_to_blocks( string $html, string $expected ): void {
-        $this->assertSame(
-            expected: $expected,
-            actual: ( new Block_Converter( $html ) )->convert(),
-        );
-    }
-
-    /**
      * Data provider of representative HTML-to-block conversions, one per tag
      * or edge case (paragraphs, headings, lists, quotes, non-oembed embeds,
      * whitespace collapsing).
@@ -231,6 +216,72 @@ HTML,
     }
 
     /**
+     * Data provider of multi-line <pre> tag conversions.
+     *
+     * @return array<int, array{0: string, 1: string}> Each item is
+     *                                                  [ $html, $expected ]
+     *                                                  matching
+     *                                                  test_converting_multi_line_pre_tag()'s parameters.
+     */
+    public static function multi_line_pre_tag_data_provider(): array {
+        return [
+            [
+                <<<HTML
+<pre>
+Line 1
+Line 2
+
+Line 3
+</pre>
+HTML,
+                <<<HTML
+<!-- wp:preformatted -->
+<pre class="wp-block-preformatted">Line 1<br>Line 2<br><br>Line 3</pre>
+<!-- /wp:preformatted -->
+HTML,
+            ],
+            [
+                <<<HTML
+<pre>
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+1815 - Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+1900 - Ut enim ad minim veniam, quis nostrud exercitation ullamco.
+1915 - Duis aute irure dolor in reprehenderit in voluptate velit.
+1925 - Excepteur sint occaecat cupidatat non proident sunt in culpa.
+
+Names: John Doe, Example Person (1800-1900)
+        Jane Smith, Test Author (1850-1950)
+
+Deaths: Lorem Ipsum, Historical Figure (1700-1800)
+        Dolor Sit, Notable Person (1750-1850)
+</pre>
+HTML,
+                <<<HTML
+<!-- wp:preformatted -->
+<pre class="wp-block-preformatted">Lorem ipsum dolor sit amet, consectetur adipiscing elit.<br><br>1815 - Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.<br>1900 - Ut enim ad minim veniam, quis nostrud exercitation ullamco.<br>1915 - Duis aute irure dolor in reprehenderit in voluptate velit.<br>1925 - Excepteur sint occaecat cupidatat non proident sunt in culpa.<br><br>Names: John Doe, Example Person (1800-1900)<br>        Jane Smith, Test Author (1850-1950)<br><br>Deaths: Lorem Ipsum, Historical Figure (1700-1800)<br>        Dolor Sit, Notable Person (1750-1850)</pre>
+<!-- /wp:preformatted -->
+HTML,
+            ],
+        ];
+    }
+
+    /**
+     * Tests that each representative HTML snippet from converter_data_provider()
+     * converts to its exact expected block markup.
+     *
+     * @param string $html     The source HTML to convert.
+     * @param string $expected The expected converted block markup.
+     */
+    #[DataProvider( 'converter_data_provider' )]
+    public function test_convert_to_blocks( string $html, string $expected ): void {
+        $this->assertSame(
+            expected: $expected,
+            actual: ( new Block_Converter( $html ) )->convert(),
+        );
+    }
+
+    /**
      * Tests that a paragraph consisting only of a random amount of whitespace
      * and newlines is treated as empty and dropped, while a sibling paragraph
      * with real content is still converted.
@@ -311,57 +362,6 @@ HTML,
             expected: $expected,
             actual: ( new Block_Converter( $html ) )->convert(),
         );
-    }
-
-    /**
-     * Data provider of multi-line <pre> tag conversions.
-     *
-     * @return array<int, array{0: string, 1: string}> Each item is
-     *                                                  [ $html, $expected ]
-     *                                                  matching
-     *                                                  test_converting_multi_line_pre_tag()'s parameters.
-     */
-    public static function multi_line_pre_tag_data_provider(): array {
-        return [
-            [
-                <<<HTML
-<pre>
-Line 1
-Line 2
-
-Line 3
-</pre>
-HTML,
-                <<<HTML
-<!-- wp:preformatted -->
-<pre class="wp-block-preformatted">Line 1<br>Line 2<br><br>Line 3</pre>
-<!-- /wp:preformatted -->
-HTML,
-            ],
-            [
-                <<<HTML
-<pre>
-Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-
-1815 - Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-1900 - Ut enim ad minim veniam, quis nostrud exercitation ullamco.
-1915 - Duis aute irure dolor in reprehenderit in voluptate velit.
-1925 - Excepteur sint occaecat cupidatat non proident sunt in culpa.
-
-Names: John Doe, Example Person (1800-1900)
-        Jane Smith, Test Author (1850-1950)
-
-Deaths: Lorem Ipsum, Historical Figure (1700-1800)
-        Dolor Sit, Notable Person (1750-1850)
-</pre>
-HTML,
-                <<<HTML
-<!-- wp:preformatted -->
-<pre class="wp-block-preformatted">Lorem ipsum dolor sit amet, consectetur adipiscing elit.<br><br>1815 - Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.<br>1900 - Ut enim ad minim veniam, quis nostrud exercitation ullamco.<br>1915 - Duis aute irure dolor in reprehenderit in voluptate velit.<br>1925 - Excepteur sint occaecat cupidatat non proident sunt in culpa.<br><br>Names: John Doe, Example Person (1800-1900)<br>        Jane Smith, Test Author (1850-1950)<br><br>Deaths: Lorem Ipsum, Historical Figure (1700-1800)<br>        Dolor Sit, Notable Person (1750-1850)</pre>
-<!-- /wp:preformatted -->
-HTML,
-            ],
-        ];
     }
 
     /**

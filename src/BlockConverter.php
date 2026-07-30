@@ -30,6 +30,135 @@ class Block_Converter {
     use Macroable;
 
     /**
+     * Known oEmbed provider matchers, in priority order.
+     *
+     * Reshapes a subset of WordPress core's built-in oEmbed provider list
+     * (`WP_oEmbed::$providers` in `wp-includes/class-wp-oembed.php`) into
+     * the block editor's embed variation shape, hardcoded with no HTTP
+     * request involved — the same approach this library already used for
+     * Twitter/Instagram/Facebook. Parameters that can vary per URL and
+     * would normally only be known from a live oEmbed response (e.g. the
+     * exact aspect ratio of a given video) are approximated with a fixed
+     * default per provider rather than fetched.
+     *
+     * @var array<int, array{pattern: string, slug: string, type: string, aspect_ratio?: string, extra_attributes?: array<string, mixed>}>
+     */
+    private const OEMBED_PROVIDERS = [
+        [
+            // YouTube Shorts are consistently vertical, unlike standard
+            // YouTube videos, so this must be matched before the general
+            // youtube.com pattern below.
+            'pattern'      => '#https?://(www\.)?youtube\.com/shorts#i',
+            'slug'         => 'youtube',
+            'type'         => 'video',
+            'aspect_ratio' => '9-16',
+        ],
+        [
+            'pattern'      => '#https?://(www\.)?youtube\.com/(watch|playlist)#i',
+            'slug'         => 'youtube',
+            'type'         => 'video',
+            'aspect_ratio' => '16-9',
+        ],
+        [
+            'pattern'      => '#https?://youtu\.be/#i',
+            'slug'         => 'youtube',
+            'type'         => 'video',
+            'aspect_ratio' => '16-9',
+        ],
+        [
+            'pattern'      => '#https?://(www\.|player\.)?vimeo\.com/#i',
+            'slug'         => 'vimeo',
+            'type'         => 'video',
+            'aspect_ratio' => '16-9',
+        ],
+        [
+            'pattern'      => '#https?://(www\.)?dailymotion\.com/#i',
+            'slug'         => 'dailymotion',
+            'type'         => 'video',
+            'aspect_ratio' => '16-9',
+        ],
+        [
+            'pattern'      => '#https?://dai\.ly/#i',
+            'slug'         => 'dailymotion',
+            'type'         => 'video',
+            'aspect_ratio' => '16-9',
+        ],
+        [
+            'pattern' => '#https?://(www\.|vm\.|vt\.)?tiktok\.com/#i',
+            'slug'    => 'tiktok',
+            'type'    => 'video',
+        ],
+        [
+            'pattern'      => '#https?://wordpress\.tv/#i',
+            'slug'         => 'wordpress-tv',
+            'type'         => 'video',
+            'aspect_ratio' => '16-9',
+        ],
+        [
+            'pattern'      => '#https?://videopress\.com/v/#i',
+            'slug'         => 'videopress',
+            'type'         => 'video',
+            'aspect_ratio' => '16-9',
+        ],
+        [
+            'pattern' => '#https?://(www\.)?flickr\.com/#i',
+            'slug'    => 'flickr',
+            'type'    => 'rich',
+        ],
+        [
+            'pattern' => '#https?://flic\.kr/#i',
+            'slug'    => 'flickr',
+            'type'    => 'rich',
+        ],
+        [
+            'pattern' => '#https?://((m|www)\.)?soundcloud\.com/#i',
+            'slug'    => 'soundcloud',
+            'type'    => 'rich',
+        ],
+        [
+            'pattern' => '#https?://(open|play)\.spotify\.com/#i',
+            'slug'    => 'spotify',
+            'type'    => 'rich',
+        ],
+        [
+            'pattern' => '#https?://(www\.)?slideshare\.net/#i',
+            'slug'    => 'slideshare',
+            'type'    => 'rich',
+        ],
+        [
+            'pattern' => '#https?://(www\.)?scribd\.com/#i',
+            'slug'    => 'scribd',
+            'type'    => 'rich',
+        ],
+        [
+            'pattern' => '#https?://(www\.)?reddit\.com/r/[^/]+/comments/#i',
+            'slug'    => 'reddit',
+            'type'    => 'rich',
+        ],
+        [
+            'pattern' => '#https?://(www\.)?imgur\.com/#i',
+            'slug'    => 'imgur',
+            'type'    => 'rich',
+        ],
+        [
+            'pattern' => '#https?://(www\.)?twitter\.com/\w{1,15}/status(es)?/#i',
+            'slug'    => 'x',
+            'type'    => 'rich',
+        ],
+        [
+            'pattern' => '#https?://(www\.)?instagram\.com/#i',
+            'slug'    => 'instagram',
+            'type'    => 'rich',
+        ],
+        [
+            'pattern'          => '#https?://(www\.)?facebook\.com/#i',
+            'slug'             => 'facebook',
+            'type'             => 'rich',
+            'extra_attributes' => [ 'previewable' => false ],
+        ],
+    ];
+
+    /**
      * Setup the class.
      *
      * @param string               $html                     The HTML to parse.
@@ -66,19 +195,75 @@ class Block_Converter {
     }
 
     /**
-     * Invoke an optional hook callback, returning $value unchanged if none is set.
-     *
-     * Replaces the `apply_filters()` call sites this library used to have,
-     * since callers now supply these as constructor callbacks instead of
-     * registering WordPress filters.
-     *
-     * @param Closure|null $callback The optional callback.
-     * @param mixed        $value    The value to pass as the callback's first argument.
-     * @param mixed        ...$args  Additional arguments to pass to the callback.
-     * @return mixed
+     * Magic function to convert to a string.
      */
-    protected function apply( ?Closure $callback, mixed $value, mixed ...$args ): mixed {
-        return $callback ? $callback( $value, ...$args ) : $value;
+    public function __toString(): string {
+        return $this->convert();
+    }
+
+    /**
+     * Get nodes from a specific tag.
+     *
+     * **Note:** This method converts the node to HTML and then gets the nodes.
+     * It cannot be use for Node object modification.
+     *
+     * @deprecated Not used by the library. Will be removed in a future release.
+     *
+     * @param Node   $node The current Node.
+     * @param string $tag The tag to search for.
+     * @return HTMLCollection<Element> The raw HTML.
+     */
+    public static function get_nodes( Node $node, $tag ) {
+        return static::get_node_tag_from_html(
+            static::get_node_html( $node ),
+            $tag
+        );
+    }
+
+    /**
+     * Get the raw HTML from a Node node.
+     *
+     * @param Node $node The current Node.
+     * @return string The raw HTML.
+     */
+    public static function get_node_html( Node $node ): string {
+        // Remove HTML comment nodes from the children.
+        if ( $node->hasChildNodes() ) {
+            foreach ( iterator_to_array( $node->childNodes ) as $child ) {
+                if ( $child->nodeType === XML_COMMENT_NODE ) {
+                    $node->removeChild( $child );
+                    continue;
+                }
+
+                // Remove any newline text nodes.
+                if ( "\\n" === trim( (string) $child->nodeValue ) ) {
+                    $node->removeChild( $child );
+                    continue;
+                }
+            }
+        }
+
+        // Clear out any empty paragraph tags.
+        if ( 'p' === strtolower( $node->nodeName ) && empty( trim( (string) $node->textContent ) ) ) {
+            return '';
+        }
+
+        $owner_document = $node->ownerDocument;
+
+        return $owner_document instanceof HTMLDocument ? $owner_document->saveHtml( $node ) : '';
+    }
+
+    /**
+     * Get the HTML content.
+     *
+     * @param string $html The HTML content.
+     * @param string $tag The tag to search for.
+     * @return HTMLCollection<Element> The list of Elements.
+     */
+    public static function get_node_tag_from_html( $html, $tag = 'body' ) {
+        $dom = HTMLDocument::createFromString( $html, LIBXML_NOERROR, 'UTF-8' );
+
+        return $dom->getElementsByTagName( $tag );
     }
 
     /**
@@ -195,6 +380,321 @@ class Block_Converter {
     }
 
     /**
+     * Convert the children of a node to blocks.
+     *
+     * @param Node $node The node.
+     * @return string The children as blocks.
+     */
+    public function convert_with_children( Node $node ): string {
+        $children           = '';
+        $previous_was_block = false;
+
+        // Recursively convert the children of the node.
+        foreach ( $node->childNodes as $child ) {
+            if ( '#text' === $child->nodeName ) {
+                if ( '' === trim( (string) $child->nodeValue ) ) {
+                    continue;
+                }
+
+                $children          .= $child->nodeValue;
+                $previous_was_block = false;
+
+                continue;
+            }
+
+            // Ensure that the cite tag is not converted to a block.
+            if ( 'cite' === strtolower( $child->nodeName ) ) {
+                $children .= trim( static::get_node_html( $child ) );
+            }
+
+            $child_block = $this->convert_node( $child );
+
+            if ( ! empty( $child_block ) ) {
+                // Separate consecutive block-level children with a blank
+                // line, matching the top-level join in convert(). Non-block
+                // content (plain text, <cite>) attaches directly with no gap.
+                if ( $previous_was_block ) {
+                    $children .= "\n\n";
+                }
+
+                $children          .= $this->minify_block( (string) $child_block );
+                $previous_was_block = true;
+            } else {
+                $previous_was_block = false;
+            }
+        }
+
+        $node->textContent = '__CHILDREN__';
+
+        $content = static::get_node_html( $node );
+
+        // Replace the placeholder with the children.
+        $content = str_replace( '__CHILDREN__', $children, $content );
+
+        return $content;
+    }
+
+    /**
+     * Create figure blocks.
+     *
+     * This method only supports converting a <figure> block that has either a
+     * <img>, <a> or <figcaption> child. If the <figure> block has other children
+     * the block will be converted to a HTML block.
+     *
+     * @param Node $node The node.
+     * @return Block|null
+     */
+    public function figure( Node $node ): ?Block {
+        if ( $this->is_supported_figure( $node ) ) {
+            return $this->img( $node );
+        }
+
+        return $this->html( $node );
+    }
+
+    /**
+     * Quick way to remove all URL arguments.
+     *
+     * @param string $url URL.
+     *
+     * @return string A reconstructed image URL containing only the scheme, host, port, and path.
+     */
+    public function remove_image_args( $url ): string {
+        $url_parts = parse_url( $url );
+        $scheme    = $url_parts['scheme'] ?? 'https';
+        $host      = $url_parts['host'] ?? '';
+        $port      = ! empty( $url_parts['port'] ) ? ':' . $url_parts['port'] : '';
+        $path      = $url_parts['path'] ?? '';
+
+        // Ensure we have enough parts to construct a valid URL.
+        $sanitized_url = '';
+        if ( ! empty( $scheme ) && ! empty( $host ) && ! empty( $path ) ) {
+            $sanitized_url = sprintf( '%s://%s%s%s', $scheme, $host, $port, $path );
+        }
+
+        // Allow the caller to filter the reconstructed URL before it's returned.
+        $filtered_url = $this->apply( $this->on_sanitized_image_url, $sanitized_url, $url );
+
+        return is_string( $filtered_url ) ? $filtered_url : $sanitized_url;
+    }
+
+    /**
+     * Upload an image via the configured Image_Uploader.
+     *
+     * @param string $src Image url.
+     * @param string $alt Image alt.
+     *
+     * @throws Exception If the image was not able to be uploaded.
+     *
+     * @return string The uploaded image URL.
+     */
+    public function upload_image( string $src, string $alt ): string {
+        $src = $this->remove_image_args( $src );
+
+        return $this->uploader?->upload( $src, $alt ) ?? $src;
+    }
+
+    /**
+     * Remove any empty blocks.
+     *
+     * @param string $html The current HTML.
+     * @return string $html The new HTML.
+     */
+    public function remove_empty_blocks( string $html ): string {
+        $html = str_replace(
+            [
+// phpcs:disable
+                '<!-- wp:html -->
+<div></div>
+<!-- /wp:html -->',
+                '<!-- wp:paragraph -->
+<div> </div>
+<!-- /wp:paragraph -->',
+                '<!-- wp:html -->
+<div> </div>
+<!-- /wp:html -->',
+                '<!-- wp:paragraph -->
+<div>  </div>
+<!-- /wp:paragraph -->',
+                '<!-- wp:paragraph --><p><br></p><!-- /wp:paragraph -->',
+                '<!-- wp:paragraph --><p><br><br><br></p><!-- /wp:paragraph -->',
+                '<!-- wp:paragraph -->
+<p><br></p>
+<!-- /wp:paragraph -->',
+                '<!-- wp:html -->
+<div> </div>
+<!-- /wp:html -->',
+                '<!-- wp:heading {"level":3} -->
+<h3>
+                                                        </h3>
+<!-- /wp:heading -->',
+// phpcs:enable
+            ],
+            '',
+            $html
+        );
+
+        return $this->remove_empty_p_blocks( $html );
+    }
+
+    /**
+     * Remove any empty p blocks.
+     *
+     * @param string $html The current HTML.
+     * @return string $html The new HTML.
+     */
+    public function remove_empty_p_blocks( string $html ): string {
+        return \preg_replace( '/(\<\!\-\- wp\:paragraph \-\-\>[\s\n\r]*?\<p\>[\s\n\r]*?\<\/p\>[\s\n\r]*?\<\!\-\- \/wp\:paragraph \-\-\>)/', '', $html ) ?: $html;
+    }
+
+    /**
+     * Get a node's child nodes, ignoring whitespace-only text nodes (e.g. the
+     * indentation/newlines between tags in pretty-printed source HTML), so
+     * child-counting checks only see meaningfully different markup.
+     *
+     * @param Node $node The node.
+     * @return Node[]
+     */
+    protected static function significant_child_nodes( Node $node ): array {
+        $children = [];
+
+        foreach ( $node->childNodes as $child ) {
+            if ( '#text' === $child->nodeName && '' === trim( (string) $child->nodeValue ) ) {
+                continue;
+            }
+
+            $children[] = $child;
+        }
+
+        return $children;
+    }
+
+    /**
+     * Remove whitespace-only text node children from an element in place,
+     * e.g. the indentation/newlines between tags in pretty-printed source
+     * HTML that the block editor's own markup doesn't have.
+     *
+     * @param Element $element The element.
+     * @return void
+     */
+    protected static function remove_whitespace_only_child_text_nodes( Element $element ): void {
+        foreach ( iterator_to_array( $element->childNodes ) as $child ) {
+            if ( '#text' === $child->nodeName && '' === trim( (string) $child->nodeValue ) ) {
+                $element->removeChild( $child );
+            }
+        }
+    }
+
+    /**
+     * Restore the self-closing "/>" syntax on void elements.
+     *
+     * WordPress intentionally self-closes void elements in its block output
+     * (e.g. the image block's `<img .../>`), with no space before the `/>`.
+     * `Dom\HTMLDocument::saveHtml()` doesn't do this — it always serializes
+     * void elements per the HTML5 spec (e.g. `<embed ...>`, no trailing
+     * slash) — so restore that syntax here to match.
+     *
+     * @param string $html The HTML to restore self-closing syntax in.
+     * @return string
+     */
+    protected static function self_close_void_elements( string $html ): string {
+        $void_elements = [ 'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr' ];
+
+        return preg_replace_callback(
+            '/<(' . implode( '|', $void_elements ) . ')\b[^>]*>/i',
+            static function ( array $matches ): string {
+                $tag = rtrim( trim( $matches[0], '>' ) );
+
+                return str_ends_with( $tag, '/' ) ? $matches[0] : $tag . '/>';
+            },
+            $html
+        ) ?? $html;
+    }
+
+    /**
+     * Collapse runs of whitespace in a node's descendant text nodes down to a
+     * single space, matching how a browser (and the block editor's rich text
+     * fields) render collapsible whitespace.
+     *
+     * @param Node $node The node to collapse whitespace within.
+     * @return void
+     */
+    protected static function collapse_whitespace( Node $node ): void {
+        foreach ( $node->childNodes as $child ) {
+            if ( '#text' === $child->nodeName ) {
+                $child->nodeValue = preg_replace( '/\s+/', ' ', (string) $child->nodeValue );
+
+                continue;
+            }
+
+            if ( $child->hasChildNodes() ) {
+                static::collapse_whitespace( $child );
+            }
+        }
+    }
+
+    /**
+     * Trim leading whitespace from a node's first descendant text node and
+     * trailing whitespace from its last, matching how a browser trims edge
+     * whitespace when rendering `white-space: normal` content.
+     *
+     * @param Node $node The node to trim edge whitespace within.
+     * @return void
+     */
+    protected static function trim_edge_whitespace( Node $node ): void {
+        $text_nodes = [];
+
+        static::collect_text_nodes( $node, $text_nodes );
+
+        if ( empty( $text_nodes ) ) {
+            return;
+        }
+
+        $first            = reset( $text_nodes );
+        $first->nodeValue = ltrim( (string) $first->nodeValue );
+
+        $last            = end( $text_nodes );
+        $last->nodeValue = rtrim( (string) $last->nodeValue );
+    }
+
+    /**
+     * Collect a node's descendant text nodes, in document order.
+     *
+     * @param Node   $node       The node to collect text nodes from.
+     * @param Node[] $text_nodes The collected text nodes, passed by reference.
+     * @return void
+     */
+    protected static function collect_text_nodes( Node $node, array &$text_nodes ): void {
+        foreach ( $node->childNodes as $child ) {
+            if ( '#text' === $child->nodeName ) {
+                $text_nodes[] = $child;
+
+                continue;
+            }
+
+            if ( $child->hasChildNodes() ) {
+                static::collect_text_nodes( $child, $text_nodes );
+            }
+        }
+    }
+
+    /**
+     * Invoke an optional hook callback, returning $value unchanged if none is set.
+     *
+     * Replaces the `apply_filters()` call sites this library used to have,
+     * since callers now supply these as constructor callbacks instead of
+     * registering WordPress filters.
+     *
+     * @param Closure|null $callback The optional callback.
+     * @param mixed        $value    The value to pass as the callback's first argument.
+     * @param mixed        ...$args  Additional arguments to pass to the callback.
+     * @return mixed
+     */
+    protected function apply( ?Closure $callback, mixed $value, mixed ...$args ): mixed {
+        return $callback ? $callback( $value, ...$args ) : $value;
+    }
+
+    /**
      * Run the `on_block` callback against a generated block.
      *
      * Shared by `convert_node()` and any method that builds `Block` instances
@@ -292,68 +792,6 @@ class Block_Converter {
                 );
             }
         }
-    }
-
-    /**
-     * Convert the children of a node to blocks.
-     *
-     * @param Node $node The node.
-     * @return string The children as blocks.
-     */
-    public function convert_with_children( Node $node ): string {
-        $children           = '';
-        $previous_was_block = false;
-
-        // Recursively convert the children of the node.
-        foreach ( $node->childNodes as $child ) {
-            if ( '#text' === $child->nodeName ) {
-                if ( '' === trim( (string) $child->nodeValue ) ) {
-                    continue;
-                }
-
-                $children          .= $child->nodeValue;
-                $previous_was_block = false;
-
-                continue;
-            }
-
-            // Ensure that the cite tag is not converted to a block.
-            if ( 'cite' === strtolower( $child->nodeName ) ) {
-                $children .= trim( static::get_node_html( $child ) );
-            }
-
-            $child_block = $this->convert_node( $child );
-
-            if ( ! empty( $child_block ) ) {
-                // Separate consecutive block-level children with a blank
-                // line, matching the top-level join in convert(). Non-block
-                // content (plain text, <cite>) attaches directly with no gap.
-                if ( $previous_was_block ) {
-                    $children .= "\n\n";
-                }
-
-                $children          .= $this->minify_block( (string) $child_block );
-                $previous_was_block = true;
-            } else {
-                $previous_was_block = false;
-            }
-        }
-
-        $node->textContent = '__CHILDREN__';
-
-        $content = static::get_node_html( $node );
-
-        // Replace the placeholder with the children.
-        $content = str_replace( '__CHILDREN__', $children, $content );
-
-        return $content;
-    }
-
-    /**
-     * Magic function to convert to a string.
-     */
-    public function __toString(): string {
-        return $this->convert();
     }
 
     /**
@@ -538,24 +976,6 @@ class Block_Converter {
     }
 
     /**
-     * Create figure blocks.
-     *
-     * This method only supports converting a <figure> block that has either a
-     * <img>, <a> or <figcaption> child. If the <figure> block has other children
-     * the block will be converted to a HTML block.
-     *
-     * @param Node $node The node.
-     * @return Block|null
-     */
-    public function figure( Node $node ): ?Block {
-        if ( $this->is_supported_figure( $node ) ) {
-            return $this->img( $node );
-        }
-
-        return $this->html( $node );
-    }
-
-    /**
      * Check if the figure node is supported for conversion.
      *
      * @param Node $node The node.
@@ -593,44 +1013,6 @@ class Block_Converter {
         $children = static::significant_child_nodes( $node );
 
         return 1 === count( $children ) && 'img' === strtolower( $children[0]->nodeName );
-    }
-
-    /**
-     * Get a node's child nodes, ignoring whitespace-only text nodes (e.g. the
-     * indentation/newlines between tags in pretty-printed source HTML), so
-     * child-counting checks only see meaningfully different markup.
-     *
-     * @param Node $node The node.
-     * @return Node[]
-     */
-    protected static function significant_child_nodes( Node $node ): array {
-        $children = [];
-
-        foreach ( $node->childNodes as $child ) {
-            if ( '#text' === $child->nodeName && '' === trim( (string) $child->nodeValue ) ) {
-                continue;
-            }
-
-            $children[] = $child;
-        }
-
-        return $children;
-    }
-
-    /**
-     * Remove whitespace-only text node children from an element in place,
-     * e.g. the indentation/newlines between tags in pretty-printed source
-     * HTML that the block editor's own markup doesn't have.
-     *
-     * @param Element $element The element.
-     * @return void
-     */
-    protected static function remove_whitespace_only_child_text_nodes( Element $element ): void {
-        foreach ( iterator_to_array( $element->childNodes ) as $child ) {
-            if ( '#text' === $child->nodeName && '' === trim( (string) $child->nodeValue ) ) {
-                $element->removeChild( $child );
-            }
-        }
     }
 
     /**
@@ -842,135 +1224,6 @@ class Block_Converter {
     }
 
     /**
-     * Known oEmbed provider matchers, in priority order.
-     *
-     * Reshapes a subset of WordPress core's built-in oEmbed provider list
-     * (`WP_oEmbed::$providers` in `wp-includes/class-wp-oembed.php`) into
-     * the block editor's embed variation shape, hardcoded with no HTTP
-     * request involved — the same approach this library already used for
-     * Twitter/Instagram/Facebook. Parameters that can vary per URL and
-     * would normally only be known from a live oEmbed response (e.g. the
-     * exact aspect ratio of a given video) are approximated with a fixed
-     * default per provider rather than fetched.
-     *
-     * @var array<int, array{pattern: string, slug: string, type: string, aspect_ratio?: string, extra_attributes?: array<string, mixed>}>
-     */
-    private const OEMBED_PROVIDERS = [
-        [
-            // YouTube Shorts are consistently vertical, unlike standard
-            // YouTube videos, so this must be matched before the general
-            // youtube.com pattern below.
-            'pattern'      => '#https?://(www\.)?youtube\.com/shorts#i',
-            'slug'         => 'youtube',
-            'type'         => 'video',
-            'aspect_ratio' => '9-16',
-        ],
-        [
-            'pattern'      => '#https?://(www\.)?youtube\.com/(watch|playlist)#i',
-            'slug'         => 'youtube',
-            'type'         => 'video',
-            'aspect_ratio' => '16-9',
-        ],
-        [
-            'pattern'      => '#https?://youtu\.be/#i',
-            'slug'         => 'youtube',
-            'type'         => 'video',
-            'aspect_ratio' => '16-9',
-        ],
-        [
-            'pattern'      => '#https?://(www\.|player\.)?vimeo\.com/#i',
-            'slug'         => 'vimeo',
-            'type'         => 'video',
-            'aspect_ratio' => '16-9',
-        ],
-        [
-            'pattern'      => '#https?://(www\.)?dailymotion\.com/#i',
-            'slug'         => 'dailymotion',
-            'type'         => 'video',
-            'aspect_ratio' => '16-9',
-        ],
-        [
-            'pattern'      => '#https?://dai\.ly/#i',
-            'slug'         => 'dailymotion',
-            'type'         => 'video',
-            'aspect_ratio' => '16-9',
-        ],
-        [
-            'pattern' => '#https?://(www\.|vm\.|vt\.)?tiktok\.com/#i',
-            'slug'    => 'tiktok',
-            'type'    => 'video',
-        ],
-        [
-            'pattern'      => '#https?://wordpress\.tv/#i',
-            'slug'         => 'wordpress-tv',
-            'type'         => 'video',
-            'aspect_ratio' => '16-9',
-        ],
-        [
-            'pattern'      => '#https?://videopress\.com/v/#i',
-            'slug'         => 'videopress',
-            'type'         => 'video',
-            'aspect_ratio' => '16-9',
-        ],
-        [
-            'pattern' => '#https?://(www\.)?flickr\.com/#i',
-            'slug'    => 'flickr',
-            'type'    => 'rich',
-        ],
-        [
-            'pattern' => '#https?://flic\.kr/#i',
-            'slug'    => 'flickr',
-            'type'    => 'rich',
-        ],
-        [
-            'pattern' => '#https?://((m|www)\.)?soundcloud\.com/#i',
-            'slug'    => 'soundcloud',
-            'type'    => 'rich',
-        ],
-        [
-            'pattern' => '#https?://(open|play)\.spotify\.com/#i',
-            'slug'    => 'spotify',
-            'type'    => 'rich',
-        ],
-        [
-            'pattern' => '#https?://(www\.)?slideshare\.net/#i',
-            'slug'    => 'slideshare',
-            'type'    => 'rich',
-        ],
-        [
-            'pattern' => '#https?://(www\.)?scribd\.com/#i',
-            'slug'    => 'scribd',
-            'type'    => 'rich',
-        ],
-        [
-            'pattern' => '#https?://(www\.)?reddit\.com/r/[^/]+/comments/#i',
-            'slug'    => 'reddit',
-            'type'    => 'rich',
-        ],
-        [
-            'pattern' => '#https?://(www\.)?imgur\.com/#i',
-            'slug'    => 'imgur',
-            'type'    => 'rich',
-        ],
-        [
-            'pattern' => '#https?://(www\.)?twitter\.com/\w{1,15}/status(es)?/#i',
-            'slug'    => 'x',
-            'type'    => 'rich',
-        ],
-        [
-            'pattern' => '#https?://(www\.)?instagram\.com/#i',
-            'slug'    => 'instagram',
-            'type'    => 'rich',
-        ],
-        [
-            'pattern'          => '#https?://(www\.)?facebook\.com/#i',
-            'slug'             => 'facebook',
-            'type'             => 'rich',
-            'extra_attributes' => [ 'previewable' => false ],
-        ],
-    ];
-
-    /**
      * Create an embed block for a URL matching a known oEmbed provider.
      *
      * @param string $url The URL.
@@ -1076,164 +1329,6 @@ class Block_Converter {
     }
 
     /**
-     * Restore the self-closing "/>" syntax on void elements.
-     *
-     * WordPress intentionally self-closes void elements in its block output
-     * (e.g. the image block's `<img .../>`), with no space before the `/>`.
-     * `Dom\HTMLDocument::saveHtml()` doesn't do this — it always serializes
-     * void elements per the HTML5 spec (e.g. `<embed ...>`, no trailing
-     * slash) — so restore that syntax here to match.
-     *
-     * @param string $html The HTML to restore self-closing syntax in.
-     * @return string
-     */
-    protected static function self_close_void_elements( string $html ): string {
-        $void_elements = [ 'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr' ];
-
-        return preg_replace_callback(
-            '/<(' . implode( '|', $void_elements ) . ')\b[^>]*>/i',
-            static function ( array $matches ): string {
-                $tag = rtrim( trim( $matches[0], '>' ) );
-
-                return str_ends_with( $tag, '/' ) ? $matches[0] : $tag . '/>';
-            },
-            $html
-        ) ?? $html;
-    }
-
-    /**
-     * Get nodes from a specific tag.
-     *
-     * **Note:** This method converts the node to HTML and then gets the nodes.
-     * It cannot be use for Node object modification.
-     *
-     * @deprecated Not used by the library. Will be removed in a future release.
-     *
-     * @param Node   $node The current Node.
-     * @param string $tag The tag to search for.
-     * @return HTMLCollection<Element> The raw HTML.
-     */
-    public static function get_nodes( Node $node, $tag ) {
-        return static::get_node_tag_from_html(
-            static::get_node_html( $node ),
-            $tag
-        );
-    }
-
-    /**
-     * Get the raw HTML from a Node node.
-     *
-     * @param Node $node The current Node.
-     * @return string The raw HTML.
-     */
-    public static function get_node_html( Node $node ): string {
-        // Remove HTML comment nodes from the children.
-        if ( $node->hasChildNodes() ) {
-            foreach ( iterator_to_array( $node->childNodes ) as $child ) {
-                if ( $child->nodeType === XML_COMMENT_NODE ) {
-                    $node->removeChild( $child );
-                    continue;
-                }
-
-                // Remove any newline text nodes.
-                if ( "\\n" === trim( (string) $child->nodeValue ) ) {
-                    $node->removeChild( $child );
-                    continue;
-                }
-            }
-        }
-
-        // Clear out any empty paragraph tags.
-        if ( 'p' === strtolower( $node->nodeName ) && empty( trim( (string) $node->textContent ) ) ) {
-            return '';
-        }
-
-        $owner_document = $node->ownerDocument;
-
-        return $owner_document instanceof HTMLDocument ? $owner_document->saveHtml( $node ) : '';
-    }
-
-    /**
-     * Collapse runs of whitespace in a node's descendant text nodes down to a
-     * single space, matching how a browser (and the block editor's rich text
-     * fields) render collapsible whitespace.
-     *
-     * @param Node $node The node to collapse whitespace within.
-     * @return void
-     */
-    protected static function collapse_whitespace( Node $node ): void {
-        foreach ( $node->childNodes as $child ) {
-            if ( '#text' === $child->nodeName ) {
-                $child->nodeValue = preg_replace( '/\s+/', ' ', (string) $child->nodeValue );
-
-                continue;
-            }
-
-            if ( $child->hasChildNodes() ) {
-                static::collapse_whitespace( $child );
-            }
-        }
-    }
-
-    /**
-     * Trim leading whitespace from a node's first descendant text node and
-     * trailing whitespace from its last, matching how a browser trims edge
-     * whitespace when rendering `white-space: normal` content.
-     *
-     * @param Node $node The node to trim edge whitespace within.
-     * @return void
-     */
-    protected static function trim_edge_whitespace( Node $node ): void {
-        $text_nodes = [];
-
-        static::collect_text_nodes( $node, $text_nodes );
-
-        if ( empty( $text_nodes ) ) {
-            return;
-        }
-
-        $first            = reset( $text_nodes );
-        $first->nodeValue = ltrim( (string) $first->nodeValue );
-
-        $last            = end( $text_nodes );
-        $last->nodeValue = rtrim( (string) $last->nodeValue );
-    }
-
-    /**
-     * Collect a node's descendant text nodes, in document order.
-     *
-     * @param Node   $node       The node to collect text nodes from.
-     * @param Node[] $text_nodes The collected text nodes, passed by reference.
-     * @return void
-     */
-    protected static function collect_text_nodes( Node $node, array &$text_nodes ): void {
-        foreach ( $node->childNodes as $child ) {
-            if ( '#text' === $child->nodeName ) {
-                $text_nodes[] = $child;
-
-                continue;
-            }
-
-            if ( $child->hasChildNodes() ) {
-                static::collect_text_nodes( $child, $text_nodes );
-            }
-        }
-    }
-
-    /**
-     * Get the HTML content.
-     *
-     * @param string $html The HTML content.
-     * @param string $tag The tag to search for.
-     * @return HTMLCollection<Element> The list of Elements.
-     */
-    public static function get_node_tag_from_html( $html, $tag = 'body' ) {
-        $dom = HTMLDocument::createFromString( $html, LIBXML_NOERROR, 'UTF-8' );
-
-        return $dom->getElementsByTagName( $tag );
-    }
-
-    /**
      * Removing whitespace between blocks
      *
      * @param string $block Gutenberg blocks.
@@ -1249,100 +1344,5 @@ class Block_Converter {
         }
 
         return trim( $block );
-    }
-
-    /**
-     * Quick way to remove all URL arguments.
-     *
-     * @param string $url URL.
-     *
-     * @return string A reconstructed image URL containing only the scheme, host, port, and path.
-     */
-    public function remove_image_args( $url ): string {
-        $url_parts = parse_url( $url );
-        $scheme    = $url_parts['scheme'] ?? 'https';
-        $host      = $url_parts['host'] ?? '';
-        $port      = ! empty( $url_parts['port'] ) ? ':' . $url_parts['port'] : '';
-        $path      = $url_parts['path'] ?? '';
-
-        // Ensure we have enough parts to construct a valid URL.
-        $sanitized_url = '';
-        if ( ! empty( $scheme ) && ! empty( $host ) && ! empty( $path ) ) {
-            $sanitized_url = sprintf( '%s://%s%s%s', $scheme, $host, $port, $path );
-        }
-
-        // Allow the caller to filter the reconstructed URL before it's returned.
-        $filtered_url = $this->apply( $this->on_sanitized_image_url, $sanitized_url, $url );
-
-        return is_string( $filtered_url ) ? $filtered_url : $sanitized_url;
-    }
-
-    /**
-     * Upload an image via the configured Image_Uploader.
-     *
-     * @param string $src Image url.
-     * @param string $alt Image alt.
-     *
-     * @throws Exception If the image was not able to be uploaded.
-     *
-     * @return string The uploaded image URL.
-     */
-    public function upload_image( string $src, string $alt ): string {
-        $src = $this->remove_image_args( $src );
-
-        return $this->uploader?->upload( $src, $alt ) ?? $src;
-    }
-
-    /**
-     * Remove any empty blocks.
-     *
-     * @param string $html The current HTML.
-     * @return string $html The new HTML.
-     */
-    public function remove_empty_blocks( string $html ): string {
-        $html = str_replace(
-            [
-// phpcs:disable
-'<!-- wp:html -->
-<div></div>
-<!-- /wp:html -->',
-'<!-- wp:paragraph -->
-<div> </div>
-<!-- /wp:paragraph -->',
-'<!-- wp:html -->
-<div> </div>
-<!-- /wp:html -->',
-'<!-- wp:paragraph -->
-<div>  </div>
-<!-- /wp:paragraph -->',
-'<!-- wp:paragraph --><p><br></p><!-- /wp:paragraph -->',
-'<!-- wp:paragraph --><p><br><br><br></p><!-- /wp:paragraph -->',
-'<!-- wp:paragraph -->
-<p><br></p>
-<!-- /wp:paragraph -->',
-'<!-- wp:html -->
-<div> </div>
-<!-- /wp:html -->',
-'<!-- wp:heading {"level":3} -->
-<h3>
-                                                        </h3>
-<!-- /wp:heading -->',
-// phpcs:enable
-            ],
-            '',
-            $html
-        );
-
-        return $this->remove_empty_p_blocks( $html );
-    }
-
-    /**
-     * Remove any empty p blocks.
-     *
-     * @param string $html The current HTML.
-     * @return string $html The new HTML.
-     */
-    public function remove_empty_p_blocks( string $html ): string {
-        return \preg_replace( '/(\<\!\-\- wp\:paragraph \-\-\>[\s\n\r]*?\<p\>[\s\n\r]*?\<\/p\>[\s\n\r]*?\<\!\-\- \/wp\:paragraph \-\-\>)/', '', $html ) ?: $html;
     }
 }
