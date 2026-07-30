@@ -1,18 +1,20 @@
 <?php
-namespace Alley\WP\Block_Converter\Tests\Shared\Fixtures;
 
-use Alley\WP\Block_Converter\Image_Uploader;
+namespace Alley\WP\BlockConverter\Tests\Shared\Fixtures;
+
+use Alley\WP\BlockConverter\ImageUploader;
 
 /**
- * A trivial Image_Uploader: it doesn't sideload anything or talk to any
+ * A trivial ImageUploader: it doesn't sideload anything or talk to any
  * store, it just marks a URL as "uploaded" and records what it was asked to
- * upload. Used by Concerns\Exercises_Constructor_Callbacks to prove the
- * Image_Uploader extension point works end-to-end independent of
- * WordPress_Image_Uploader — shared between the WordPress and standalone
+ * upload. Used by Concerns\ExercisesConstructorCallbacks to prove the
+ * ImageUploader extension point works end-to-end independent of
+ * WordPressImageUploader — shared between the WordPress and standalone
  * suites since neither this fixture nor the behavior it exercises is
  * WordPress-specific.
  */
-class Noop_Image_Uploader implements Image_Uploader {
+class NoopImageUploader implements ImageUploader
+{
     /**
      * Images passed to upload(), in call order.
      *
@@ -23,7 +25,8 @@ class Noop_Image_Uploader implements Image_Uploader {
     /**
      * {@inheritDoc}
      */
-    public function upload( string $src, string $alt ): string {
+    public function upload(string $src, string $alt): string
+    {
         $this->uploaded[] = [
             'src' => $src,
             'alt' => $alt,
@@ -35,21 +38,24 @@ class Noop_Image_Uploader implements Image_Uploader {
     /**
      * {@inheritDoc}
      */
-    public function attachment_id_for( string $url ): ?int {
+    public function attachmentIdFor(string $url): ?int
+    {
         return null;
     }
 
     /**
      * {@inheritDoc}
      */
-    public function get_created_attachment_ids(): array {
+    public function getCreatedAttachmentIds(): array
+    {
         return [];
     }
 
     /**
      * {@inheritDoc}
      */
-    public function assign_parent_to_attachments( int $parent_post_id ): void {
+    public function assignParentToAttachments(int $parentPostId): void
+    {
         // No-op: this test double has no "attachment" concept of its own.
     }
 }

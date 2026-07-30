@@ -1,13 +1,14 @@
 <?php
+
 /**
- * Trait Converts_Representative_Html
+ * Trait ConvertsRepresentativeHtml
  *
  * @package wp-block-converter
  */
 
-namespace Alley\WP\Block_Converter\Tests\Shared\Concerns;
+namespace Alley\WP\BlockConverter\Tests\Shared\Concerns;
 
-use Alley\WP\Block_Converter\Block_Converter;
+use Alley\WP\BlockConverter\BlockConverter;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
@@ -16,7 +17,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * environments are proven to produce identical output rather than
  * maintaining two copies of the same assertions.
  */
-trait Converts_Representative_Html {
+trait ConvertsRepresentativeHtml
+{
     /**
      * Data provider of representative HTML-to-block conversions, one per tag
      * or edge case (paragraphs, headings, lists, quotes, non-oembed embeds,
@@ -25,9 +27,10 @@ trait Converts_Representative_Html {
      * @return array<string, array{0: string, 1: string}> Each item is
      *                                                     [ $html, $expected ]
      *                                                     matching
-     *                                                     test_convert_to_blocks()'s parameters.
+     *                                                     testConvertToBlocks()'s parameters.
      */
-    public static function converter_data_provider(): array {
+    public static function converterDataProvider(): array
+    {
         return [
             'paragraph' => [
                 <<<HTML
@@ -118,8 +121,8 @@ HTML,
             'ol' => [
                 <<<HTML
 <ol>
-    <li>Random content</li>
-    <li>Another random content</li>
+	<li>Random content</li>
+	<li>Another random content</li>
 </ol>
 HTML,
                 <<<HTML
@@ -137,8 +140,8 @@ HTML,
             'ul' => [
                 <<<HTML
 <ul>
-    <li>Random content</li>
-    <li>Another random content</li>
+	<li>Random content</li>
+	<li>Another random content</li>
 </ul>
 HTML,
                 <<<HTML
@@ -156,7 +159,7 @@ HTML,
             'blockquote' => [
                 <<<HTML
 <blockquote>
-    <p>Lorem ipsum</p>
+	<p>Lorem ipsum</p>
 </blockquote>
 HTML,
                 <<<HTML
@@ -170,8 +173,8 @@ HTML,
             'blockquote with cite' => [
                 <<<HTML
 <blockquote>
-    <p>Lorem ipsum</p>
-    <cite>Source</cite>
+	<p>Lorem ipsum</p>
+	<cite>Source</cite>
 </blockquote>
 HTML,
                 <<<HTML
@@ -204,7 +207,7 @@ HTML,
             ],
             'paragraph with multiple spaces' => [
                 <<<HTML
-<p>This has    four spaces and    a tab.</p>
+<p>This has    four spaces and  a tab.</p>
 HTML,
                 <<<HTML
 <!-- wp:paragraph -->
@@ -221,9 +224,10 @@ HTML,
      * @return array<int, array{0: string, 1: string}> Each item is
      *                                                  [ $html, $expected ]
      *                                                  matching
-     *                                                  test_converting_multi_line_pre_tag()'s parameters.
+     *                                                  testConvertingMultiLinePreTag()'s parameters.
      */
-    public static function multi_line_pre_tag_data_provider(): array {
+    public static function multiLinePreTagDataProvider(): array
+    {
         return [
             [
                 <<<HTML
@@ -251,15 +255,15 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 1925 - Excepteur sint occaecat cupidatat non proident sunt in culpa.
 
 Names: John Doe, Example Person (1800-1900)
-        Jane Smith, Test Author (1850-1950)
+		Jane Smith, Test Author (1850-1950)
 
 Deaths: Lorem Ipsum, Historical Figure (1700-1800)
-        Dolor Sit, Notable Person (1750-1850)
+		Dolor Sit, Notable Person (1750-1850)
 </pre>
 HTML,
                 <<<HTML
 <!-- wp:preformatted -->
-<pre class="wp-block-preformatted">Lorem ipsum dolor sit amet, consectetur adipiscing elit.<br><br>1815 - Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.<br>1900 - Ut enim ad minim veniam, quis nostrud exercitation ullamco.<br>1915 - Duis aute irure dolor in reprehenderit in voluptate velit.<br>1925 - Excepteur sint occaecat cupidatat non proident sunt in culpa.<br><br>Names: John Doe, Example Person (1800-1900)<br>        Jane Smith, Test Author (1850-1950)<br><br>Deaths: Lorem Ipsum, Historical Figure (1700-1800)<br>        Dolor Sit, Notable Person (1750-1850)</pre>
+<pre class="wp-block-preformatted">Lorem ipsum dolor sit amet, consectetur adipiscing elit.<br><br>1815 - Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.<br>1900 - Ut enim ad minim veniam, quis nostrud exercitation ullamco.<br>1915 - Duis aute irure dolor in reprehenderit in voluptate velit.<br>1925 - Excepteur sint occaecat cupidatat non proident sunt in culpa.<br><br>Names: John Doe, Example Person (1800-1900)<br>		Jane Smith, Test Author (1850-1950)<br><br>Deaths: Lorem Ipsum, Historical Figure (1700-1800)<br>		Dolor Sit, Notable Person (1750-1850)</pre>
 <!-- /wp:preformatted -->
 HTML,
             ],
@@ -267,17 +271,18 @@ HTML,
     }
 
     /**
-     * Tests that each representative HTML snippet from converter_data_provider()
+     * Tests that each representative HTML snippet from converterDataProvider()
      * converts to its exact expected block markup.
      *
      * @param string $html     The source HTML to convert.
      * @param string $expected The expected converted block markup.
      */
-    #[DataProvider( 'converter_data_provider' )]
-    public function test_convert_to_blocks( string $html, string $expected ): void {
+    #[DataProvider('converterDataProvider')]
+    public function testConvertToBlocks(string $html, string $expected): void
+    {
         $this->assertSame(
             expected: $expected,
-            actual: ( new Block_Converter( $html ) )->convert(),
+            actual: ( new BlockConverter($html) )->convert(),
         );
     }
 
@@ -286,14 +291,15 @@ HTML,
      * and newlines is treated as empty and dropped, while a sibling paragraph
      * with real content is still converted.
      */
-    public function test_convert_with_empty_paragraphs_of_arbitrary_length_to_block(): void {
-        $arbitraryNewLines = str_repeat( "\n\r", mt_rand( 1, 1000 ) );
-        $arbitrarySpaces   = str_repeat( ' ', mt_rand( 1, 1000 ) );
+    public function testConvertWithEmptyParagraphsOfArbitraryLengthToBlock(): void
+    {
+        $arbitraryNewLines = str_repeat("\n\r", mt_rand(1, 1000));
+        $arbitrarySpaces   = str_repeat(' ', mt_rand(1, 1000));
 
-        $converter = new Block_Converter( '<p>bar</p><p></p><p>' . $arbitrarySpaces . $arbitraryNewLines . '</p>' );
+        $converter = new BlockConverter('<p>bar</p><p></p><p>' . $arbitrarySpaces . $arbitraryNewLines . '</p>');
         $block     = $converter->convert();
 
-        $this->assertNotEmpty( actual: $block );
+        $this->assertNotEmpty(actual: $block);
         $this->assertSame(
             expected: <<<HTML
 <!-- wp:paragraph -->
@@ -309,8 +315,9 @@ HTML,
      * alt text left as-is, and no attachment IDs are recorded, when the
      * converter has no image uploader configured.
      */
-    public function test_images_are_left_untouched_without_an_uploader(): void {
-        $converter = new Block_Converter(
+    public function testImagesAreLeftUntouchedWithoutAnUploader(): void
+    {
+        $converter = new BlockConverter(
             html: <<<HTML
 <img src="https://example.org/image.jpg" alt="Sample alt text" />
 HTML,
@@ -324,15 +331,16 @@ HTML,
 HTML,
             actual: $converter->convert(),
         );
-        $this->assertSame( [], $converter->get_created_attachment_ids() );
+        $this->assertSame([], $converter->getCreatedAttachmentIds());
     }
 
     /**
      * Tests that an image's srcset and sizes attributes are stripped from the
      * resulting image block markup.
      */
-    public function test_image_with_srcset_and_sizes_attributes_removed(): void {
-        $converter = new Block_Converter(
+    public function testImageWithSrcsetAndSizesAttributesRemoved(): void
+    {
+        $converter = new BlockConverter(
             html: <<<HTML
 <img src="https://example.org/image.jpg" srcset="https://example.org/image.jpg 1x, https://example.org/image-2x.jpg 2x" sizes="(max-width: 600px) 100vw, 600px" alt="Sample alt text" />
 HTML,
@@ -349,18 +357,19 @@ HTML,
     }
 
     /**
-     * Tests that a multi-line <pre> tag from multi_line_pre_tag_data_provider()
+     * Tests that a multi-line <pre> tag from multiLinePreTagDataProvider()
      * converts to a preformatted block with internal newlines replaced by
      * <br> tags.
      *
      * @param string $html     The source HTML to convert.
      * @param string $expected The expected converted block markup.
      */
-    #[DataProvider( 'multi_line_pre_tag_data_provider' )]
-    public function test_converting_multi_line_pre_tag( string $html, string $expected ): void {
+    #[DataProvider('multiLinePreTagDataProvider')]
+    public function testConvertingMultiLinePreTag(string $html, string $expected): void
+    {
         $this->assertSame(
             expected: $expected,
-            actual: ( new Block_Converter( $html ) )->convert(),
+            actual: ( new BlockConverter($html) )->convert(),
         );
     }
 
@@ -369,7 +378,8 @@ HTML,
      * comments, inline styles, and meta/link tags — is cleaned up and
      * converted to plain paragraph, list, and image blocks.
      */
-    public function test_microsoft_word_importing(): void {
+    public function testMicrosoftWordImporting(): void
+    {
         $html = <<<HTML
 <meta content="text/html; charset=utf-8" http-equiv="Content-Type"><meta content="Word.Document" name="ProgId"><meta content="Microsoft Word 12" name="Generator"><meta content="Microsoft Word 12" name="Originator"><link href="file:///C:%5CDOCUME%7E1%5C{{REDACTED}}%5CLOCALS%7E1%5CTemp%5Cmsohtmlclip1%5C01%5Cclip_filelist.xml" rel="File-List"><link href="file:///C:%5CDOCUME%7E1%5C{{REDACTED}}%5CLOCALS%7E1%5CTemp%5Cmsohtmlclip1%5C01%5Cclip_themedata.thmx" rel="themeData"><link href="file:///C:%5CDOCUME%7E1%5C{{REDACTED}}%5CLOCALS%7E1%5CTemp%5Cmsohtmlclip1%5C01%5Cclip_colorschememapping.xml" rel="colorSchemeMapping">\n
 <!--[if gte mso 9]><xml> Normal0falsefalsefalseEN-USX-NONEX-NONEMicrosoftInternetExplorer4 </xml><![endif]-->\n
@@ -379,15 +389,15 @@ HTML,
 <p class="MsoNormal" style="margin-bottom:12.0pt;line-height:115%"><b><span style="font-size:11.0pt;line-height:115%;font-family:&quot;Calibri&quot;,sans-serif;color:black">This is a test from Microsoft Word</span></b></p>
 <p class="MsoNormal" style="margin-bottom:12.0pt;line-height:115%"><span style="font-size:11.0pt;line-height:115%;font-family:&quot;Calibri&quot;,sans-serif;color:black">Here is a link to <a href="https://alley.com" style="color:blue;text-decoration:underline">Alley</a></span></p>
 <ul style="margin-top:0in" type="disc">
-    <li class="MsoNormal" style="margin-bottom:12.0pt;line-height:115%"><span style="font-size:11.0pt;line-height:115%;font-family:&quot;Calibri&quot;,sans-serif;color:black">First item</span></li>
-    <li class="MsoNormal" style="margin-bottom:12.0pt;line-height:115%"><span style="font-size:11.0pt;line-height:115%;font-family:&quot;Calibri&quot;,sans-serif;color:black">Second item</span></li>
+	<li class="MsoNormal" style="margin-bottom:12.0pt;line-height:115%"><span style="font-size:11.0pt;line-height:115%;font-family:&quot;Calibri&quot;,sans-serif;color:black">First item</span></li>
+	<li class="MsoNormal" style="margin-bottom:12.0pt;line-height:115%"><span style="font-size:11.0pt;line-height:115%;font-family:&quot;Calibri&quot;,sans-serif;color:black">Second item</span></li>
 </ul>
 <p class="MsoNormal" style="margin-bottom:12.0pt;line-height:115%"><span style="font-size:11.0pt;line-height:115%;font-family:&quot;Calibri&quot;,sans-serif;color:black">Here is an image:</span></p>
 
 <img border="0" src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Screen Shot 2022-01-19 at 2.51.37 PM" width="300" style="width:225.0pt;border:none;mso-border-alt:solid #000000 .5pt;mso-border-alt:solid windowtext .5pt;mso-padding-alt:0in 0in 0in 0in" />
 HTML;
 
-        $converted = ( new Block_Converter( $html ) )->convert();
+        $converted = ( new BlockConverter($html) )->convert();
 
         $this->assertSame(
             expected: <<<HTML
@@ -425,7 +435,8 @@ HTML,
      * Tests that nested blockquotes convert correctly, with each level's
      * paragraph and quote block content nested inside its parent quote block.
      */
-    public function test_convert_with_children(): void {
+    public function testConvertWithChildren(): void
+    {
         $html = <<<HTML
 <blockquote><p><em>Sint sint nulla voluptate nulla adipisicing non proident excepteur duis fugiat fugiat qui minim reprehenderit. Irure adipisicing mollit ipsum eiusmod consequat reprehenderit elit anim irure deserunt in deserunt. In dolore ut quis ex quis laboris ex eu. Minim culpa cillum eu.</em></p>
 <blockquote>
@@ -434,9 +445,9 @@ HTML,
 </blockquote>
 HTML;
 
-        $block = ( new Block_Converter( $html ) )->convert();
+        $block = ( new BlockConverter($html) )->convert();
 
-        $this->assertNotEmpty( actual: $block );
+        $this->assertNotEmpty(actual: $block);
         $this->assertSame(
             expected: <<<HTML
 <!-- wp:quote -->

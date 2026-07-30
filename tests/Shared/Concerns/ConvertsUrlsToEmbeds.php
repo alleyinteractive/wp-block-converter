@@ -1,22 +1,24 @@
 <?php
+
 /**
- * Trait Converts_Urls_To_Embeds
+ * Trait ConvertsUrlsToEmbeds
  *
  * @package wp-block-converter
  */
 
-namespace Alley\WP\Block_Converter\Tests\Shared\Concerns;
+namespace Alley\WP\BlockConverter\Tests\Shared\Concerns;
 
-use Alley\WP\Block_Converter\Block_Converter;
+use Alley\WP\BlockConverter\BlockConverter;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Rich embed coverage for the static oEmbed provider table
- * (Block_Converter::OEMBED_PROVIDERS). This needs no HTTP mocking at all —
- * embed_for_url() never makes a request — so it needs nothing WordPress
+ * (BlockConverter::OEMBED_PROVIDERS). This needs no HTTP mocking at all —
+ * embedForUrl() never makes a request — so it needs nothing WordPress
  * specific and is shared between the WordPress and standalone suites.
  */
-trait Converts_Urls_To_Embeds {
+trait ConvertsUrlsToEmbeds
+{
     /**
      * Data provider of URLs for each supported oEmbed provider (YouTube,
      * Vimeo, Twitter/X, Instagram, Facebook, TikTok, etc.) and their expected
@@ -25,9 +27,10 @@ trait Converts_Urls_To_Embeds {
      * @return array<string, array{0: string, 1: string}> Each item is
      *                                                     [ $html, $expected ]
      *                                                     matching
-     *                                                     test_url_to_embed()'s parameters.
+     *                                                     testUrlToEmbed()'s parameters.
      */
-    public static function embed_data_provider(): array {
+    public static function embedDataProvider(): array
+    {
         return [
             'youtube' => [
                 <<<HTML
@@ -261,16 +264,17 @@ HTML,
     }
 
     /**
-     * Tests that a bare or linked URL from embed_data_provider() converts to
+     * Tests that a bare or linked URL from embedDataProvider() converts to
      * the expected embed block for its provider, generated from the static
      * OEMBED_PROVIDERS table rather than a live oEmbed request.
      *
      * @param string $html     The source HTML to convert.
      * @param string $expected The expected converted embed block markup.
      */
-    #[DataProvider( 'embed_data_provider' )]
-    public function test_url_to_embed( string $html, string $expected ): void {
-        $block = ( new Block_Converter( $html ) )->convert();
+    #[DataProvider('embedDataProvider')]
+    public function testUrlToEmbed(string $html, string $expected): void
+    {
+        $block = ( new BlockConverter($html) )->convert();
 
         $this->assertSame(
             expected: $expected,

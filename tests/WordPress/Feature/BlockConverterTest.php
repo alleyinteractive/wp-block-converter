@@ -1,39 +1,42 @@
 <?php
+
 /**
  * Class BlockConverterTest
  *
  * @package wp-block-converter
  */
 
-namespace Alley\WP\Block_Converter\Tests\WordPress\Feature;
+namespace Alley\WP\BlockConverter\Tests\WordPress\Feature;
 
-use Alley\WP\Block_Converter\Block_Converter;
-use Alley\WP\Block_Converter\Tests\Shared\Concerns\Converts_Representative_Html;
-use Alley\WP\Block_Converter\Tests\Shared\Concerns\Converts_Urls_To_Embeds;
-use Alley\WP\Block_Converter\Tests\Shared\Concerns\Exercises_Constructor_Callbacks;
-use Alley\WP\Block_Converter\Tests\Shared\Concerns\Supports_Macros;
-use Alley\WP\Block_Converter\Tests\WordPress\TestCase;
-use Alley\WP\Block_Converter\WordPress_Image_Uploader;
+use Alley\WP\BlockConverter\BlockConverter;
+use Alley\WP\BlockConverter\Tests\Shared\Concerns\ConvertsRepresentativeHtml;
+use Alley\WP\BlockConverter\Tests\Shared\Concerns\ConvertsUrlsToEmbeds;
+use Alley\WP\BlockConverter\Tests\Shared\Concerns\ExercisesConstructorCallbacks;
+use Alley\WP\BlockConverter\Tests\Shared\Concerns\SupportsMacros;
+use Alley\WP\BlockConverter\Tests\WordPress\TestCase;
+use Alley\WP\BlockConverter\WordPressImageUploader;
 use Mantle\Testing\Concerns\Prevent_Remote_Requests;
 use Mantle\Testing\Concerns\Refresh_Database;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * WordPress-specific coverage only: real image sideloading into the media
- * library via WordPress_Image_Uploader, which needs WordPress loaded and so
+ * library via WordPressImageUploader, which needs WordPress loaded and so
  * can't run in the standalone suite.
  *
  * Everything WordPress-agnostic lives in the shared Concerns traits (see
- * tests/shared/Concerns) and is reused here, proving this suite produces
+ * tests/Shared/Concerns) and is reused here, proving this suite produces
  * identical output to the standalone suite under real WordPress rather than
  * maintaining a second copy of the same assertions.
  */
-class BlockConverterTest extends TestCase {
-    use Prevent_Remote_Requests, Refresh_Database;
-    use Converts_Representative_Html;
-    use Converts_Urls_To_Embeds;
-    use Exercises_Constructor_Callbacks;
-    use Supports_Macros;
+class BlockConverterTest extends TestCase
+{
+    use Prevent_Remote_Requests;
+    use Refresh_Database;
+    use ConvertsRepresentativeHtml;
+    use ConvertsUrlsToEmbeds;
+    use ExercisesConstructorCallbacks;
+    use SupportsMacros;
 
     /**
      * Data provider of images in different surrounding markup (bare, wrapped
@@ -43,14 +46,15 @@ class BlockConverterTest extends TestCase {
      * @return array<string, array{0: string, 1: string}> Each item is
      *                                                     [ $html, $expected ]
      *                                                     matching
-     *                                                     test_image()'s parameters.
+     *                                                     testImage()'s parameters.
      */
-    public static function image_dataprovider(): array {
+    public static function imageDataprovider(): array
+    {
         return [
             'image wrapped with figure/a' => [
                 <<<HTML
 <figure>
-    <a href="https://alley.com/"><img src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Sample alt text"></a>
+	<a href="https://alley.com/"><img src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Sample alt text"></a>
 </figure>
 HTML,
                 <<<HTML
@@ -62,8 +66,8 @@ HTML,
             'image wrapped with figure/a with caption' => [
                 <<<HTML
 <figure>
-    <a href="https://alley.com/"><img src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Sample alt text"></a>
-    <figcaption>Image caption</figcaption>
+	<a href="https://alley.com/"><img src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Sample alt text"></a>
+	<figcaption>Image caption</figcaption>
 </figure>
 HTML,
                 <<<HTML
@@ -142,8 +146,8 @@ HTML,
     }
 
     /**
-     * Tests that images from image_dataprovider() are sideloaded into the
-     * media library via WordPress_Image_Uploader, that exactly one attachment
+     * Tests that images from imageDataprovider() are sideloaded into the
+     * media library via WordPressImageUploader, that exactly one attachment
      * is created, and that the resulting block markup matches the expected
      * output once the real attachment ID and URL are substituted in.
      *
@@ -152,24 +156,25 @@ HTML,
      *                         {{IMAGE_ID}}/{{IMAGE_SRC}} placeholders for the
      *                         real attachment ID/URL.
      */
-    #[DataProvider( 'image_dataprovider' )]
-    public function test_image( string $html, string $expected ) {
-        $converter = new Block_Converter(
+    #[DataProvider('imageDataprovider')]
+    public function testImage(string $html, string $expected)
+    {
+        $converter = new BlockConverter(
             html: $html,
-            uploader: new WordPress_Image_Uploader(),
+            uploader: new WordPressImageUploader(),
         );
         $block     = $converter->convert();
 
         $this->assertCount(
             expectedCount: 1,
-            haystack: $converter->get_created_attachment_ids(),
+            haystack: $converter->getCreatedAttachmentIds(),
         );
 
-        $attachment_id = $converter->get_created_attachment_ids()[0];
+        $attachmentId = $converter->getCreatedAttachmentIds()[0];
 
         $expected = str_replace(
             search: [ '{{IMAGE_ID}}', '{{IMAGE_SRC}}' ],
-            replace: [ $attachment_id, wp_get_attachment_url( $attachment_id ) ],
+            replace: [ $attachmentId, wp_get_attachment_url($attachmentId) ],
             subject: $expected,
         );
 
@@ -188,15 +193,16 @@ HTML,
      * the network, and clears the uploads directory before each test so
      * attachment IDs and filenames don't leak between tests.
      */
-    protected function setUp(): void {
+    protected function setUp(): void
+    {
         parent::setUp();
 
-        $this->fake_request( 'https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png' )
-            ->with_file( __DIR__ . '/../../shared/Fixtures/image.png' );
+        $this->fake_request('https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png')
+            ->with_file(__DIR__ . '/../../Shared/Fixtures/image.png');
 
         // Delete all uploaded files between tests.
         $dir = wp_upload_dir();
 
-        shell_exec( "rm -rf {$dir['path']}/*" );
+        shell_exec("rm -rf {$dir['path']}/*");
     }
 }
