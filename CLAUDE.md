@@ -35,3 +35,13 @@ This is a library for converting HTML to WordPress blocks (sometimes referred to
 Prefer the dedicated tools over shell commands for file operations, and prefer simple, already-allowed commands over compound or complex shell invocations that require interactive approval. This allows work to continue in the background without prompting for permission.
 
 When navigating code, always prefer LSP tools (like goToDefinition and findReferences) over grep for intelligence. Fall back to grep/glob only if LSP is unavailable.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in GitHub Issues for alleyinteractive/wp-block-converter, using the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context layout (`CONTEXT.md` + `docs/adr/` at repo root, created lazily as needed). See `docs/agents/domain.md`.
