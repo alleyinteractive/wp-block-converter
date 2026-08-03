@@ -30,6 +30,21 @@ class BlockConverter
     use Macroable;
 
     /**
+     * Inline-level tags that only carry running text formatting.
+     *
+     * When one of these is a top-level node being dispatched by
+     * `convertNode()`, it's promoted to its own paragraph block (matching
+     * how the block editor treats bare inline content pasted at the top
+     * level). But when it's a direct child of a node already being walked
+     * by `convertWithChildren()` (e.g. an `<a>` inside a `<li>`), it must
+     * stay as plain inline HTML rather than being wrapped in a nested
+     * block — see `convertWithChildren()`.
+     *
+     * @var array<int, string>
+     */
+    private const INLINE_TAGS = [ 'a', 'abbr', 'b', 'code', 'em', 'i', 'strong', 'sub', 'sup', 'span', 'u' ];
+
+    /**
      * Known oEmbed provider matchers, in priority order.
      *
      * Reshapes a subset of WordPress core's built-in oEmbed provider list
@@ -368,20 +383,23 @@ class BlockConverter
             $this->cleanMsWordNode($node);
         }
 
-        if (static::hasMacro(strtolower($node->nodeName))) {
+        $tagName = strtolower($node->nodeName);
+
+        if (static::hasMacro($tagName)) {
             // Registered tag macros may be invoked by an arbitrary string
             // name (e.g. a hyphenated custom element like <special-tag>),
             // which isn't valid PHP method call syntax and can never trigger
             // __call() automatically — so call it directly instead.
-            $block = $this->__call(strtolower($node->nodeName), [ $node ]);
+            $block = $this->__call($tagName, [ $node ]);
+        } elseif ('p' === $tagName || in_array($tagName, self::INLINE_TAGS, true)) {
+            $block = $this->p($node);
         } else {
-            $block = match (strtolower($node->nodeName)) {
+            $block = match ($tagName) {
                 'ul' => $this->ul($node),
                 'ol' => $this->ol($node),
                 'img' => $this->img($node),
                 'blockquote' => $this->blockquote($node),
                 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' => $this->h($node),
-                'p', 'a', 'abbr', 'b', 'code', 'em', 'i', 'strong', 'sub', 'sup', 'span', 'u' => $this->p($node),
                 'figure' => $this->figure($node),
                 'br', 'cite', 'source' => null,
                 'hr' => $this->separator(),
@@ -412,6 +430,22 @@ class BlockConverter
                 }
 
                 $children         .= $child->nodeValue;
+                $previousWasBlock = false;
+
+                continue;
+            }
+
+            // Inline formatting tags (anchors, bold, em, etc.) are running
+            // text within this node's content, not their own nested block —
+            // only an anchor wrapping a single image still needs full
+            // conversion (into an image block).
+            if (
+                in_array(strtolower($child->nodeName), self::INLINE_TAGS, true)
+                && ! $this->isAnchorWrappedImage($child)
+            ) {
+                $this->sideloadChildImages($child);
+
+                $children         .= trim(static::getNodeHtml($child));
                 $previousWasBlock = false;
 
                 continue;
