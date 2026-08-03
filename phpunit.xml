@@ -2,14 +2,14 @@
 <phpunit
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
-  bootstrap="tests/standalone/bootstrap.php"
+  bootstrap="tests/Standalone/bootstrap.php"
   backupGlobals="false"
   colors="true"
   cacheDirectory=".phpunit.result.cache"
 >
   <testsuites>
     <testsuite name="standalone">
-      <directory suffix=".php">tests/standalone/Feature</directory>
+      <directory suffix=".php">tests/Standalone/Feature</directory>
     </testsuite>
   </testsuites>
 </phpunit>

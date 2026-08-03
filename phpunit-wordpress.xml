@@ -2,14 +2,14 @@
 <phpunit
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
-  bootstrap="tests/wordpress/bootstrap.php"
+  bootstrap="tests/WordPress/bootstrap.php"
   backupGlobals="false"
   colors="true"
   cacheDirectory=".phpunit-wordpress.result.cache"
 >
   <testsuites>
     <testsuite name="feature">
-      <directory suffix=".php">tests/wordpress/Feature</directory>
+      <directory suffix=".php">tests/WordPress/Feature</directory>
     </testsuite>
   </testsuites>
   <php>
