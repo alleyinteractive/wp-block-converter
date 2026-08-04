@@ -156,6 +156,25 @@ HTML,
 <!-- /wp:list -->
 HTML,
             ],
+            'ul with linked list item' => [
+                <<<HTML
+<ul>
+	<li><a href="https://example.org/">Random content</a></li>
+	<li>Another random content</li>
+</ul>
+HTML,
+                <<<HTML
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><a href="https://example.org/">Random content</a></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Another random content</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+HTML,
+            ],
             'blockquote' => [
                 <<<HTML
 <blockquote>
