@@ -26,6 +26,18 @@ use PHPUnit\Framework\Attributes\DataProvider;
  */
 trait SupportsMacros
 {
+
+    /**
+     * Flushes all macros registered on BlockConverter after every test, so
+     * a macro registered by one test (including one that overrides every
+     * built-in tag) can never leak into another regardless of test order.
+     */
+    protected function tearDown(): void
+    {
+        BlockConverter::flushMacros();
+
+        parent::tearDown();
+    }
     /**
      * Data provider of every built-in tag name that BlockConverter natively
      * handles.
@@ -163,17 +175,5 @@ HTML,
                 actual: $block,
             );
         }
-    }
-
-    /**
-     * Flushes all macros registered on BlockConverter after every test, so
-     * a macro registered by one test (including one that overrides every
-     * built-in tag) can never leak into another regardless of test order.
-     */
-    protected function tearDown(): void
-    {
-        BlockConverter::flushMacros();
-
-        parent::tearDown();
     }
 }

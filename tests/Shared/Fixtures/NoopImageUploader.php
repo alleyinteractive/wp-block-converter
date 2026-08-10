@@ -25,14 +25,9 @@ class NoopImageUploader implements ImageUploader
     /**
      * {@inheritDoc}
      */
-    public function upload(string $src, string $alt): string
+    public function assignParentToAttachments(int $parentPostId): void
     {
-        $this->uploaded[] = [
-            'src' => $src,
-            'alt' => $alt,
-        ];
-
-        return $src . '#uploaded';
+        // No-op: this test double has no "attachment" concept of its own.
     }
 
     /**
@@ -54,8 +49,13 @@ class NoopImageUploader implements ImageUploader
     /**
      * {@inheritDoc}
      */
-    public function assignParentToAttachments(int $parentPostId): void
+    public function upload(string $src, string $alt): string
     {
-        // No-op: this test double has no "attachment" concept of its own.
+        $this->uploaded[] = [
+            'src' => $src,
+            'alt' => $alt,
+        ];
+
+        return $src . '#uploaded';
     }
 }

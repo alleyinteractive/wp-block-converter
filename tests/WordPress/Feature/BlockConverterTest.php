@@ -31,12 +31,30 @@ use PHPUnit\Framework\Attributes\DataProvider;
  */
 class BlockConverterTest extends TestCase
 {
-    use Prevent_Remote_Requests;
-    use Refresh_Database;
     use ConvertsRepresentativeHtml;
     use ConvertsUrlsToEmbeds;
     use ExercisesConstructorCallbacks;
+    use Prevent_Remote_Requests;
+    use Refresh_Database;
     use SupportsMacros;
+
+    /**
+     * Fakes the remote request for the test image so sideloading it never hits
+     * the network, and clears the uploads directory before each test so
+     * attachment IDs and filenames don't leak between tests.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->fake_request('https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png')
+            ->with_file(__DIR__ . '/../../Shared/Fixtures/image.png');
+
+        // Delete all uploaded files between tests.
+        $dir = wp_upload_dir();
+
+        shell_exec("rm -rf {$dir['path']}/*");
+    }
 
     /**
      * Data provider of images in different surrounding markup (bare, wrapped
@@ -186,23 +204,5 @@ HTML,
             url_or_callback: 'https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png',
             expected_times: 1,
         );
-    }
-
-    /**
-     * Fakes the remote request for the test image so sideloading it never hits
-     * the network, and clears the uploads directory before each test so
-     * attachment IDs and filenames don't leak between tests.
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->fake_request('https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png')
-            ->with_file(__DIR__ . '/../../Shared/Fixtures/image.png');
-
-        // Delete all uploaded files between tests.
-        $dir = wp_upload_dir();
-
-        shell_exec("rm -rf {$dir['path']}/*");
     }
 }

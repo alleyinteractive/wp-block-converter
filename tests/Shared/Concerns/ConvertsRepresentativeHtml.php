@@ -290,6 +290,23 @@ HTML,
     }
 
     /**
+     * Tests that a multi-line <pre> tag from multiLinePreTagDataProvider()
+     * converts to a preformatted block with internal newlines replaced by
+     * <br> tags.
+     *
+     * @param string $html     The source HTML to convert.
+     * @param string $expected The expected converted block markup.
+     */
+    #[DataProvider('multiLinePreTagDataProvider')]
+    public function testConvertingMultiLinePreTag(string $html, string $expected): void
+    {
+        $this->assertSame(
+            expected: $expected,
+            actual: ( new BlockConverter($html) )->convert(),
+        );
+    }
+
+    /**
      * Tests that each representative HTML snippet from converterDataProvider()
      * converts to its exact expected block markup.
      *
@@ -302,6 +319,43 @@ HTML,
         $this->assertSame(
             expected: $expected,
             actual: ( new BlockConverter($html) )->convert(),
+        );
+    }
+
+    /**
+     * Tests that nested blockquotes convert correctly, with each level's
+     * paragraph and quote block content nested inside its parent quote block.
+     */
+    public function testConvertWithChildren(): void
+    {
+        $html = <<<HTML
+<blockquote><p><em>Sint sint nulla voluptate nulla adipisicing non proident excepteur duis fugiat fugiat qui minim reprehenderit. Irure adipisicing mollit ipsum eiusmod consequat reprehenderit elit anim irure deserunt in deserunt. In dolore ut quis ex quis laboris ex eu. Minim culpa cillum eu.</em></p>
+<blockquote>
+<blockquote><p><em>-proident excepteur duis fugiat fugiat qui minim reprehenderit </em></p></blockquote>
+</blockquote>
+</blockquote>
+HTML;
+
+        $block = ( new BlockConverter($html) )->convert();
+
+        $this->assertNotEmpty(actual: $block);
+        $this->assertSame(
+            expected: <<<HTML
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:paragraph -->
+<p><em>Sint sint nulla voluptate nulla adipisicing non proident excepteur duis fugiat fugiat qui minim reprehenderit. Irure adipisicing mollit ipsum eiusmod consequat reprehenderit elit anim irure deserunt in deserunt. In dolore ut quis ex quis laboris ex eu. Minim culpa cillum eu.</em></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:paragraph -->
+<p><em>-proident excepteur duis fugiat fugiat qui minim reprehenderit</em></p>
+<!-- /wp:paragraph --></blockquote>
+<!-- /wp:quote --></blockquote>
+<!-- /wp:quote --></blockquote>
+<!-- /wp:quote -->
+HTML,
+            actual: $block,
         );
     }
 
@@ -376,23 +430,6 @@ HTML,
     }
 
     /**
-     * Tests that a multi-line <pre> tag from multiLinePreTagDataProvider()
-     * converts to a preformatted block with internal newlines replaced by
-     * <br> tags.
-     *
-     * @param string $html     The source HTML to convert.
-     * @param string $expected The expected converted block markup.
-     */
-    #[DataProvider('multiLinePreTagDataProvider')]
-    public function testConvertingMultiLinePreTag(string $html, string $expected): void
-    {
-        $this->assertSame(
-            expected: $expected,
-            actual: ( new BlockConverter($html) )->convert(),
-        );
-    }
-
-    /**
      * Tests that HTML pasted from Microsoft Word — with its MSO conditional
      * comments, inline styles, and meta/link tags — is cleaned up and
      * converted to plain paragraph, list, and image blocks.
@@ -447,43 +484,6 @@ HTML;
 <!-- /wp:image -->
 HTML,
             actual: $converted,
-        );
-    }
-
-    /**
-     * Tests that nested blockquotes convert correctly, with each level's
-     * paragraph and quote block content nested inside its parent quote block.
-     */
-    public function testConvertWithChildren(): void
-    {
-        $html = <<<HTML
-<blockquote><p><em>Sint sint nulla voluptate nulla adipisicing non proident excepteur duis fugiat fugiat qui minim reprehenderit. Irure adipisicing mollit ipsum eiusmod consequat reprehenderit elit anim irure deserunt in deserunt. In dolore ut quis ex quis laboris ex eu. Minim culpa cillum eu.</em></p>
-<blockquote>
-<blockquote><p><em>-proident excepteur duis fugiat fugiat qui minim reprehenderit </em></p></blockquote>
-</blockquote>
-</blockquote>
-HTML;
-
-        $block = ( new BlockConverter($html) )->convert();
-
-        $this->assertNotEmpty(actual: $block);
-        $this->assertSame(
-            expected: <<<HTML
-<!-- wp:quote -->
-<blockquote class="wp-block-quote"><!-- wp:paragraph -->
-<p><em>Sint sint nulla voluptate nulla adipisicing non proident excepteur duis fugiat fugiat qui minim reprehenderit. Irure adipisicing mollit ipsum eiusmod consequat reprehenderit elit anim irure deserunt in deserunt. In dolore ut quis ex quis laboris ex eu. Minim culpa cillum eu.</em></p>
-<!-- /wp:paragraph -->
-
-<!-- wp:quote -->
-<blockquote class="wp-block-quote"><!-- wp:quote -->
-<blockquote class="wp-block-quote"><!-- wp:paragraph -->
-<p><em>-proident excepteur duis fugiat fugiat qui minim reprehenderit</em></p>
-<!-- /wp:paragraph --></blockquote>
-<!-- /wp:quote --></blockquote>
-<!-- /wp:quote --></blockquote>
-<!-- /wp:quote -->
-HTML,
-            actual: $block,
         );
     }
 }
