@@ -2,8 +2,6 @@
 
 /**
  * Trait ConvertsRepresentativeHtml
- *
- * @package wp-block-converter
  */
 
 namespace Alley\WP\BlockConverter\Tests\Shared\Concerns;
@@ -25,40 +23,40 @@ trait ConvertsRepresentativeHtml
      * whitespace collapsing).
      *
      * @return array<string, array{0: string, 1: string}> Each item is
-     *                                                     [ $html, $expected ]
-     *                                                     matching
-     *                                                     testConvertToBlocks()'s parameters.
+     *                                                    [ $html, $expected ]
+     *                                                    matching
+     *                                                    testConvertToBlocks()'s parameters.
      */
     public static function converterDataProvider(): array
     {
         return [
             'paragraph' => [
-                <<<HTML
+                <<<'HTML'
 <p>Content to migrate</p>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:paragraph -->
 <p>Content to migrate</p>
 <!-- /wp:paragraph -->
 HTML,
             ],
             'empty-paragraphs' => [
-                <<<HTML
+                <<<'HTML'
 <p>Content to migrate</p>
 <p></p>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:paragraph -->
 <p>Content to migrate</p>
 <!-- /wp:paragraph -->
 HTML,
             ],
             'paragraph-heading' => [
-                <<<HTML
+                <<<'HTML'
 <p>Content to migrate</p>
 <h1>Heading 01</h1>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:paragraph -->
 <p>Content to migrate</p>
 <!-- /wp:paragraph -->
@@ -69,63 +67,63 @@ HTML,
 HTML,
             ],
             'h1' => [
-                <<<HTML
+                <<<'HTML'
 <h1>Another content</h1>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:heading {"level":1} -->
 <h1 class="wp-block-heading">Another content</h1>
 <!-- /wp:heading -->
 HTML,
             ],
             'h2' => [
-                <<<HTML
+                <<<'HTML'
 <h2>Another content</h2>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:heading {"level":2} -->
 <h2 class="wp-block-heading">Another content</h2>
 <!-- /wp:heading -->
 HTML,
             ],
             'h3' => [
-                <<<HTML
+                <<<'HTML'
 <h3>Another content</h3>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:heading {"level":3} -->
 <h3 class="wp-block-heading">Another content</h3>
 <!-- /wp:heading -->
 HTML,
             ],
             'h4' => [
-                <<<HTML
+                <<<'HTML'
 <h4>Another content</h4>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:heading {"level":4} -->
 <h4 class="wp-block-heading">Another content</h4>
 <!-- /wp:heading -->
 HTML,
             ],
             'h5' => [
-                <<<HTML
+                <<<'HTML'
 <h5>Another content</h5>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:heading {"level":5} -->
 <h5 class="wp-block-heading">Another content</h5>
 <!-- /wp:heading -->
 HTML,
             ],
             'ol' => [
-                <<<HTML
+                <<<'HTML'
 <ol>
 	<li>Random content</li>
 	<li>Another random content</li>
 </ol>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:list {"ordered":true} -->
 <ol class="wp-block-list"><!-- wp:list-item -->
 <li>Random content</li>
@@ -138,13 +136,13 @@ HTML,
 HTML,
             ],
             'ul' => [
-                <<<HTML
+                <<<'HTML'
 <ul>
 	<li>Random content</li>
 	<li>Another random content</li>
 </ul>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:list -->
 <ul class="wp-block-list"><!-- wp:list-item -->
 <li>Random content</li>
@@ -157,13 +155,13 @@ HTML,
 HTML,
             ],
             'ul with linked list item' => [
-                <<<HTML
+                <<<'HTML'
 <ul>
 	<li><a href="https://example.org/">Random content</a></li>
 	<li>Another random content</li>
 </ul>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:list -->
 <ul class="wp-block-list"><!-- wp:list-item -->
 <li><a href="https://example.org/">Random content</a></li>
@@ -176,12 +174,12 @@ HTML,
 HTML,
             ],
             'blockquote' => [
-                <<<HTML
+                <<<'HTML'
 <blockquote>
 	<p>Lorem ipsum</p>
 </blockquote>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:quote -->
 <blockquote class="wp-block-quote"><!-- wp:paragraph -->
 <p>Lorem ipsum</p>
@@ -190,13 +188,13 @@ HTML,
 HTML,
             ],
             'blockquote with cite' => [
-                <<<HTML
+                <<<'HTML'
 <blockquote>
 	<p>Lorem ipsum</p>
 	<cite>Source</cite>
 </blockquote>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:quote -->
 <blockquote class="wp-block-quote"><!-- wp:paragraph -->
 <p>Lorem ipsum</p>
@@ -205,30 +203,30 @@ HTML,
 HTML,
             ],
             'non-oembed-embed' => [
-                <<<HTML
+                <<<'HTML'
 <embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200" />
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:html -->
 <embed type="video/webm" src="/media/mr-arnold.mp4" width="250" height="200"/>
 <!-- /wp:html -->
 HTML,
             ],
             'paragraph with double spaces' => [
-                <<<HTML
+                <<<'HTML'
 <p>This is content with  a double space.</p>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:paragraph -->
 <p>This is content with a double space.</p>
 <!-- /wp:paragraph -->
 HTML,
             ],
             'paragraph with multiple spaces' => [
-                <<<HTML
+                <<<'HTML'
 <p>This has    four spaces and  a tab.</p>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:paragraph -->
 <p>This has four spaces and a tab.</p>
 <!-- /wp:paragraph -->
@@ -241,15 +239,15 @@ HTML,
      * Data provider of multi-line <pre> tag conversions.
      *
      * @return array<int, array{0: string, 1: string}> Each item is
-     *                                                  [ $html, $expected ]
-     *                                                  matching
-     *                                                  testConvertingMultiLinePreTag()'s parameters.
+     *                                                 [ $html, $expected ]
+     *                                                 matching
+     *                                                 testConvertingMultiLinePreTag()'s parameters.
      */
     public static function multiLinePreTagDataProvider(): array
     {
         return [
             [
-                <<<HTML
+                <<<'HTML'
 <pre>
 Line 1
 Line 2
@@ -257,14 +255,14 @@ Line 2
 Line 3
 </pre>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:preformatted -->
 <pre class="wp-block-preformatted">Line 1<br>Line 2<br><br>Line 3</pre>
 <!-- /wp:preformatted -->
 HTML,
             ],
             [
-                <<<HTML
+                <<<'HTML'
 <pre>
 Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 
@@ -280,7 +278,7 @@ Deaths: Lorem Ipsum, Historical Figure (1700-1800)
 		Dolor Sit, Notable Person (1750-1850)
 </pre>
 HTML,
-                <<<HTML
+                <<<'HTML'
 <!-- wp:preformatted -->
 <pre class="wp-block-preformatted">Lorem ipsum dolor sit amet, consectetur adipiscing elit.<br><br>1815 - Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.<br>1900 - Ut enim ad minim veniam, quis nostrud exercitation ullamco.<br>1915 - Duis aute irure dolor in reprehenderit in voluptate velit.<br>1925 - Excepteur sint occaecat cupidatat non proident sunt in culpa.<br><br>Names: John Doe, Example Person (1800-1900)<br>		Jane Smith, Test Author (1850-1950)<br><br>Deaths: Lorem Ipsum, Historical Figure (1700-1800)<br>		Dolor Sit, Notable Person (1750-1850)</pre>
 <!-- /wp:preformatted -->
@@ -290,18 +288,72 @@ HTML,
     }
 
     /**
+     * Tests that a multi-line <pre> tag from multiLinePreTagDataProvider()
+     * converts to a preformatted block with internal newlines replaced by
+     * <br> tags.
+     *
+     * @param  string  $html  The source HTML to convert.
+     * @param  string  $expected  The expected converted block markup.
+     */
+    #[DataProvider('multiLinePreTagDataProvider')]
+    public function testConvertingMultiLinePreTag(string $html, string $expected): void
+    {
+        $this->assertSame(
+            expected: $expected,
+            actual: (new BlockConverter($html))->convert(),
+        );
+    }
+
+    /**
      * Tests that each representative HTML snippet from converterDataProvider()
      * converts to its exact expected block markup.
      *
-     * @param string $html     The source HTML to convert.
-     * @param string $expected The expected converted block markup.
+     * @param  string  $html  The source HTML to convert.
+     * @param  string  $expected  The expected converted block markup.
      */
     #[DataProvider('converterDataProvider')]
     public function testConvertToBlocks(string $html, string $expected): void
     {
         $this->assertSame(
             expected: $expected,
-            actual: ( new BlockConverter($html) )->convert(),
+            actual: (new BlockConverter($html))->convert(),
+        );
+    }
+
+    /**
+     * Tests that nested blockquotes convert correctly, with each level's
+     * paragraph and quote block content nested inside its parent quote block.
+     */
+    public function testConvertWithChildren(): void
+    {
+        $html = <<<'HTML'
+<blockquote><p><em>Sint sint nulla voluptate nulla adipisicing non proident excepteur duis fugiat fugiat qui minim reprehenderit. Irure adipisicing mollit ipsum eiusmod consequat reprehenderit elit anim irure deserunt in deserunt. In dolore ut quis ex quis laboris ex eu. Minim culpa cillum eu.</em></p>
+<blockquote>
+<blockquote><p><em>-proident excepteur duis fugiat fugiat qui minim reprehenderit </em></p></blockquote>
+</blockquote>
+</blockquote>
+HTML;
+
+        $block = (new BlockConverter($html))->convert();
+
+        $this->assertNotEmpty(actual: $block);
+        $this->assertSame(
+            expected: <<<'HTML'
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:paragraph -->
+<p><em>Sint sint nulla voluptate nulla adipisicing non proident excepteur duis fugiat fugiat qui minim reprehenderit. Irure adipisicing mollit ipsum eiusmod consequat reprehenderit elit anim irure deserunt in deserunt. In dolore ut quis ex quis laboris ex eu. Minim culpa cillum eu.</em></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:paragraph -->
+<p><em>-proident excepteur duis fugiat fugiat qui minim reprehenderit</em></p>
+<!-- /wp:paragraph --></blockquote>
+<!-- /wp:quote --></blockquote>
+<!-- /wp:quote --></blockquote>
+<!-- /wp:quote -->
+HTML,
+            actual: $block,
         );
     }
 
@@ -313,14 +365,14 @@ HTML,
     public function testConvertWithEmptyParagraphsOfArbitraryLengthToBlock(): void
     {
         $arbitraryNewLines = str_repeat("\n\r", mt_rand(1, 1000));
-        $arbitrarySpaces   = str_repeat(' ', mt_rand(1, 1000));
+        $arbitrarySpaces = str_repeat(' ', mt_rand(1, 1000));
 
-        $converter = new BlockConverter('<p>bar</p><p></p><p>' . $arbitrarySpaces . $arbitraryNewLines . '</p>');
-        $block     = $converter->convert();
+        $converter = new BlockConverter('<p>bar</p><p></p><p>'.$arbitrarySpaces.$arbitraryNewLines.'</p>');
+        $block = $converter->convert();
 
         $this->assertNotEmpty(actual: $block);
         $this->assertSame(
-            expected: <<<HTML
+            expected: <<<'HTML'
 <!-- wp:paragraph -->
 <p>bar</p>
 <!-- /wp:paragraph -->
@@ -337,13 +389,13 @@ HTML,
     public function testImagesAreLeftUntouchedWithoutAnUploader(): void
     {
         $converter = new BlockConverter(
-            html: <<<HTML
+            html: <<<'HTML'
 <img src="https://example.org/image.jpg" alt="Sample alt text" />
 HTML,
         );
 
         $this->assertSame(
-            expected: <<<HTML
+            expected: <<<'HTML'
 <!-- wp:image {"sizeSlug":"large"} -->
 <figure class="wp-block-image size-large"><img src="https://example.org/image.jpg" alt="Sample alt text"/></figure>
 <!-- /wp:image -->
@@ -360,35 +412,18 @@ HTML,
     public function testImageWithSrcsetAndSizesAttributesRemoved(): void
     {
         $converter = new BlockConverter(
-            html: <<<HTML
+            html: <<<'HTML'
 <img src="https://example.org/image.jpg" srcset="https://example.org/image.jpg 1x, https://example.org/image-2x.jpg 2x" sizes="(max-width: 600px) 100vw, 600px" alt="Sample alt text" />
 HTML,
         );
 
         $this->assertSame(
-            expected: <<<HTML
+            expected: <<<'HTML'
 <!-- wp:image {"sizeSlug":"large"} -->
 <figure class="wp-block-image size-large"><img src="https://example.org/image.jpg" alt="Sample alt text"/></figure>
 <!-- /wp:image -->
 HTML,
             actual: $converter->convert(),
-        );
-    }
-
-    /**
-     * Tests that a multi-line <pre> tag from multiLinePreTagDataProvider()
-     * converts to a preformatted block with internal newlines replaced by
-     * <br> tags.
-     *
-     * @param string $html     The source HTML to convert.
-     * @param string $expected The expected converted block markup.
-     */
-    #[DataProvider('multiLinePreTagDataProvider')]
-    public function testConvertingMultiLinePreTag(string $html, string $expected): void
-    {
-        $this->assertSame(
-            expected: $expected,
-            actual: ( new BlockConverter($html) )->convert(),
         );
     }
 
@@ -416,10 +451,10 @@ HTML,
 <img border="0" src="https://alley.com/wp-content/uploads/2022/01/Screen-Shot-2022-01-19-at-2.51.37-PM.png" alt="Screen Shot 2022-01-19 at 2.51.37 PM" width="300" style="width:225.0pt;border:none;mso-border-alt:solid #000000 .5pt;mso-border-alt:solid windowtext .5pt;mso-padding-alt:0in 0in 0in 0in" />
 HTML;
 
-        $converted = ( new BlockConverter($html) )->convert();
+        $converted = (new BlockConverter($html))->convert();
 
         $this->assertSame(
-            expected: <<<HTML
+            expected: <<<'HTML'
 <!-- wp:paragraph -->
 <p><strong>This is a test from Microsoft Word</strong></p>
 <!-- /wp:paragraph -->
@@ -447,43 +482,6 @@ HTML;
 <!-- /wp:image -->
 HTML,
             actual: $converted,
-        );
-    }
-
-    /**
-     * Tests that nested blockquotes convert correctly, with each level's
-     * paragraph and quote block content nested inside its parent quote block.
-     */
-    public function testConvertWithChildren(): void
-    {
-        $html = <<<HTML
-<blockquote><p><em>Sint sint nulla voluptate nulla adipisicing non proident excepteur duis fugiat fugiat qui minim reprehenderit. Irure adipisicing mollit ipsum eiusmod consequat reprehenderit elit anim irure deserunt in deserunt. In dolore ut quis ex quis laboris ex eu. Minim culpa cillum eu.</em></p>
-<blockquote>
-<blockquote><p><em>-proident excepteur duis fugiat fugiat qui minim reprehenderit </em></p></blockquote>
-</blockquote>
-</blockquote>
-HTML;
-
-        $block = ( new BlockConverter($html) )->convert();
-
-        $this->assertNotEmpty(actual: $block);
-        $this->assertSame(
-            expected: <<<HTML
-<!-- wp:quote -->
-<blockquote class="wp-block-quote"><!-- wp:paragraph -->
-<p><em>Sint sint nulla voluptate nulla adipisicing non proident excepteur duis fugiat fugiat qui minim reprehenderit. Irure adipisicing mollit ipsum eiusmod consequat reprehenderit elit anim irure deserunt in deserunt. In dolore ut quis ex quis laboris ex eu. Minim culpa cillum eu.</em></p>
-<!-- /wp:paragraph -->
-
-<!-- wp:quote -->
-<blockquote class="wp-block-quote"><!-- wp:quote -->
-<blockquote class="wp-block-quote"><!-- wp:paragraph -->
-<p><em>-proident excepteur duis fugiat fugiat qui minim reprehenderit</em></p>
-<!-- /wp:paragraph --></blockquote>
-<!-- /wp:quote --></blockquote>
-<!-- /wp:quote --></blockquote>
-<!-- /wp:quote -->
-HTML,
-            actual: $block,
         );
     }
 }

@@ -17,11 +17,6 @@
       "Bash(pwd:*)",
       "Edit",
       "Write"
-    ],
-    "deny": [
-      "Bash(git commit:*)",
-      "Bash(gh pr comment:*)",
-      "Bash(gh merge)"
     ]
   },
   "hooks": {

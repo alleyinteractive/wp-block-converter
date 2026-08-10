@@ -2,8 +2,6 @@
 
 /**
  * Trait SupportsMacros
- *
- * @package wp-block-converter
  */
 
 namespace Alley\WP\BlockConverter\Tests\Shared\Concerns;
@@ -27,12 +25,24 @@ use PHPUnit\Framework\Attributes\DataProvider;
 trait SupportsMacros
 {
     /**
+     * Flushes all macros registered on BlockConverter after every test, so
+     * a macro registered by one test (including one that overrides every
+     * built-in tag) can never leak into another regardless of test order.
+     */
+    protected function tearDown(): void
+    {
+        BlockConverter::flushMacros();
+
+        parent::tearDown();
+    }
+
+    /**
      * Data provider of every built-in tag name that BlockConverter natively
      * handles.
      *
      * @return array<string, array{0: string}> Each item is [ $tag ] matching
-     *                                          testMacroableOverrideBuiltIn()'s
-     *                                          parameter.
+     *                                         testMacroableOverrideBuiltIn()'s
+     *                                         parameter.
      */
     public static function macroableDataprovider(): array
     {
@@ -66,7 +76,7 @@ trait SupportsMacros
             'hr',
         ];
 
-        return array_combine($tags, array_map(fn (string $tag) => [ $tag ], $tags));
+        return array_combine($tags, array_map(fn (string $tag) => [$tag], $tags));
     }
 
     /**
@@ -78,14 +88,14 @@ trait SupportsMacros
         BlockConverter::macro(
             'special-tag',
             function (Node $node) {
-                return new Block('paragraph', [ 'attribute' => '123' ], BlockConverter::getNodeHtml($node));
+                return new Block('paragraph', ['attribute' => '123'], BlockConverter::getNodeHtml($node));
             },
         );
 
-        $block = ( new BlockConverter('<special-tag>content here</special-tag>') )->convert();
+        $block = (new BlockConverter('<special-tag>content here</special-tag>'))->convert();
 
         $this->assertEquals(
-            expected: <<<HTML
+            expected: <<<'HTML'
 <!-- wp:paragraph {"attribute":"123"} -->
 <special-tag>content here</special-tag>
 <!-- /wp:paragraph -->
@@ -130,19 +140,19 @@ HTML,
      * macroableDataprovider()) overrides the built-in handler for that tag,
      * for every tag the converter natively supports.
      *
-     * @param string $tag The HTML tag name whose built-in handler is overridden.
+     * @param  string  $tag  The HTML tag name whose built-in handler is overridden.
      */
     #[DataProvider('macroableDataprovider')]
     public function testMacroableOverrideBuiltIn(string $tag): void
     {
-        $isSingleTag = in_array($tag, [ 'img', 'br', 'hr', 'source' ], true);
+        $isSingleTag = in_array($tag, ['img', 'br', 'hr', 'source'], true);
 
         BlockConverter::macro(
             $tag,
-            fn (Node $node) => new Block('core/paragraph', [], $isSingleTag ? strtolower($node->nodeName) : ( $node->textContent ?? '' )),
+            fn (Node $node) => new Block('core/paragraph', [], $isSingleTag ? strtolower($node->nodeName) : ($node->textContent ?? '')),
         );
 
-        $block = ( new BlockConverter($isSingleTag ? "<$tag />" : "<$tag>content here</$tag>") )->convert();
+        $block = (new BlockConverter($isSingleTag ? "<$tag />" : "<$tag>content here</$tag>"))->convert();
 
         if ($isSingleTag) {
             $this->assertEquals(
@@ -155,7 +165,7 @@ HTML,
             );
         } else {
             $this->assertEquals(
-                expected: <<<HTML
+                expected: <<<'HTML'
 <!-- wp:paragraph -->
 content here
 <!-- /wp:paragraph -->
@@ -163,17 +173,5 @@ HTML,
                 actual: $block,
             );
         }
-    }
-
-    /**
-     * Flushes all macros registered on BlockConverter after every test, so
-     * a macro registered by one test (including one that overrides every
-     * built-in tag) can never leak into another regardless of test order.
-     */
-    protected function tearDown(): void
-    {
-        BlockConverter::flushMacros();
-
-        parent::tearDown();
     }
 }
