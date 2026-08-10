@@ -2,8 +2,6 @@
 
 /**
  * Class BlockConverterTest
- *
- * @package wp-block-converter
  */
 
 namespace Alley\WP\BlockConverter\Tests\Standalone\Feature;

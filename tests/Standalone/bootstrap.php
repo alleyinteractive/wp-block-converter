@@ -7,4 +7,4 @@
  * this never loads WordPress or a database, just the Composer autoloader.
  */
 
-require __DIR__ . '/../../vendor/autoload.php';
+require __DIR__.'/../../vendor/autoload.php';

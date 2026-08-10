@@ -2,8 +2,6 @@
 
 /**
  * Trait ExercisesConstructorCallbacks
- *
- * @package wp-block-converter
  */
 
 namespace Alley\WP\BlockConverter\Tests\Shared\Concerns;
@@ -23,7 +21,6 @@ use Dom\Node;
  */
 trait ExercisesConstructorCallbacks
 {
-
     /**
      * Tests that supplying a custom ImageUploader causes an image to be
      * sideloaded through it end-to-end, with the uploader's rewritten source
@@ -31,7 +28,7 @@ trait ExercisesConstructorCallbacks
      */
     public function testACustomUploaderSideloadsImagesEndToEnd(): void
     {
-        $uploader = new NoopImageUploader();
+        $uploader = new NoopImageUploader;
 
         $converter = new BlockConverter(
             html: '<img src="https://example.org/image.jpg" alt="Sample alt text" />',
@@ -50,7 +47,7 @@ trait ExercisesConstructorCallbacks
             actual: $uploader->uploaded,
         );
         $this->assertSame(
-            expected: <<<HTML
+            expected: <<<'HTML'
 <!-- wp:image {"sizeSlug":"full"} -->
 <figure class="wp-block-image size-full"><img src="https://example.org/image.jpg#uploaded" alt="Sample alt text"/></figure>
 <!-- /wp:image -->
@@ -67,7 +64,7 @@ HTML,
      */
     public function testGetCreatedAttachmentIdsAndAssignParentProxyToTheUploader(): void
     {
-        $uploader = new NoopImageUploader();
+        $uploader = new NoopImageUploader;
 
         $converter = new BlockConverter(
             html: '<img src="https://example.org/image.jpg" alt="Sample alt text" />',
@@ -86,6 +83,7 @@ HTML,
 
         $this->addToAssertionCount(1);
     }
+
     /**
      * Tests that the onBlock callback can rewrite the content of a single
      * generated block (here, only paragraph blocks) while leaving others
@@ -93,7 +91,7 @@ HTML,
      */
     public function testOnBlockCanModifyASingleBlock(): void
     {
-        $html = <<<HTML
+        $html = <<<'HTML'
 <p>Content to migrate</p>
 <h1>Heading 01</h1>
 HTML;
@@ -101,7 +99,7 @@ HTML;
         $converter = new BlockConverter(
             html: $html,
             onBlock: function (?Block $block, Node $node) {
-                if ($block instanceof Block && 'p' === strtolower($node->nodeName)) {
+                if ($block instanceof Block && strtolower($node->nodeName) === 'p') {
                     $block->content = 'Override content';
                 }
 
@@ -110,7 +108,7 @@ HTML;
         );
 
         $this->assertSame(
-            expected: <<<HTML
+            expected: <<<'HTML'
 <!-- wp:paragraph -->
 Override content
 <!-- /wp:paragraph -->
@@ -154,12 +152,12 @@ HTML,
      */
     public function testOnPreSideloadImageAndOnSideloadedImageAreInvokedForChildImages(): void
     {
-        $uploader            = new NoopImageUploader();
-        $preSideloadSources  = [];
-        $sideloadedSources   = [];
+        $uploader = new NoopImageUploader;
+        $preSideloadSources = [];
+        $sideloadedSources = [];
 
         $converter = new BlockConverter(
-            html: <<<HTML
+            html: <<<'HTML'
 <div>
 	<img src="https://example.org/a.jpg" alt="A" />
 	<img src="https://example.org/b.jpg" alt="B" />
@@ -180,11 +178,11 @@ HTML,
         $result = $converter->convert();
 
         $this->assertSame(
-            expected: [ 'https://example.org/a.jpg', 'https://example.org/b.jpg' ],
+            expected: ['https://example.org/a.jpg', 'https://example.org/b.jpg'],
             actual: $preSideloadSources,
         );
         $this->assertSame(
-            expected: [ 'https://example.org/a.jpg#uploaded' ],
+            expected: ['https://example.org/a.jpg#uploaded'],
             actual: $sideloadedSources,
         );
         $this->assertCount(1, $uploader->uploaded);
@@ -201,7 +199,7 @@ HTML,
     {
         $converter = new BlockConverter(
             html: '<p>Unused</p>',
-            onSanitizedImageUrl: fn (string $sanitizedUrl, string $url) => $sanitizedUrl . '?cachebust=1',
+            onSanitizedImageUrl: fn (string $sanitizedUrl, string $url) => $sanitizedUrl.'?cachebust=1',
         );
 
         $this->assertSame(
@@ -222,7 +220,7 @@ HTML,
         $converter = new BlockConverter(
             html: '<p>First</p><p>Second</p>',
             onSkipMinifyBlock: function (bool $skipMinifyBlock, string $block, Node $node) use (&$calls) {
-                $calls[] = [ $skipMinifyBlock, $block, $node ];
+                $calls[] = [$skipMinifyBlock, $block, $node];
 
                 return $skipMinifyBlock;
             },
@@ -232,7 +230,7 @@ HTML,
 
         $this->assertCount(2, $calls);
 
-        foreach ($calls as [ $skipMinifyBlock, $block, $node ]) {
+        foreach ($calls as [$skipMinifyBlock, $block, $node]) {
             $this->assertFalse($skipMinifyBlock);
             $this->assertStringContainsString('<!-- wp:paragraph -->', $block);
             $this->assertInstanceOf(Node::class, $node);

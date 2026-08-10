@@ -53,6 +53,7 @@
         "pint": "pint",
         "pint-test": "pint --test",
         "test": [
+            "@pint-test",
             "@phpstan",
             "@phpunit",
             "@phpunit-wordpress"

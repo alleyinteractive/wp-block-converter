@@ -56,6 +56,6 @@ class NoopImageUploader implements ImageUploader
             'alt' => $alt,
         ];
 
-        return $src . '#uploaded';
+        return $src.'#uploaded';
     }
 }

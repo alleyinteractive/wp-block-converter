@@ -10,6 +10,4 @@ use PHPUnit\Framework\TestCase as PHPUnitTestCase;
  * Plain PHPUnit, no Mantle testkit — this suite exists to prove
  * BlockConverter runs with no WordPress loaded at all.
  */
-abstract class TestCase extends PHPUnitTestCase
-{
-}
+abstract class TestCase extends PHPUnitTestCase {}
