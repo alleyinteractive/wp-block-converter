@@ -42,18 +42,20 @@ class WordPressImageUploader implements ImageUploader
     }
 
     /**
-     * Upload an image into the WordPress media library, or reuse a
-     * previously sideloaded attachment for the same source URL.
+     * Assign a parent post ID to the attachments created during the conversion.
      *
-     * @throws Exception If the image was not able to be uploaded.
-     *
-     * @param string $src Image URL.
-     * @param string $alt Image alt text.
-     * @return string The WordPress attachment URL.
+     * @param int $parentPostId Parent post ID.
      */
-    public function upload(string $src, string $alt): string
+    public function assignParentToAttachments(int $parentPostId): void
     {
-        return (string) wp_get_attachment_url($this->createOrGetAttachmentFromUrl($src, [ 'alt' => $alt ]));
+        foreach ($this->createdAttachmentIds as $attachmentId) {
+            wp_update_post(
+                [
+                    'ID'          => $attachmentId,
+                    'post_parent' => $parentPostId,
+                ]
+            );
+        }
     }
 
     /**
@@ -80,20 +82,18 @@ class WordPressImageUploader implements ImageUploader
     }
 
     /**
-     * Assign a parent post ID to the attachments created during the conversion.
+     * Upload an image into the WordPress media library, or reuse a
+     * previously sideloaded attachment for the same source URL.
      *
-     * @param int $parentPostId Parent post ID.
+     * @throws Exception If the image was not able to be uploaded.
+     *
+     * @param string $src Image URL.
+     * @param string $alt Image alt text.
+     * @return string The WordPress attachment URL.
      */
-    public function assignParentToAttachments(int $parentPostId): void
+    public function upload(string $src, string $alt): string
     {
-        foreach ($this->createdAttachmentIds as $attachmentId) {
-            wp_update_post(
-                [
-                    'ID'          => $attachmentId,
-                    'post_parent' => $parentPostId,
-                ]
-            );
-        }
+        return (string) wp_get_attachment_url($this->createOrGetAttachmentFromUrl($src, [ 'alt' => $alt ]));
     }
 
     /**

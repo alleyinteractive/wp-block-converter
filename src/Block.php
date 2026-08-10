@@ -68,16 +68,6 @@ class Block
     }
 
     /**
-     * Remove the default "core/" namespace from a block name.
-     *
-     * @param string $blockName Original block name.
-     */
-    private static function stripCoreNamespace(string $blockName): string
-    {
-        return str_starts_with($blockName, 'core/') ? substr($blockName, 5) : $blockName;
-    }
-
-    /**
      * Serialize block attributes for inclusion in a block comment delimiter.
      *
      * @param array<string, mixed> $attributes Block attributes.
@@ -95,5 +85,15 @@ class Block
                 '\\"'  => '\\u0022',
             ],
         );
+    }
+
+    /**
+     * Remove the default "core/" namespace from a block name.
+     *
+     * @param string $blockName Original block name.
+     */
+    private static function stripCoreNamespace(string $blockName): string
+    {
+        return str_starts_with($blockName, 'core/') ? substr($blockName, 5) : $blockName;
     }
 }

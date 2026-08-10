@@ -53,109 +53,6 @@ trait MicrosoftWordContent
     }
 
     /**
-     * Determines if the given node contains Microsoft Word content.
-     *
-     * @param \Dom\Node $node The DOM node to check.
-     * @return bool True if the node contains Microsoft Word content, false otherwise.
-     */
-    protected function isMsWordContent(\Dom\Node $node): bool
-    {
-        if ($node->nodeType !== XML_ELEMENT_NODE || ! $node instanceof \Dom\Element) {
-            return false;
-        }
-
-        $ownerDocument = $node->ownerDocument;
-
-        $html = $ownerDocument instanceof \Dom\HTMLDocument ? $ownerDocument->saveHtml($node) : '';
-
-        return $this->isMsWordHtml($html);
-    }
-
-    /**
-     * Determines if a raw HTML string looks like Microsoft Word content.
-     *
-     * @param string $html The HTML to check.
-     * @return bool True if the HTML contains Microsoft Word markers, false otherwise.
-     */
-    protected function isMsWordHtml(string $html): bool
-    {
-        foreach (self::MS_WORD_PATTERNS as $pattern) {
-            if (preg_match($pattern . 'i', $html)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Clean MS Word specific styles from a style string.
-     *
-     * @param string $styleString The style attribute value.
-     * @return string The cleaned style string.
-     */
-    protected function cleanMsWordStyles(string $styleString): string
-    {
-        // Parse style string into individual properties.
-        $styles     = [];
-        $stylePairs = explode(';', $styleString);
-
-        foreach ($stylePairs as $pair) {
-            $pair = trim($pair);
-            if (empty($pair)) {
-                continue;
-            }
-
-            if (strpos($pair, ':') !== false) {
-                list( $property, $value ) = explode(':', $pair, 2);
-                $property                 = trim($property);
-                $value                    = trim($value);
-
-                // Skip MS Word specific properties.
-                if (strpos($property, 'mso-') === 0) {
-                    continue;
-                }
-
-                // Skip problematic Word styles.
-                $skipProperties = [
-                    'font-family', // Often contains non-web fonts.
-                    'font-size', // Usually incorrect from Word.
-                    'margin',
-                    'padding',
-                    'line-height', // Word line heights are often problematic.
-                    'text-indent',
-                ];
-
-                if (in_array($property, $skipProperties, true)) {
-                    continue;
-                }
-
-                // Keep only essential properties.
-                $allowedProperties = [
-                    'color',
-                    'background-color',
-                    'font-weight',
-                    'font-style',
-                    'text-decoration',
-                    'text-align',
-                ];
-
-                if (in_array($property, $allowedProperties, true)) {
-                    $styles[ $property ] = $value;
-                }
-            }
-        }
-
-        // Rebuild style string.
-        $cleanedStyles = [];
-        foreach ($styles as $property => $value) {
-            $cleanedStyles[] = $property . ': ' . $value;
-        }
-
-        return implode('; ', $cleanedStyles);
-    }
-
-    /**
      * Clean up Microsoft Word formatting from a DOM node.
      *
      * @param \Dom\Node $node The DOM node to clean up.
@@ -333,5 +230,108 @@ trait MicrosoftWordContent
         foreach ($children as $child) {
             $this->cleanMsWordNode($child);
         }
+    }
+
+    /**
+     * Clean MS Word specific styles from a style string.
+     *
+     * @param string $styleString The style attribute value.
+     * @return string The cleaned style string.
+     */
+    protected function cleanMsWordStyles(string $styleString): string
+    {
+        // Parse style string into individual properties.
+        $styles     = [];
+        $stylePairs = explode(';', $styleString);
+
+        foreach ($stylePairs as $pair) {
+            $pair = trim($pair);
+            if (empty($pair)) {
+                continue;
+            }
+
+            if (strpos($pair, ':') !== false) {
+                list( $property, $value ) = explode(':', $pair, 2);
+                $property                 = trim($property);
+                $value                    = trim($value);
+
+                // Skip MS Word specific properties.
+                if (strpos($property, 'mso-') === 0) {
+                    continue;
+                }
+
+                // Skip problematic Word styles.
+                $skipProperties = [
+                    'font-family', // Often contains non-web fonts.
+                    'font-size', // Usually incorrect from Word.
+                    'margin',
+                    'padding',
+                    'line-height', // Word line heights are often problematic.
+                    'text-indent',
+                ];
+
+                if (in_array($property, $skipProperties, true)) {
+                    continue;
+                }
+
+                // Keep only essential properties.
+                $allowedProperties = [
+                    'color',
+                    'background-color',
+                    'font-weight',
+                    'font-style',
+                    'text-decoration',
+                    'text-align',
+                ];
+
+                if (in_array($property, $allowedProperties, true)) {
+                    $styles[ $property ] = $value;
+                }
+            }
+        }
+
+        // Rebuild style string.
+        $cleanedStyles = [];
+        foreach ($styles as $property => $value) {
+            $cleanedStyles[] = $property . ': ' . $value;
+        }
+
+        return implode('; ', $cleanedStyles);
+    }
+
+    /**
+     * Determines if the given node contains Microsoft Word content.
+     *
+     * @param \Dom\Node $node The DOM node to check.
+     * @return bool True if the node contains Microsoft Word content, false otherwise.
+     */
+    protected function isMsWordContent(\Dom\Node $node): bool
+    {
+        if ($node->nodeType !== XML_ELEMENT_NODE || ! $node instanceof \Dom\Element) {
+            return false;
+        }
+
+        $ownerDocument = $node->ownerDocument;
+
+        $html = $ownerDocument instanceof \Dom\HTMLDocument ? $ownerDocument->saveHtml($node) : '';
+
+        return $this->isMsWordHtml($html);
+    }
+
+    /**
+     * Determines if a raw HTML string looks like Microsoft Word content.
+     *
+     * @param string $html The HTML to check.
+     * @return bool True if the HTML contains Microsoft Word markers, false otherwise.
+     */
+    protected function isMsWordHtml(string $html): bool
+    {
+        foreach (self::MS_WORD_PATTERNS as $pattern) {
+            if (preg_match($pattern . 'i', $html)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

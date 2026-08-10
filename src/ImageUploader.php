@@ -23,16 +23,13 @@ use Exception;
  */
 interface ImageUploader
 {
+
     /**
-     * Upload (or otherwise resolve) an image, returning its final URL.
+     * Assign a parent post ID to the attachments created during the conversion.
      *
-     * @throws Exception If the image was not able to be uploaded.
-     *
-     * @param string $src Image URL.
-     * @param string $alt Image alt text.
-     * @return string The final image URL.
+     * @param int $parentPostId Parent post ID.
      */
-    public function upload(string $src, string $alt): string;
+    public function assignParentToAttachments(int $parentPostId): void;
 
     /**
      * Resolve the attachment ID for a previously uploaded image, if known.
@@ -48,11 +45,14 @@ interface ImageUploader
      * @return array<int>
      */
     public function getCreatedAttachmentIds(): array;
-
     /**
-     * Assign a parent post ID to the attachments created during the conversion.
+     * Upload (or otherwise resolve) an image, returning its final URL.
      *
-     * @param int $parentPostId Parent post ID.
+     * @throws Exception If the image was not able to be uploaded.
+     *
+     * @param string $src Image URL.
+     * @param string $alt Image alt text.
+     * @return string The final image URL.
      */
-    public function assignParentToAttachments(int $parentPostId): void;
+    public function upload(string $src, string $alt): string;
 }
