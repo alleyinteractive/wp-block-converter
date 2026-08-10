@@ -2,8 +2,6 @@
 
 /**
  * WordPressImageUploader class file
- *
- * @package wp-block-converter
  */
 
 namespace Alley\WP\BlockConverter;
@@ -44,14 +42,14 @@ class WordPressImageUploader implements ImageUploader
     /**
      * Assign a parent post ID to the attachments created during the conversion.
      *
-     * @param int $parentPostId Parent post ID.
+     * @param  int  $parentPostId  Parent post ID.
      */
     public function assignParentToAttachments(int $parentPostId): void
     {
         foreach ($this->createdAttachmentIds as $attachmentId) {
             wp_update_post(
                 [
-                    'ID'          => $attachmentId,
+                    'ID' => $attachmentId,
                     'post_parent' => $parentPostId,
                 ]
             );
@@ -61,8 +59,7 @@ class WordPressImageUploader implements ImageUploader
     /**
      * Resolve the attachment ID for a previously sideloaded image URL.
      *
-     * @param string $url Image URL.
-     * @return int|null
+     * @param  string  $url  Image URL.
      */
     public function attachmentIdFor(string $url): ?int
     {
@@ -85,37 +82,41 @@ class WordPressImageUploader implements ImageUploader
      * Upload an image into the WordPress media library, or reuse a
      * previously sideloaded attachment for the same source URL.
      *
-     * @throws Exception If the image was not able to be uploaded.
      *
-     * @param string $src Image URL.
-     * @param string $alt Image alt text.
+     * @param  string  $src  Image URL.
+     * @param  string  $alt  Image alt text.
      * @return string The WordPress attachment URL.
+     *
+     * @throws Exception If the image was not able to be uploaded.
      */
     public function upload(string $src, string $alt): string
     {
-        return (string) wp_get_attachment_url($this->createOrGetAttachmentFromUrl($src, [ 'alt' => $alt ]));
+        return (string) wp_get_attachment_url($this->createOrGetAttachmentFromUrl($src, ['alt' => $alt]));
     }
 
     /**
      * Create or get an already saved attachment from an external URL.
      *
-     * @param string $src Image URL.
-     * @param array  $args {
-     *        Arguments for the attachment, optional. Default empty array.
+     * @param  string  $src  Image URL.
+     * @param  array  $args  {
+     *                       Arguments for the attachment, optional. Default empty array.
      *
-     *        @type string      $alt            Alt text.
-     *        @type string      $caption        Caption text.
-     *        @type string      $description    Description text.
-     *        @type array       $meta           Associate array of meta to set.
-     *                                          The value of alt text will
-     *                                          automatically be mapped into
-     *                                          this value and will be
-     *                                          overridden by the alt explicitly
-     *                                          passed into this array.
-     *        @type null|int    $parent_post_id Parent post id.
-     *        @type null|string $title          Title text. Null defaults to the
-     *                                          sanitized filename.
-     * }
+     * @type string $alt            Alt text.
+     * @type string $caption        Caption text.
+     * @type string $description    Description text.
+     * @type array $meta           Associate array of meta to set.
+     *             The value of alt text will
+     *             automatically be mapped into
+     *             this value and will be
+     *             overridden by the alt explicitly
+     *             passed into this array.
+     * @type null|int $parent_post_id Parent post id.
+     * @type null|string $title          Title text. Null defaults to the
+     *                   sanitized filename.
+     *                   }
+     *
+     * @param  string  $metaKey  Meta key to store the original URL.
+     *
      * @phpstan-param array{
      *   alt?: string,
      *   caption?: string,
@@ -124,11 +125,10 @@ class WordPressImageUploader implements ImageUploader
      *   parent_post_id?: null|int,
      *   title?: null|string,
      * } $args
-     * @param string $metaKey Meta key to store the original URL.
-     *
-     * @throws Exception If the image was not able to be uploaded.
      *
      * @return int Attachment ID.
+     *
+     * @throws Exception If the image was not able to be uploaded.
      */
     protected function createOrGetAttachmentFromUrl(
         string $src,
@@ -137,12 +137,12 @@ class WordPressImageUploader implements ImageUploader
     ): int {
         $attachmentIds = get_posts(
             [
-                'fields'           => 'ids',
-                'meta_key'         => $metaKey,
-                'meta_value'       => $src,
-                'post_status'      => 'any',
-                'post_type'        => 'attachment',
-                'posts_per_page'   => 1,
+                'fields' => 'ids',
+                'meta_key' => $metaKey,
+                'meta_value' => $src,
+                'post_status' => 'any',
+                'post_type' => 'attachment',
+                'posts_per_page' => 1,
                 'suppress_filters' => false,
             ]
         );
@@ -152,9 +152,9 @@ class WordPressImageUploader implements ImageUploader
         }
 
         if (! function_exists('media_sideload_image')) {
-            require_once ABSPATH . 'wp-admin/includes/file.php';
-            require_once ABSPATH . 'wp-admin/includes/image.php';
-            require_once ABSPATH . 'wp-admin/includes/media.php';
+            require_once ABSPATH.'wp-admin/includes/file.php';
+            require_once ABSPATH.'wp-admin/includes/image.php';
+            require_once ABSPATH.'wp-admin/includes/media.php';
         }
 
         $attachmentId = media_sideload_image($src, $args['parent_post_id'] ?? 0, $args['description'] ?? '', 'id');
@@ -182,10 +182,10 @@ class WordPressImageUploader implements ImageUploader
         $postArr = [
             'post_content' => $args['description'] ?? '',
             'post_excerpt' => $args['caption'] ?? '',
-            'post_title'   => $args['title'] ?? '',
-            'meta_input'   => array_filter(
+            'post_title' => $args['title'] ?? '',
+            'meta_input' => array_filter(
                 array_merge(
-                    (array) ( $args['meta'] ?? [] ),
+                    (array) ($args['meta'] ?? []),
                     [
                         '_wp_attachment_image_alt' => $args['alt'] ?? null,
                     ],

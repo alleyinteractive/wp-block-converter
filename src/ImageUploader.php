@@ -2,8 +2,6 @@
 
 /**
  * ImageUploader interface file
- *
- * @package wp-block-converter
  */
 
 namespace Alley\WP\BlockConverter;
@@ -23,19 +21,17 @@ use Exception;
  */
 interface ImageUploader
 {
-
     /**
      * Assign a parent post ID to the attachments created during the conversion.
      *
-     * @param int $parentPostId Parent post ID.
+     * @param  int  $parentPostId  Parent post ID.
      */
     public function assignParentToAttachments(int $parentPostId): void;
 
     /**
      * Resolve the attachment ID for a previously uploaded image, if known.
      *
-     * @param string $url Image URL.
-     * @return int|null
+     * @param  string  $url  Image URL.
      */
     public function attachmentIdFor(string $url): ?int;
 
@@ -45,14 +41,16 @@ interface ImageUploader
      * @return array<int>
      */
     public function getCreatedAttachmentIds(): array;
+
     /**
      * Upload (or otherwise resolve) an image, returning its final URL.
      *
-     * @throws Exception If the image was not able to be uploaded.
      *
-     * @param string $src Image URL.
-     * @param string $alt Image alt text.
+     * @param  string  $src  Image URL.
+     * @param  string  $alt  Image alt text.
      * @return string The final image URL.
+     *
+     * @throws Exception If the image was not able to be uploaded.
      */
     public function upload(string $src, string $alt): string;
 }

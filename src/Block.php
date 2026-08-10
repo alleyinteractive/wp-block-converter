@@ -2,8 +2,6 @@
 
 /**
  * Block class file
- *
- * @package wp-block-converter
  */
 
 namespace Alley\WP\BlockConverter;
@@ -16,13 +14,11 @@ class Block
     /**
      * Constructor.
      *
-     * @param string               $blockName  The block name.
-     * @param array<string, mixed> $attributes The block attributes.
-     * @param string|null          $content    The block content.
+     * @param  string  $blockName  The block name.
+     * @param  array<string, mixed>  $attributes  The block attributes.
+     * @param  string|null  $content  The block content.
      */
-    public function __construct(public string $blockName, public array $attributes = [], public ?string $content = null)
-    {
-    }
+    public function __construct(public string $blockName, public array $attributes = [], public ?string $content = null) {}
 
     /**
      * Convert the block to HTML.
@@ -42,15 +38,15 @@ class Block
      */
     public function render(): string
     {
-        $blockName  = self::stripCoreNamespace($this->blockName);
-        $attributes = empty($this->attributes) ? '' : self::serializeAttributes($this->attributes) . ' ';
-        $content    = $this->content ?? '';
+        $blockName = self::stripCoreNamespace($this->blockName);
+        $attributes = empty($this->attributes) ? '' : self::serializeAttributes($this->attributes).' ';
+        $content = $this->content ?? '';
 
         // An empty block name marks this as a passthrough for content that's
         // already fully block-comment-delimited (e.g. multiple sibling
         // blocks produced from splitting a single source node), so render
         // it verbatim instead of wrapping it in another comment delimiter.
-        if ('' === $blockName) {
+        if ($blockName === '') {
             return $content;
         }
 
@@ -70,7 +66,7 @@ class Block
     /**
      * Serialize block attributes for inclusion in a block comment delimiter.
      *
-     * @param array<string, mixed> $attributes Block attributes.
+     * @param  array<string, mixed>  $attributes  Block attributes.
      */
     private static function serializeAttributes(array $attributes): string
     {
@@ -78,11 +74,11 @@ class Block
             (string) json_encode($attributes, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             [
                 '\\\\' => '\\u005c',
-                '--'   => '\\u002d\\u002d',
-                '<'    => '\\u003c',
-                '>'    => '\\u003e',
-                '&'    => '\\u0026',
-                '\\"'  => '\\u0022',
+                '--' => '\\u002d\\u002d',
+                '<' => '\\u003c',
+                '>' => '\\u003e',
+                '&' => '\\u0026',
+                '\\"' => '\\u0022',
             ],
         );
     }
@@ -90,7 +86,7 @@ class Block
     /**
      * Remove the default "core/" namespace from a block name.
      *
-     * @param string $blockName Original block name.
+     * @param  string  $blockName  Original block name.
      */
     private static function stripCoreNamespace(string $blockName): string
     {

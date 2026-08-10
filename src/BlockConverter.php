@@ -2,8 +2,6 @@
 
 /**
  * BlockConverter class file
- *
- * @package wp-block-converter
  */
 
 namespace Alley\WP\BlockConverter;
@@ -42,7 +40,7 @@ class BlockConverter
      *
      * @var array<int, string>
      */
-    private const INLINE_TAGS = [ 'a', 'abbr', 'b', 'code', 'em', 'i', 'strong', 'sub', 'sup', 'span', 'u' ];
+    private const INLINE_TAGS = ['a', 'abbr', 'b', 'code', 'em', 'i', 'strong', 'sub', 'sup', 'span', 'u'];
 
     /**
      * Known oEmbed provider matchers, in priority order.
@@ -69,138 +67,138 @@ class BlockConverter
             // YouTube Shorts are consistently vertical, unlike standard
             // YouTube videos, so this must be matched before the general
             // youtube.com pattern below.
-            'pattern'      => '#https?://(www\.)?youtube\.com/shorts#i',
-            'slug'         => 'youtube',
-            'type'         => 'video',
+            'pattern' => '#https?://(www\.)?youtube\.com/shorts#i',
+            'slug' => 'youtube',
+            'type' => 'video',
             'aspect_ratio' => '9-16',
         ],
         [
-            'pattern'      => '#https?://(www\.)?youtube\.com/(watch|playlist)#i',
-            'slug'         => 'youtube',
-            'type'         => 'video',
+            'pattern' => '#https?://(www\.)?youtube\.com/(watch|playlist)#i',
+            'slug' => 'youtube',
+            'type' => 'video',
             'aspect_ratio' => '16-9',
         ],
         [
-            'pattern'      => '#https?://youtu\.be/#i',
-            'slug'         => 'youtube',
-            'type'         => 'video',
+            'pattern' => '#https?://youtu\.be/#i',
+            'slug' => 'youtube',
+            'type' => 'video',
             'aspect_ratio' => '16-9',
         ],
         [
-            'pattern'      => '#https?://(www\.|player\.)?vimeo\.com/#i',
-            'slug'         => 'vimeo',
-            'type'         => 'video',
+            'pattern' => '#https?://(www\.|player\.)?vimeo\.com/#i',
+            'slug' => 'vimeo',
+            'type' => 'video',
             'aspect_ratio' => '16-9',
         ],
         [
-            'pattern'      => '#https?://(www\.)?dailymotion\.com/#i',
-            'slug'         => 'dailymotion',
-            'type'         => 'video',
+            'pattern' => '#https?://(www\.)?dailymotion\.com/#i',
+            'slug' => 'dailymotion',
+            'type' => 'video',
             'aspect_ratio' => '16-9',
         ],
         [
-            'pattern'      => '#https?://dai\.ly/#i',
-            'slug'         => 'dailymotion',
-            'type'         => 'video',
+            'pattern' => '#https?://dai\.ly/#i',
+            'slug' => 'dailymotion',
+            'type' => 'video',
             'aspect_ratio' => '16-9',
         ],
         [
             'pattern' => '#https?://(www\.|vm\.|vt\.)?tiktok\.com/#i',
-            'slug'    => 'tiktok',
-            'type'    => 'video',
+            'slug' => 'tiktok',
+            'type' => 'video',
         ],
         [
-            'pattern'      => '#https?://wordpress\.tv/#i',
-            'slug'         => 'wordpress-tv',
-            'type'         => 'video',
+            'pattern' => '#https?://wordpress\.tv/#i',
+            'slug' => 'wordpress-tv',
+            'type' => 'video',
             'aspect_ratio' => '16-9',
         ],
         [
-            'pattern'      => '#https?://videopress\.com/v/#i',
-            'slug'         => 'videopress',
-            'type'         => 'video',
+            'pattern' => '#https?://videopress\.com/v/#i',
+            'slug' => 'videopress',
+            'type' => 'video',
             'aspect_ratio' => '16-9',
         ],
         [
             'pattern' => '#https?://(www\.)?flickr\.com/#i',
-            'slug'    => 'flickr',
-            'type'    => 'rich',
+            'slug' => 'flickr',
+            'type' => 'rich',
         ],
         [
             'pattern' => '#https?://flic\.kr/#i',
-            'slug'    => 'flickr',
-            'type'    => 'rich',
+            'slug' => 'flickr',
+            'type' => 'rich',
         ],
         [
             'pattern' => '#https?://((m|www)\.)?soundcloud\.com/#i',
-            'slug'    => 'soundcloud',
-            'type'    => 'rich',
+            'slug' => 'soundcloud',
+            'type' => 'rich',
         ],
         [
             'pattern' => '#https?://(open|play)\.spotify\.com/#i',
-            'slug'    => 'spotify',
-            'type'    => 'rich',
+            'slug' => 'spotify',
+            'type' => 'rich',
         ],
         [
             'pattern' => '#https?://(www\.)?slideshare\.net/#i',
-            'slug'    => 'slideshare',
-            'type'    => 'rich',
+            'slug' => 'slideshare',
+            'type' => 'rich',
         ],
         [
             'pattern' => '#https?://(www\.)?scribd\.com/#i',
-            'slug'    => 'scribd',
-            'type'    => 'rich',
+            'slug' => 'scribd',
+            'type' => 'rich',
         ],
         [
             'pattern' => '#https?://(www\.)?reddit\.com/r/[^/]+/comments/#i',
-            'slug'    => 'reddit',
-            'type'    => 'rich',
+            'slug' => 'reddit',
+            'type' => 'rich',
         ],
         [
             'pattern' => '#https?://(www\.)?imgur\.com/#i',
-            'slug'    => 'imgur',
-            'type'    => 'rich',
+            'slug' => 'imgur',
+            'type' => 'rich',
         ],
         [
             'pattern' => '#https?://(www\.)?twitter\.com/\w{1,15}/status(es)?/#i',
-            'slug'    => 'x',
-            'type'    => 'rich',
+            'slug' => 'x',
+            'type' => 'rich',
         ],
         [
             'pattern' => '#https?://(www\.)?instagram\.com/#i',
-            'slug'    => 'instagram',
-            'type'    => 'rich',
+            'slug' => 'instagram',
+            'type' => 'rich',
         ],
         [
-            'pattern'          => '#https?://(www\.)?facebook\.com/#i',
-            'slug'             => 'facebook',
-            'type'             => 'rich',
-            'extra_attributes' => [ 'previewable' => false ],
+            'pattern' => '#https?://(www\.)?facebook\.com/#i',
+            'slug' => 'facebook',
+            'type' => 'rich',
+            'extra_attributes' => ['previewable' => false],
         ],
     ];
 
     /**
      * Setup the class.
      *
-     * @param string $html The HTML to parse.
-     * @param LoggerInterface|null $logger The logger to use.
-     * @param Closure|null $onSkipMinifyBlock Called with ( bool $skipMinifyBlock, string $block,
-     *                      Node $node ): bool to decide whether a block should skip minification.
-     * @param Closure|null $onDocumentHtml Called with ( string $html, HTMLCollection $content ):
-     *                      string to filter the final converted HTML for the whole document.
-     * @param Closure|null $onBlock Called with ( ?Block $block, Node $node ): ?Block to filter
-     *                      each generated block.
-     * @param Closure|null $onPreSideloadImage Called with ( bool $pre, string $src,
-     *                      Node $childNode, BlockConverter $converter ): bool to decide whether a
-     *                      given image should be sideloaded.
-     * @param Closure|null $onSideloadedImage Called with ( string $src, Node $childNode ): void
-     *                      after an image has been sideloaded.
-     * @param Closure|null $onSanitizedImageUrl Called with ( string $sanitizedUrl, string $url ):
-     *                      string to filter the reconstructed image URL used for sideloading.
-     * @param ImageUploader|null $uploader The image uploader to use for sideloading images.
-     *                      Images are left untouched (no sideloading) unless an uploader is
-     *                      supplied here — e.g. `new WordPressImageUploader()` to sideload into
-     *                      the WordPress media library.
+     * @param  string  $html  The HTML to parse.
+     * @param  LoggerInterface|null  $logger  The logger to use.
+     * @param  Closure|null  $onSkipMinifyBlock  Called with ( bool $skipMinifyBlock, string $block,
+     *                                           Node $node ): bool to decide whether a block should skip minification.
+     * @param  Closure|null  $onDocumentHtml  Called with ( string $html, HTMLCollection $content ):
+     *                                        string to filter the final converted HTML for the whole document.
+     * @param  Closure|null  $onBlock  Called with ( ?Block $block, Node $node ): ?Block to filter
+     *                                 each generated block.
+     * @param  Closure|null  $onPreSideloadImage  Called with ( bool $pre, string $src,
+     *                                            Node $childNode, BlockConverter $converter ): bool to decide whether a
+     *                                            given image should be sideloaded.
+     * @param  Closure|null  $onSideloadedImage  Called with ( string $src, Node $childNode ): void
+     *                                           after an image has been sideloaded.
+     * @param  Closure|null  $onSanitizedImageUrl  Called with ( string $sanitizedUrl, string $url ):
+     *                                             string to filter the reconstructed image URL used for sideloading.
+     * @param  ImageUploader|null  $uploader  The image uploader to use for sideloading images.
+     *                                        Images are left untouched (no sideloading) unless an uploader is
+     *                                        supplied here — e.g. `new WordPressImageUploader()` to sideload into
+     *                                        the WordPress media library.
      */
     public function __construct(
         public string $html,
@@ -212,8 +210,7 @@ class BlockConverter
         protected ?Closure $onSideloadedImage = null,
         protected ?Closure $onSanitizedImageUrl = null,
         protected ?ImageUploader $uploader = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Magic function to convert to a string.
@@ -226,7 +223,7 @@ class BlockConverter
     /**
      * Get the raw HTML from a Node node.
      *
-     * @param Node $node The current Node.
+     * @param  Node  $node  The current Node.
      * @return string The raw HTML.
      */
     public static function getNodeHtml(Node $node): string
@@ -236,19 +233,21 @@ class BlockConverter
             foreach (iterator_to_array($node->childNodes) as $child) {
                 if ($child->nodeType === XML_COMMENT_NODE) {
                     $node->removeChild($child);
+
                     continue;
                 }
 
                 // Remove any newline text nodes.
-                if ("\\n" === trim((string) $child->nodeValue)) {
+                if (trim((string) $child->nodeValue) === '\\n') {
                     $node->removeChild($child);
+
                     continue;
                 }
             }
         }
 
         // Clear out any empty paragraph tags.
-        if ('p' === strtolower($node->nodeName) && empty(trim((string) $node->textContent))) {
+        if (strtolower($node->nodeName) === 'p' && empty(trim((string) $node->textContent))) {
             return '';
         }
 
@@ -265,8 +264,8 @@ class BlockConverter
      *
      * @deprecated Not used by the library. Will be removed in a future release.
      *
-     * @param Node   $node The current Node.
-     * @param string $tag The tag to search for.
+     * @param  Node  $node  The current Node.
+     * @param  string  $tag  The tag to search for.
      * @return HTMLCollection<Element> The raw HTML.
      */
     public static function getNodes(Node $node, $tag)
@@ -280,8 +279,8 @@ class BlockConverter
     /**
      * Get the HTML content.
      *
-     * @param string $html The HTML content.
-     * @param string $tag The tag to search for.
+     * @param  string  $html  The HTML content.
+     * @param  string  $tag  The tag to search for.
      * @return HTMLCollection<Element> The list of Elements.
      */
     public static function getNodeTagFromHtml($html, $tag = 'body')
@@ -295,7 +294,7 @@ class BlockConverter
      * Assign a parent post ID to the attachments created during the
      * conversion. No-op if sideloading was never enabled.
      *
-     * @param int $parentPostId Parent post ID.
+     * @param  int  $parentPostId  Parent post ID.
      */
     public function assignParentToAttachments(int $parentPostId): void
     {
@@ -320,7 +319,7 @@ class BlockConverter
         $html = [];
 
         foreach ($content->item(0)->childNodes as $node) {
-            if ('#text' === $node->nodeName || $node->nodeType === XML_COMMENT_NODE) {
+            if ($node->nodeName === '#text' || $node->nodeType === XML_COMMENT_NODE) {
                 continue;
             }
 
@@ -328,7 +327,7 @@ class BlockConverter
 
             $skipMinifyBlock = false;
 
-            if ('pre' === strtolower($node->nodeName)) {
+            if (strtolower($node->nodeName) === 'pre') {
                 $skipMinifyBlock = true;
             }
 
@@ -349,7 +348,7 @@ class BlockConverter
 
         // Allow the caller to filter the fully converted HTML for the whole document.
         $filteredHtml = $this->apply($this->onDocumentHtml, $html, $content);
-        $html         = trim(is_string($filteredHtml) ? $filteredHtml : $html);
+        $html = trim(is_string($filteredHtml) ? $filteredHtml : $html);
 
         return $html;
     }
@@ -357,14 +356,14 @@ class BlockConverter
     /**
      * Convert a node to a block.
      *
-     * @throws RuntimeException If the block is not an instance of Block or null.
      *
-     * @param Node $node The node to convert.
-     * @return Block|null
+     * @param  Node  $node  The node to convert.
+     *
+     * @throws RuntimeException If the block is not an instance of Block or null.
      */
     public function convertNode(Node $node): ?Block
     {
-        if ('#text' === $node->nodeName) {
+        if ($node->nodeName === '#text') {
             return null;
         }
 
@@ -379,8 +378,8 @@ class BlockConverter
             // name (e.g. a hyphenated custom element like <special-tag>),
             // which isn't valid PHP method call syntax and can never trigger
             // __call() automatically — so call it directly instead.
-            $block = $this->__call($tagName, [ $node ]);
-        } elseif ('p' === $tagName || in_array($tagName, self::INLINE_TAGS, true)) {
+            $block = $this->__call($tagName, [$node]);
+        } elseif ($tagName === 'p' || in_array($tagName, self::INLINE_TAGS, true)) {
             $block = $this->p($node);
         } else {
             $block = match ($tagName) {
@@ -403,22 +402,22 @@ class BlockConverter
     /**
      * Convert the children of a node to blocks.
      *
-     * @param Node $node The node.
+     * @param  Node  $node  The node.
      * @return string The children as blocks.
      */
     public function convertWithChildren(Node $node): string
     {
-        $children         = '';
+        $children = '';
         $previousWasBlock = false;
 
         // Recursively convert the children of the node.
         foreach ($node->childNodes as $child) {
-            if ('#text' === $child->nodeName) {
-                if ('' === trim((string) $child->nodeValue)) {
+            if ($child->nodeName === '#text') {
+                if (trim((string) $child->nodeValue) === '') {
                     continue;
                 }
 
-                $children         .= $child->nodeValue;
+                $children .= $child->nodeValue;
                 $previousWasBlock = false;
 
                 continue;
@@ -434,14 +433,14 @@ class BlockConverter
             ) {
                 $this->sideloadChildImages($child);
 
-                $children         .= trim(static::getNodeHtml($child));
+                $children .= trim(static::getNodeHtml($child));
                 $previousWasBlock = false;
 
                 continue;
             }
 
             // Ensure that the cite tag is not converted to a block.
-            if ('cite' === strtolower($child->nodeName)) {
+            if (strtolower($child->nodeName) === 'cite') {
                 $children .= trim(static::getNodeHtml($child));
             }
 
@@ -455,7 +454,7 @@ class BlockConverter
                     $children .= "\n\n";
                 }
 
-                $children         .= $this->minifyBlock((string) $childBlock);
+                $children .= $this->minifyBlock((string) $childBlock);
                 $previousWasBlock = true;
             } else {
                 $previousWasBlock = false;
@@ -479,8 +478,7 @@ class BlockConverter
      * <img>, <a> or <figcaption> child. If the <figure> block has other children
      * the block will be converted to a HTML block.
      *
-     * @param Node $node The node.
-     * @return Block|null
+     * @param  Node  $node  The node.
      */
     public function figure(Node $node): ?Block
     {
@@ -505,39 +503,37 @@ class BlockConverter
     /**
      * Remove any empty blocks.
      *
-     * @param string $html The current HTML.
+     * @param  string  $html  The current HTML.
      * @return string $html The new HTML.
      */
     public function removeEmptyBlocks(string $html): string
     {
         $html = str_replace(
             [
-// phpcs:disable
-'<!-- wp:html -->
+                '<!-- wp:html -->
 <div></div>
 <!-- /wp:html -->',
-'<!-- wp:paragraph -->
+                '<!-- wp:paragraph -->
 <div> </div>
 <!-- /wp:paragraph -->',
-'<!-- wp:html -->
+                '<!-- wp:html -->
 <div> </div>
 <!-- /wp:html -->',
-'<!-- wp:paragraph -->
+                '<!-- wp:paragraph -->
 <div>  </div>
 <!-- /wp:paragraph -->',
-'<!-- wp:paragraph --><p><br></p><!-- /wp:paragraph -->',
-'<!-- wp:paragraph --><p><br><br><br></p><!-- /wp:paragraph -->',
-'<!-- wp:paragraph -->
+                '<!-- wp:paragraph --><p><br></p><!-- /wp:paragraph -->',
+                '<!-- wp:paragraph --><p><br><br><br></p><!-- /wp:paragraph -->',
+                '<!-- wp:paragraph -->
 <p><br></p>
 <!-- /wp:paragraph -->',
-'<!-- wp:html -->
+                '<!-- wp:html -->
 <div> </div>
 <!-- /wp:html -->',
-'<!-- wp:heading {"level":3} -->
+                '<!-- wp:heading {"level":3} -->
 <h3>
 														</h3>
 <!-- /wp:heading -->',
-// phpcs:enable
             ],
             '',
             $html
@@ -549,13 +545,12 @@ class BlockConverter
     /**
      * Remove any empty p blocks.
      *
-     * @param string $html The current HTML.
+     * @param  string  $html  The current HTML.
      * @return string $html The new HTML.
      */
     public function removeEmptyPBlocks(string $html): string
     {
         return \preg_replace(
-            // phpcs:ignore Generic.Files.LineLength.TooLong -- regex literal, splitting it would change the pattern.
             '/(\<\!\-\- wp\:paragraph \-\-\>[\s\n\r]*?\<p\>[\s\n\r]*?\<\/p\>[\s\n\r]*?\<\!\-\- \/wp\:paragraph \-\-\>)/',
             '',
             $html
@@ -565,17 +560,16 @@ class BlockConverter
     /**
      * Quick way to remove all URL arguments.
      *
-     * @param string $url URL.
-     *
+     * @param  string  $url  URL.
      * @return string A reconstructed image URL containing only the scheme, host, port, and path.
      */
     public function removeImageArgs($url): string
     {
         $urlParts = parse_url($url);
-        $scheme   = $urlParts['scheme'] ?? 'https';
-        $host     = $urlParts['host'] ?? '';
-        $port     = ! empty($urlParts['port']) ? ':' . $urlParts['port'] : '';
-        $path     = $urlParts['path'] ?? '';
+        $scheme = $urlParts['scheme'] ?? 'https';
+        $host = $urlParts['host'] ?? '';
+        $port = ! empty($urlParts['port']) ? ':'.$urlParts['port'] : '';
+        $path = $urlParts['path'] ?? '';
 
         // Ensure we have enough parts to construct a valid URL.
         $sanitizedUrl = '';
@@ -592,12 +586,11 @@ class BlockConverter
     /**
      * Upload an image via the configured ImageUploader.
      *
-     * @param string $src Image url.
-     * @param string $alt Image alt.
+     * @param  string  $src  Image url.
+     * @param  string  $alt  Image alt.
+     * @return string The uploaded image URL.
      *
      * @throws Exception If the image was not able to be uploaded.
-     *
-     * @return string The uploaded image URL.
      */
     public function uploadImage(string $src, string $alt): string
     {
@@ -611,13 +604,12 @@ class BlockConverter
      * single space, matching how a browser (and the block editor's rich text
      * fields) render collapsible whitespace.
      *
-     * @param Node $node The node to collapse whitespace within.
-     * @return void
+     * @param  Node  $node  The node to collapse whitespace within.
      */
     protected static function collapseWhitespace(Node $node): void
     {
         foreach ($node->childNodes as $child) {
-            if ('#text' === $child->nodeName) {
+            if ($child->nodeName === '#text') {
                 $child->nodeValue = preg_replace('/\s+/', ' ', (string) $child->nodeValue);
 
                 continue;
@@ -632,14 +624,13 @@ class BlockConverter
     /**
      * Collect a node's descendant text nodes, in document order.
      *
-     * @param Node   $node      The node to collect text nodes from.
-     * @param Node[] $textNodes The collected text nodes, passed by reference.
-     * @return void
+     * @param  Node  $node  The node to collect text nodes from.
+     * @param  Node[]  $textNodes  The collected text nodes, passed by reference.
      */
     protected static function collectTextNodes(Node $node, array &$textNodes): void
     {
         foreach ($node->childNodes as $child) {
-            if ('#text' === $child->nodeName) {
+            if ($child->nodeName === '#text') {
                 $textNodes[] = $child;
 
                 continue;
@@ -656,13 +647,12 @@ class BlockConverter
      * e.g. the indentation/newlines between tags in pretty-printed source
      * HTML that the block editor's own markup doesn't have.
      *
-     * @param Element $element The element.
-     * @return void
+     * @param  Element  $element  The element.
      */
     protected static function removeWhitespaceOnlyChildTextNodes(Element $element): void
     {
         foreach (iterator_to_array($element->childNodes) as $child) {
-            if ('#text' === $child->nodeName && '' === trim((string) $child->nodeValue)) {
+            if ($child->nodeName === '#text' && trim((string) $child->nodeValue) === '') {
                 $element->removeChild($child);
             }
         }
@@ -677,8 +667,7 @@ class BlockConverter
      * void elements per the HTML5 spec (e.g. `<embed ...>`, no trailing
      * slash) — so restore that syntax here to match.
      *
-     * @param string $html The HTML to restore self-closing syntax in.
-     * @return string
+     * @param  string  $html  The HTML to restore self-closing syntax in.
      */
     protected static function selfCloseVoidElements(string $html): string
     {
@@ -688,11 +677,11 @@ class BlockConverter
         ];
 
         return preg_replace_callback(
-            '/<(' . implode('|', $voidElements) . ')\b[^>]*>/i',
+            '/<('.implode('|', $voidElements).')\b[^>]*>/i',
             static function (array $matches): string {
                 $tag = rtrim(trim($matches[0], '>'));
 
-                return str_ends_with($tag, '/') ? $matches[0] : $tag . '/>';
+                return str_ends_with($tag, '/') ? $matches[0] : $tag.'/>';
             },
             $html
         ) ?? $html;
@@ -703,7 +692,7 @@ class BlockConverter
      * indentation/newlines between tags in pretty-printed source HTML), so
      * child-counting checks only see meaningfully different markup.
      *
-     * @param Node $node The node.
+     * @param  Node  $node  The node.
      * @return Node[]
      */
     protected static function significantChildNodes(Node $node): array
@@ -711,7 +700,7 @@ class BlockConverter
         $children = [];
 
         foreach ($node->childNodes as $child) {
-            if ('#text' === $child->nodeName && '' === trim((string) $child->nodeValue)) {
+            if ($child->nodeName === '#text' && trim((string) $child->nodeValue) === '') {
                 continue;
             }
 
@@ -726,8 +715,7 @@ class BlockConverter
      * trailing whitespace from its last, matching how a browser trims edge
      * whitespace when rendering `white-space: normal` content.
      *
-     * @param Node $node The node to trim edge whitespace within.
-     * @return void
+     * @param  Node  $node  The node to trim edge whitespace within.
      */
     protected static function trimEdgeWhitespace(Node $node): void
     {
@@ -739,10 +727,10 @@ class BlockConverter
             return;
         }
 
-        $first            = reset($textNodes);
+        $first = reset($textNodes);
         $first->nodeValue = ltrim((string) $first->nodeValue);
 
-        $last            = end($textNodes);
+        $last = end($textNodes);
         $last->nodeValue = rtrim((string) $last->nodeValue);
     }
 
@@ -753,10 +741,9 @@ class BlockConverter
      * since callers now supply these as constructor callbacks instead of
      * registering WordPress filters.
      *
-     * @param Closure|null $callback The optional callback.
-     * @param mixed        $value    The value to pass as the callback's first argument.
-     * @param mixed        ...$args  Additional arguments to pass to the callback.
-     * @return mixed
+     * @param  Closure|null  $callback  The optional callback.
+     * @param  mixed  $value  The value to pass as the callback's first argument.
+     * @param  mixed  ...$args  Additional arguments to pass to the callback.
      */
     protected function apply(?Closure $callback, mixed $value, mixed ...$args): mixed
     {
@@ -766,8 +753,7 @@ class BlockConverter
     /**
      * Create blockquote block.
      *
-     * @param Node $node The node.
-     * @return Block|null
+     * @param  Node  $node  The node.
      */
     protected function blockquote(Node $node): ?Block
     {
@@ -792,8 +778,7 @@ class BlockConverter
     /**
      * Create an embed block for a URL matching a known oEmbed provider.
      *
-     * @param string $url The URL.
-     * @return Block|null
+     * @param  string  $url  The URL.
      */
     protected function embedForUrl(string $url): ?Block
     {
@@ -803,14 +788,14 @@ class BlockConverter
             }
 
             $attributes = [
-                'url'              => $url,
-                'type'             => $provider['type'],
+                'url' => $url,
+                'type' => $provider['type'],
                 'providerNameSlug' => $provider['slug'],
-                'responsive'       => true,
+                'responsive' => true,
             ];
 
             foreach ($provider['extra_attributes'] ?? [] as $key => $value) {
-                $attributes[ $key ] = $value;
+                $attributes[$key] = $value;
             }
 
             $className = '';
@@ -827,14 +812,13 @@ class BlockConverter
                 blockName: 'embed',
                 attributes: $attributes,
                 content: sprintf(
-                    // phpcs:ignore Generic.Files.LineLength.TooLong -- literal markup, must match output exactly.
                     '<figure class="wp-block-embed is-type-%s is-provider-%s wp-block-embed-%s%s"><div class="wp-block-embed__wrapper">
 					%s
 					</div></figure>',
                     $provider['type'],
                     $provider['slug'],
                     $provider['slug'],
-                    $className ? ' ' . $className : '',
+                    $className ? ' '.$className : '',
                     $url
                 ),
             );
@@ -851,15 +835,15 @@ class BlockConverter
      * into multiple sibling blocks), so every generated block passes through
      * the same customization hook.
      *
-     * @throws RuntimeException If the block is not an instance of Block or null.
      *
-     * @param mixed $block The generated block, if any.
-     * @param Node  $node  The node the block was generated from.
-     * @return Block|null
+     * @param  mixed  $block  The generated block, if any.
+     * @param  Node  $node  The node the block was generated from.
+     *
+     * @throws RuntimeException If the block is not an instance of Block or null.
      */
     protected function finalizeBlock(mixed $block, Node $node): ?Block
     {
-        if (null !== $block && ! $block instanceof Block) {
+        if ($block !== null && ! $block instanceof Block) {
             throw new RuntimeException('Returned block must be an instance of Block or null.');
         }
 
@@ -871,8 +855,7 @@ class BlockConverter
     /**
      * Create heading blocks.
      *
-     * @param Node $node The node.
-     * @return Block|null
+     * @param  Node  $node  The node.
      */
     protected function h(Node $node): ?Block
     {
@@ -898,8 +881,7 @@ class BlockConverter
     /**
      * Create HTML blocks.
      *
-     * @param Node $node The node.
-     * @return Block|null
+     * @param  Node  $node  The node.
      */
     protected function html(Node $node): ?Block
     {
@@ -927,11 +909,10 @@ class BlockConverter
      * other parent (e.g. an <a>), the resulting block wraps it in a new
      * <figure> tag.
      *
-     * @param Element|Node $element             The node.
-     * @param bool         $splitFromParagraph Whether this image was split out from inline
-     *                                          paragraph text, in which case the block editor
-     *                                          floats it right of the remaining text.
-     * @return Block|null
+     * @param  Element|Node  $element  The node.
+     * @param  bool  $splitFromParagraph  Whether this image was split out from inline
+     *                                    paragraph text, in which case the block editor
+     *                                    floats it right of the remaining text.
      */
     protected function img(Element|Node $element, bool $splitFromParagraph = false): ?Block
     {
@@ -940,7 +921,7 @@ class BlockConverter
         }
 
         // If the element passed isn't an <img> attempt to find it from the children.
-        if ('img' !== strtolower($element->nodeName)) {
+        if (strtolower($element->nodeName) !== 'img') {
             $imageNode = $element->getElementsByTagName('img')->item(0);
 
             // Bail early if the image node is not found.
@@ -952,7 +933,7 @@ class BlockConverter
         }
 
         $imageSrc = $imageNode->getAttribute('data-srcset');
-        $alt      = $imageNode->getAttribute('alt') ?? '';
+        $alt = $imageNode->getAttribute('alt') ?? '';
 
         if (empty($imageSrc) && ! empty($imageNode->getAttribute('src'))) {
             $imageSrc = $imageNode->getAttribute('src');
@@ -973,9 +954,9 @@ class BlockConverter
             $imageNode->removeAttribute('sizes');
         }
 
-        $attributes      = [];
+        $attributes = [];
         $wrappedInAnchor = $imageNode->parentNode instanceof Element
-            && 'a' === strtolower($imageNode->parentNode->nodeName);
+            && strtolower($imageNode->parentNode->nodeName) === 'a';
 
         if ($this->uploader) {
             try {
@@ -989,7 +970,7 @@ class BlockConverter
             $attachmentId = $this->uploader->attachmentIdFor($imageSrc);
 
             if ($attachmentId) {
-                $imageNode->setAttribute('class', 'wp-image-' . $attachmentId);
+                $imageNode->setAttribute('class', 'wp-image-'.$attachmentId);
             }
 
             // The block editor's exact attribute shape for a sideloaded
@@ -999,10 +980,10 @@ class BlockConverter
             // its (default) "none" link destination explicit and floats
             // right of the remaining text.
             if ($wrappedInAnchor) {
-                $attributes['lightbox'] = [ 'enabled' => false ];
+                $attributes['lightbox'] = ['enabled' => false];
             }
 
-            if (null !== $attachmentId) {
+            if ($attachmentId !== null) {
                 $attributes['id'] = $attachmentId;
             }
 
@@ -1017,7 +998,7 @@ class BlockConverter
             if ($splitFromParagraph) {
                 $attributes['align'] = 'right';
             }
-        } elseif (! ( $this->convertMsWordContent && $this->isMsWordHtml($this->html) )) {
+        } elseif (! ($this->convertMsWordContent && $this->isMsWordHtml($this->html))) {
             // Without a known attachment, default to the block editor's
             // "Large" image size option — unless this is a Microsoft Word
             // paste, which the editor handles as a distinct import path
@@ -1030,10 +1011,10 @@ class BlockConverter
         }
 
         $class = 'wp-block-image'
-            . ( $splitFromParagraph ? ' alignright' : '' )
-            . ( isset($attributes['sizeSlug']) ? ' size-' . $attributes['sizeSlug'] : '' );
+            .($splitFromParagraph ? ' alignright' : '')
+            .(isset($attributes['sizeSlug']) ? ' size-'.$attributes['sizeSlug'] : '');
 
-        if ('figure' === strtolower($element->nodeName)) {
+        if (strtolower($element->nodeName) === 'figure') {
             $element->setAttribute('class', $class);
 
             $figcaption = $element->getElementsByTagName('figcaption')->item(0);
@@ -1063,8 +1044,7 @@ class BlockConverter
      * Check if the node's only meaningful child is an <img>, e.g. an <a>
      * wrapping a single image.
      *
-     * @param Node|null $node The node.
-     * @return bool
+     * @param  Node|null  $node  The node.
      */
     protected function isAnchorWrappedImage(?Node $node): bool
     {
@@ -1074,14 +1054,13 @@ class BlockConverter
 
         $children = static::significantChildNodes($node);
 
-        return 1 === count($children) && 'img' === strtolower($children[0]->nodeName);
+        return count($children) === 1 && strtolower($children[0]->nodeName) === 'img';
     }
 
     /**
      * Check if the figure node is supported for conversion.
      *
-     * @param Node $node The node.
-     * @return bool
+     * @param  Node  $node  The node.
      */
     protected function isSupportedFigure(Node $node): bool
     {
@@ -1091,23 +1070,22 @@ class BlockConverter
             return false;
         }
 
-        if (2 === count($children) && 'figcaption' !== strtolower($children[1]->nodeName)) {
+        if (count($children) === 2 && strtolower($children[1]->nodeName) !== 'figcaption') {
             return false;
         }
 
         $firstChild = $children[0];
 
         // Check if the first child is an <img> or an <a> with an <img> child.
-        return 'img' === strtolower($firstChild->nodeName) || $this->isAnchorWrappedImage($firstChild);
+        return strtolower($firstChild->nodeName) === 'img' || $this->isAnchorWrappedImage($firstChild);
     }
 
     /**
      * Create list blocks, wrapping each <li> child in a nested "list-item"
      * block to match the block editor's markup.
      *
-     * @param Node $node    The node.
-     * @param bool $ordered Whether the list is ordered (<ol>).
-     * @return Block
+     * @param  Node  $node  The node.
+     * @param  bool  $ordered  Whether the list is ordered (<ol>).
      */
     protected function list(Node $node, bool $ordered): Block
     {
@@ -1120,7 +1098,7 @@ class BlockConverter
         $items = [];
 
         foreach ($node->childNodes as $child) {
-            if ('li' !== strtolower($child->nodeName)) {
+            if (strtolower($child->nodeName) !== 'li') {
                 continue;
             }
 
@@ -1133,7 +1111,7 @@ class BlockConverter
 
         return new Block(
             blockName: 'list',
-            attributes: $ordered ? [ 'ordered' => true ] : [],
+            attributes: $ordered ? ['ordered' => true] : [],
             content: $content,
         );
     }
@@ -1141,8 +1119,7 @@ class BlockConverter
     /**
      * Create list-item blocks for a <li>.
      *
-     * @param Node $node The node.
-     * @return Block
+     * @param  Node  $node  The node.
      */
     protected function listItem(Node $node): Block
     {
@@ -1155,8 +1132,7 @@ class BlockConverter
     /**
      * Removing whitespace between blocks
      *
-     * @param string $block Gutenberg blocks.
-     * @return string
+     * @param  string  $block  Gutenberg blocks.
      */
     protected function minifyBlock(string $block): string
     {
@@ -1174,8 +1150,7 @@ class BlockConverter
     /**
      * Create ol blocks.
      *
-     * @param Node $node The node.
-     * @return Block
+     * @param  Node  $node  The node.
      */
     protected function ol(Node $node): Block
     {
@@ -1185,8 +1160,7 @@ class BlockConverter
     /**
      * Create paragraph blocks.
      *
-     * @param Node $node The node.
-     * @return Block|null
+     * @param  Node  $node  The node.
      */
     protected function p(Node $node): ?Block
     {
@@ -1194,7 +1168,7 @@ class BlockConverter
             return $this->img($node);
         }
 
-        if ('p' === strtolower($node->nodeName) && $this->paragraphHasInlineImage($node)) {
+        if (strtolower($node->nodeName) === 'p' && $this->paragraphHasInlineImage($node)) {
             return $this->splitParagraphWithInlineImages($node);
         }
 
@@ -1214,7 +1188,7 @@ class BlockConverter
         // content and not full embeds.
         if (! empty(filter_var($textContent, FILTER_VALIDATE_URL))) {
             if (\str_contains($textContent, '//x.com/') || \str_contains($textContent, '//www.x.com/')) {
-                $textContent       = str_replace([ '//x.com/', '//www.x.com/' ], '//twitter.com/', $textContent);
+                $textContent = str_replace(['//x.com/', '//www.x.com/'], '//twitter.com/', $textContent);
                 $node->textContent = $textContent;
             }
 
@@ -1237,13 +1211,12 @@ class BlockConverter
      * direct children, i.e. an image sitting inline in running text rather
      * than being the paragraph's sole content.
      *
-     * @param Node $node The node.
-     * @return bool
+     * @param  Node  $node  The node.
      */
     protected function paragraphHasInlineImage(Node $node): bool
     {
         foreach (static::significantChildNodes($node) as $child) {
-            if ('img' === strtolower($child->nodeName) || $this->isAnchorWrappedImage($child)) {
+            if (strtolower($child->nodeName) === 'img' || $this->isAnchorWrappedImage($child)) {
                 return true;
             }
         }
@@ -1254,8 +1227,7 @@ class BlockConverter
     /**
      * Create preformatted blocks.
      *
-     * @param Node $node The node.
-     * @return Block|null
+     * @param  Node  $node  The node.
      */
     protected function preformatted(Node $node): ?Block
     {
@@ -1276,8 +1248,6 @@ class BlockConverter
 
     /**
      * Create separator blocks.
-     *
-     * @return Block
      */
     protected function separator(): Block
     {
@@ -1290,8 +1260,7 @@ class BlockConverter
     /**
      * Sideload any child images of a Node and replace the src with the new URL.
      *
-     * @param Node $node The node.
-     * @return void
+     * @param  Node  $node  The node.
      */
     protected function sideloadChildImages(Node $node): void
     {
@@ -1307,7 +1276,7 @@ class BlockConverter
 
         foreach ($children as $childNode) {
             // Skip if the node is not an image or is not an instance of Element.
-            if ('img' !== strtolower($childNode->nodeName) || ! $childNode instanceof Element) {
+            if (strtolower($childNode->nodeName) !== 'img' || ! $childNode instanceof Element) {
                 // Recursively sideload images in child nodes.
                 if ($childNode->hasChildNodes()) {
                     $this->sideloadChildImages($childNode);
@@ -1334,7 +1303,7 @@ class BlockConverter
 
             try {
                 $previousSrc = $src;
-                $src         = $this->uploadImage($src, $childNode->getAttribute('alt') ?? '');
+                $src = $this->uploadImage($src, $childNode->getAttribute('alt') ?? '');
 
                 if ($src) {
                     $childNode->setAttribute('src', $src);
@@ -1351,7 +1320,7 @@ class BlockConverter
                     // node is an anchor.
                     if (
                         $node instanceof Element
-                        && 'a' === strtolower($node->nodeName)
+                        && strtolower($node->nodeName) === 'a'
                         && $previousSrc === $node->getAttribute('href')
                     ) {
                         $node->setAttribute('href', $src);
@@ -1359,7 +1328,7 @@ class BlockConverter
 
                     // Notify the caller that a child image has been sideloaded.
                     if ($this->onSideloadedImage) {
-                        ( $this->onSideloadedImage )($src, $childNode);
+                        ($this->onSideloadedImage)($src, $childNode);
                     }
                 }
             } catch (Throwable $e) {
@@ -1367,7 +1336,7 @@ class BlockConverter
                     "Error sideloading image: {$e->getMessage()}",
                     [
                         'exception' => $e,
-                        'node'      => $childNode,
+                        'node' => $childNode,
                     ]
                 );
             }
@@ -1380,8 +1349,7 @@ class BlockConverter
      * pasted inline image out of its surrounding text into its own image
      * block (floated right of the remaining text).
      *
-     * @param Node $node The node.
-     * @return Block|null
+     * @param  Node  $node  The node.
      */
     protected function splitParagraphWithInlineImages(Node $node): ?Block
     {
@@ -1394,10 +1362,10 @@ class BlockConverter
         $buffer = '';
 
         foreach ($node->childNodes as $child) {
-            if ('img' === strtolower($child->nodeName) || $this->isAnchorWrappedImage($child)) {
+            if (strtolower($child->nodeName) === 'img' || $this->isAnchorWrappedImage($child)) {
                 $text = trim($buffer);
 
-                if ('' !== $text) {
+                if ($text !== '') {
                     $blocks[] = $this->finalizeBlock(
                         new Block(blockName: 'paragraph', content: sprintf('<p>%s</p>', $text)),
                         $child,
@@ -1411,12 +1379,12 @@ class BlockConverter
                 continue;
             }
 
-            $buffer .= '#text' === $child->nodeName ? (string) $child->nodeValue : static::getNodeHtml($child);
+            $buffer .= $child->nodeName === '#text' ? (string) $child->nodeValue : static::getNodeHtml($child);
         }
 
         $text = trim($buffer);
 
-        if ('' !== $text) {
+        if ($text !== '') {
             $blocks[] = $this->finalizeBlock(
                 new Block(blockName: 'paragraph', content: sprintf('<p>%s</p>', $text)),
                 $node,
@@ -1441,8 +1409,7 @@ class BlockConverter
     /**
      * Create ul blocks.
      *
-     * @param Node $node The node.
-     * @return Block
+     * @param  Node  $node  The node.
      */
     protected function ul(Node $node): Block
     {
