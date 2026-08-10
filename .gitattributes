@@ -6,8 +6,6 @@
 # Via WPCS.
 #
 /.github export-ignore
-/phpcs.xml export-ignore
-/.phpcs export-ignore
 /phpunit.xml export-ignore
 /phpunit-wordpress.xml export-ignore
 /phpstan.neon export-ignore

@@ -12,12 +12,10 @@ output.log
 tests
 bin
 composer.lock
-phpcs.xml
 phpunit.xml
 phpunit-wordpress.xml
 configure.php
 DOCKER_ENV
 phpunit.xml
 tests
-.phpcs
 Makefile
