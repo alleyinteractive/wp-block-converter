@@ -113,9 +113,6 @@ trait MicrosoftWordContent
             }
         }
 
-        // <i>/<b> are already renamed to <em>/<strong> before this method
-        // ever sees the node — see BlockConverter::normalizeEmphasisTags().
-
         // Remove Word tracking and comment elements completely.
         if (in_array(strtolower($node->nodeName), ['del', 'ins'], true)) {
             // For tracking changes, remove del elements but keep ins content.

@@ -457,8 +457,7 @@ class BlockConverter
             if (! empty($childBlock)) {
                 // A block-level child always starts on its own line, so any
                 // trailing whitespace collected from preceding inline text
-                // (e.g. the source formatting between "to:" and a nested
-                // <ul>) is insignificant here.
+                // is insignificant here and gets removed.
                 $children = rtrim($children);
 
                 // Separate consecutive block-level children with a blank
@@ -671,11 +670,7 @@ class BlockConverter
      * how the block editor's own paste handler (`@wordpress/blocks`'
      * `rawHandler()`, which this class otherwise mirrors — see the class
      * docblock) normalizes these presentational-but-conforming tags to
-     * their semantic equivalents, for any HTML — not just a Microsoft Word
-     * paste. `MicrosoftWordContent::cleanMsWordNode()` used to do this same
-     * rename itself, gated behind Word-paste detection; it's redundant now
-     * that every `<b>`/`<i>` is already renamed before that method ever
-     * sees the node.
+     * their semantic equivalents.
      *
      * Skips a tag for which the caller has registered a macro (see
      * `Macroable`/`hasMacro()`) — an explicit override of that built-in tag's
