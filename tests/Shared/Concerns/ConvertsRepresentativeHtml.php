@@ -232,6 +232,61 @@ HTML,
 <!-- /wp:paragraph -->
 HTML,
             ],
+            'b converts to strong' => [
+                <<<'HTML'
+<p>This is <b>bold</b> text.</p>
+HTML,
+                <<<'HTML'
+<!-- wp:paragraph -->
+<p>This is <strong>bold</strong> text.</p>
+<!-- /wp:paragraph -->
+HTML,
+            ],
+            'i converts to em' => [
+                <<<'HTML'
+<p>This is <i>italic</i> text.</p>
+HTML,
+                <<<'HTML'
+<!-- wp:paragraph -->
+<p>This is <em>italic</em> text.</p>
+<!-- /wp:paragraph -->
+HTML,
+            ],
+            'b and i preserve their attributes when renamed' => [
+                <<<'HTML'
+<p>This is <b class="bold-class">bold</b> and <i class="italic-class">italic</i> text.</p>
+HTML,
+                <<<'HTML'
+<!-- wp:paragraph -->
+<p>This is <strong class="bold-class">bold</strong> and <em class="italic-class">italic</em> text.</p>
+<!-- /wp:paragraph -->
+HTML,
+            ],
+            'b converts to strong inside a nested list item' => [
+                <<<'HTML'
+<ul>
+	<li><b>Bold item</b></li>
+</ul>
+HTML,
+                <<<'HTML'
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>Bold item</strong></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+HTML,
+            ],
+            'paragraph strips whitespace immediately after a br' => [
+                <<<HTML
+<p>Line one<br>
+\tLine two</p>
+HTML,
+                <<<'HTML'
+<!-- wp:paragraph -->
+<p>Line one<br>Line two</p>
+<!-- /wp:paragraph -->
+HTML,
+            ],
         ];
     }
 
@@ -285,6 +340,61 @@ HTML,
 HTML,
             ],
         ];
+    }
+
+    /**
+     * Tests that a blockquote's text content (converted via
+     * convertWithChildren(), unlike a <p>'s own whitespace handling) has runs
+     * of whitespace collapsed to a single space, same as paragraph content.
+     */
+    public function testBlockquoteCollapsesWhitespaceInText(): void
+    {
+        $html = <<<'HTML'
+<blockquote>
+	Some    text   with
+	extra   whitespace.
+</blockquote>
+HTML;
+
+        $this->assertSame(
+            expected: <<<'HTML'
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"> Some text with extra whitespace. </blockquote>
+<!-- /wp:quote -->
+HTML,
+            actual: (new BlockConverter($html))->convert(),
+        );
+    }
+
+    /**
+     * Tests that trailing whitespace collected from text immediately
+     * preceding a nested block-level element (e.g. a <ul>) inside a
+     * blockquote is trimmed, rather than leaking a blank line's worth of
+     * source formatting into the merged block content.
+     */
+    public function testBlockquoteTrimsTrailingWhitespaceBeforeNestedBlock(): void
+    {
+        $html = <<<'HTML'
+<blockquote>
+	Introduction text:
+	<ul>
+		<li>Item one</li>
+	</ul>
+</blockquote>
+HTML;
+
+        $this->assertSame(
+            expected: <<<'HTML'
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"> Introduction text:<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>Item one</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list --></blockquote>
+<!-- /wp:quote -->
+HTML,
+            actual: (new BlockConverter($html))->convert(),
+        );
     }
 
     /**

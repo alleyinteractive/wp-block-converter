@@ -174,4 +174,28 @@ HTML,
             );
         }
     }
+
+    /**
+     * Tests that registering a macro for the `b` tag skips the automatic
+     * `<b>`-to-`<strong>` rename (BlockConverter::normalizeEmphasisTags()),
+     * so the macro sees the original, unrenamed node.
+     */
+    public function testMacroableOverrideSkipsEmphasisTagNormalization(): void
+    {
+        BlockConverter::macro(
+            'b',
+            fn (Node $node) => new Block('paragraph', [], BlockConverter::getNodeHtml($node)),
+        );
+
+        $block = (new BlockConverter('<b>content</b>'))->convert();
+
+        $this->assertSame(
+            expected: <<<'HTML'
+<!-- wp:paragraph -->
+<b>content</b>
+<!-- /wp:paragraph -->
+HTML,
+            actual: $block,
+        );
+    }
 }
