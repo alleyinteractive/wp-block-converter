@@ -113,55 +113,8 @@ trait MicrosoftWordContent
             }
         }
 
-        // Convert <i> tags to <em> tags.
-        if (strtolower($node->nodeName) === 'i' && $node->ownerDocument !== null) {
-            $em = $node->ownerDocument->createElement('em');
-
-            // Copy all attributes except ones we're cleaning.
-            if ($node->hasAttributes()) {
-                foreach ($node->attributes as $attr) {
-                    if ($attr->nodeName !== 'class' && $attr->nodeName !== 'style' && $attr->nodeValue !== null) {
-                        $em->setAttribute($attr->nodeName, $attr->nodeValue);
-                    }
-                }
-            }
-
-            // Move all child nodes to the new em element.
-            while ($node->firstChild) {
-                $em->appendChild($node->firstChild);
-            }
-
-            // Replace the i element with em element.
-            if ($node->parentNode !== null) {
-                $node->parentNode->replaceChild($em, $node);
-                $node = $em;
-            }
-        }
-
-        // Convert <b> tags to <strong> tags.
-        if (strtolower($node->nodeName) === 'b' && $node->ownerDocument !== null) {
-            $strong = $node->ownerDocument->createElement('strong');
-
-            // Copy all attributes except ones we're cleaning.
-            if ($node->hasAttributes()) {
-                foreach ($node->attributes as $attr) {
-                    if ($attr->nodeName !== 'class' && $attr->nodeName !== 'style' && $attr->nodeValue !== null) {
-                        $strong->setAttribute($attr->nodeName, $attr->nodeValue);
-                    }
-                }
-            }
-
-            // Move all child nodes to the new strong element.
-            while ($node->firstChild) {
-                $strong->appendChild($node->firstChild);
-            }
-
-            // Replace the b element with strong element.
-            if ($node->parentNode !== null) {
-                $node->parentNode->replaceChild($strong, $node);
-                $node = $strong;
-            }
-        }
+        // <i>/<b> are already renamed to <em>/<strong> before this method
+        // ever sees the node — see BlockConverter::normalizeEmphasisTags().
 
         // Remove Word tracking and comment elements completely.
         if (in_array(strtolower($node->nodeName), ['del', 'ins'], true)) {
