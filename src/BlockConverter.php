@@ -316,6 +316,8 @@ class BlockConverter
             return '';
         }
 
+        static::normalizeEmphasisTags($content->item(0));
+
         $html = [];
 
         foreach ($content->item(0)->childNodes as $node) {
@@ -413,11 +415,17 @@ class BlockConverter
         // Recursively convert the children of the node.
         foreach ($node->childNodes as $child) {
             if ($child->nodeName === '#text') {
-                if (trim((string) $child->nodeValue) === '') {
+                $value = preg_replace('/\s+/', ' ', (string) $child->nodeValue);
+
+                if ($child->previousSibling instanceof Element && strtolower($child->previousSibling->nodeName) === 'br') {
+                    $value = ltrim((string) $value);
+                }
+
+                if (trim((string) $value) === '') {
                     continue;
                 }
 
-                $children .= $child->nodeValue;
+                $children .= $value;
                 $previousWasBlock = false;
 
                 continue;
@@ -447,6 +455,11 @@ class BlockConverter
             $childBlock = $this->convertNode($child);
 
             if (! empty($childBlock)) {
+                // A block-level child always starts on its own line, so any
+                // trailing whitespace collected from preceding inline text
+                // is insignificant here and gets removed.
+                $children = rtrim($children);
+
                 // Separate consecutive block-level children with a blank
                 // line, matching the top-level join in convert(). Non-block
                 // content (plain text, <cite>) attaches directly with no gap.
@@ -610,7 +623,17 @@ class BlockConverter
     {
         foreach ($node->childNodes as $child) {
             if ($child->nodeName === '#text') {
-                $child->nodeValue = preg_replace('/\s+/', ' ', (string) $child->nodeValue);
+                $value = preg_replace('/\s+/', ' ', (string) $child->nodeValue);
+
+                // A line break already ends the line, so whitespace right
+                // after one (typically just source-formatting indentation)
+                // renders as nothing — unlike whitespace between two runs of
+                // inline text, which collapses to one visible space.
+                if ($child->previousSibling instanceof Element && strtolower($child->previousSibling->nodeName) === 'br') {
+                    $value = ltrim((string) $value);
+                }
+
+                $child->nodeValue = $value;
 
                 continue;
             }
@@ -639,6 +662,57 @@ class BlockConverter
             if ($child->hasChildNodes()) {
                 static::collectTextNodes($child, $textNodes);
             }
+        }
+    }
+
+    /**
+     * Rename every `<b>` element to `<strong>` and `<i>` to `<em>`, matching
+     * how the block editor's own paste handler (`@wordpress/blocks`'
+     * `rawHandler()`, which this class otherwise mirrors — see the class
+     * docblock) normalizes these presentational-but-conforming tags to
+     * their semantic equivalents.
+     *
+     * Skips a tag for which the caller has registered a macro (see
+     * `Macroable`/`hasMacro()`) — an explicit override of that built-in tag's
+     * handling takes precedence over this automatic rename, matching every
+     * other built-in tag's dispatch in `convertNode()`.
+     *
+     * @param  Node  $node  The node to normalize, along with its descendants.
+     */
+    protected static function normalizeEmphasisTags(Node $node): void
+    {
+        foreach (iterator_to_array($node->childNodes) as $child) {
+            if ($child->hasChildNodes()) {
+                static::normalizeEmphasisTags($child);
+            }
+
+            if (! $child instanceof Element) {
+                continue;
+            }
+
+            $tagName = strtolower($child->nodeName);
+
+            $replacementTag = match ($tagName) {
+                'b' => 'strong',
+                'i' => 'em',
+                default => null,
+            };
+
+            if ($replacementTag === null || static::hasMacro($tagName) || $child->ownerDocument === null || $child->parentNode === null) {
+                continue;
+            }
+
+            $replacement = $child->ownerDocument->createElement($replacementTag);
+
+            foreach ($child->attributes ?? [] as $attribute) {
+                $replacement->setAttribute($attribute->nodeName, (string) $attribute->nodeValue);
+            }
+
+            while ($child->firstChild) {
+                $replacement->appendChild($child->firstChild);
+            }
+
+            $child->parentNode->replaceChild($replacement, $child);
         }
     }
 
