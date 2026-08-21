@@ -394,7 +394,6 @@ class BlockConverter
                 'br', 'cite', 'source' => null,
                 'hr' => $this->separator(),
                 'pre' => $this->preformatted($node),
-                'table' => $this->table($node),
                 default => $this->html($node),
             };
         }
@@ -599,6 +598,56 @@ class BlockConverter
         $filteredUrl = $this->apply($this->onSanitizedImageUrl, $sanitizedUrl, $url);
 
         return is_string($filteredUrl) ? $filteredUrl : $sanitizedUrl;
+    }
+
+    /**
+     * Create table blocks.
+     *
+     * Reuses the source `<table>`'s own markup (matching how list() and
+     * figure() work), stripped of every attribute except `colspan`/`rowspan`
+     * on a cell, since a migrated table's original width/styling attributes
+     * won't match the destination theme. `hasFixedLayout` is explicitly set
+     * to `false` (rather than left unset) so the block's declared attribute
+     * always matches its markup — the block editor defaults an unset
+     * `hasFixedLayout` to `true`, which would otherwise expect a
+     * `has-fixed-layout` class this method never adds.
+     *
+     * Deliberately not wired into convertNode()'s automatic tag dispatch, unlike this
+     * class's other tag handlers: plenty of real-world `<table>` markup is a legacy
+     * presentational layout hack (multi-column positioning via cells, `width`/`bgcolor`
+     * attributes doing the actual work) rather than genuine tabular data, and stripping
+     * those attributes to build a real table block would destroy the layout it depends
+     * on. There's no reliable way to tell the two apart from markup alone, so this stays
+     * an explicit, opt-in conversion — call it directly (e.g. from a macro or a
+     * `BlockConverter::macro('table', ...)` registration) once the caller has some
+     * outside signal that a specific `<table>` is real data.
+     *
+     * @param  Node  $node  The node.
+     */
+    public function table(Node $node): ?Block
+    {
+        if (! $node instanceof Element) {
+            return null;
+        }
+
+        $this->sideloadChildImages($node);
+        self::stripNonStructuralTableAttributes($node);
+
+        // Drop the indentation/newline text nodes a pretty-printed <table>
+        // has between <thead>/<tbody>/<tr>/<td> — matching the same cleanup
+        // img() does for a <figure>'s direct children, but recursively here
+        // since a table nests several levels deep.
+        foreach ([$node, ...iterator_to_array($node->getElementsByTagName('*'))] as $element) {
+            static::removeWhitespaceOnlyChildTextNodes($element);
+        }
+
+        $content = sprintf('<figure class="wp-block-table">%s</figure>', static::getNodeHtml($node));
+
+        return new Block(
+            blockName: 'table',
+            attributes: ['hasFixedLayout' => false],
+            content: static::selfCloseVoidElements($content),
+        );
     }
 
     /**
@@ -1120,14 +1169,25 @@ class BlockConverter
     }
 
     /**
-     * Check if the node's only meaningful child is an <img>, e.g. an <a>
-     * wrapping a single image.
+     * Check if $node is itself an `<a>` whose only meaningful child is an `<img>` — i.e.
+     * an anchor wrapping a single image, such as `<a href="..."><img ...></a>`.
+     *
+     * $node's own tag must be checked, not just its children: this previously matched
+     * any element with exactly one `<img>` child, regardless of tag — which also (and
+     * incorrectly) matched a plain, unlinked `<p><img></p>`. p() calls this on the whole
+     * `<p>` to decide whether the paragraph is really just a linked image masquerading
+     * as a paragraph (in which case the anchor/image relationship needs to survive
+     * intact via img()'s own `$wrappedInAnchor` handling); a bare `<p><img></p>` isn't
+     * that case, and must instead fall through to paragraphHasInlineImage() /
+     * splitParagraphWithInlineImages() — the previous, overly broad match skipped that
+     * fall-through, and getNodeHtml()'s "empty paragraph" special case (checking the
+     * `<p>`'s own, image-only textContent) then silently emptied the image out entirely.
      *
      * @param  Node|null  $node  The node.
      */
     protected function isAnchorWrappedImage(?Node $node): bool
     {
-        if (! $node) {
+        if (! $node instanceof Element || strtolower($node->nodeName) !== 'a') {
             return false;
         }
 
@@ -1482,46 +1542,6 @@ class BlockConverter
                 "\n\n",
                 array_map(fn (Block $block) => $this->minifyBlock((string) $block), $blocks)
             ),
-        );
-    }
-
-    /**
-     * Create table blocks.
-     *
-     * Reuses the source `<table>`'s own markup (matching how list() and
-     * figure() work), stripped of every attribute except `colspan`/`rowspan`
-     * on a cell, since a migrated table's original width/styling attributes
-     * won't match the destination theme. `hasFixedLayout` is explicitly set
-     * to `false` (rather than left unset) so the block's declared attribute
-     * always matches its markup — the block editor defaults an unset
-     * `hasFixedLayout` to `true`, which would otherwise expect a
-     * `has-fixed-layout` class this method never adds.
-     *
-     * @param  Node  $node  The node.
-     */
-    protected function table(Node $node): ?Block
-    {
-        if (! $node instanceof Element) {
-            return null;
-        }
-
-        $this->sideloadChildImages($node);
-        self::stripNonStructuralTableAttributes($node);
-
-        // Drop the indentation/newline text nodes a pretty-printed <table>
-        // has between <thead>/<tbody>/<tr>/<td> — matching the same cleanup
-        // img() does for a <figure>'s direct children, but recursively here
-        // since a table nests several levels deep.
-        foreach ([$node, ...iterator_to_array($node->getElementsByTagName('*'))] as $element) {
-            static::removeWhitespaceOnlyChildTextNodes($element);
-        }
-
-        $content = sprintf('<figure class="wp-block-table">%s</figure>', static::getNodeHtml($node));
-
-        return new Block(
-            blockName: 'table',
-            attributes: ['hasFixedLayout' => false],
-            content: static::selfCloseVoidElements($content),
         );
     }
 
