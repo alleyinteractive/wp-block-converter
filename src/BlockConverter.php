@@ -575,10 +575,7 @@ class BlockConverter
      *
      * @param  string  $url  URL.
      * @return string A reconstructed image URL containing only the scheme, host, port, and path,
-     *                or the original $url unchanged if it has no host to reconstruct one from — e.g. a
-     *                relative reference an ImageUploader is expected to resolve itself (a bare path, or a
-     *                non-http(s) scheme like a CMS's own "~/"-relative media syntax). Previously collapsed
-     *                to an empty string in that case, silently discarding the image.
+     *                or the original $url unchanged if it has no host to reconstruct one from.
      */
     public function removeImageArgs($url): string
     {
@@ -608,9 +605,7 @@ class BlockConverter
      * on a cell, since a migrated table's original width/styling attributes
      * won't match the destination theme. `hasFixedLayout` is explicitly set
      * to `false` (rather than left unset) so the block's declared attribute
-     * always matches its markup — the block editor defaults an unset
-     * `hasFixedLayout` to `true`, which would otherwise expect a
-     * `has-fixed-layout` class this method never adds.
+     * always matches its markup.
      *
      * Deliberately not wired into convertNode()'s automatic tag dispatch, unlike this
      * class's other tag handlers: plenty of real-world `<table>` markup is a legacy
@@ -1171,17 +1166,6 @@ class BlockConverter
     /**
      * Check if $node is itself an `<a>` whose only meaningful child is an `<img>` — i.e.
      * an anchor wrapping a single image, such as `<a href="..."><img ...></a>`.
-     *
-     * $node's own tag must be checked, not just its children: this previously matched
-     * any element with exactly one `<img>` child, regardless of tag — which also (and
-     * incorrectly) matched a plain, unlinked `<p><img></p>`. p() calls this on the whole
-     * `<p>` to decide whether the paragraph is really just a linked image masquerading
-     * as a paragraph (in which case the anchor/image relationship needs to survive
-     * intact via img()'s own `$wrappedInAnchor` handling); a bare `<p><img></p>` isn't
-     * that case, and must instead fall through to paragraphHasInlineImage() /
-     * splitParagraphWithInlineImages() — the previous, overly broad match skipped that
-     * fall-through, and getNodeHtml()'s "empty paragraph" special case (checking the
-     * `<p>`'s own, image-only textContent) then silently emptied the image out entirely.
      *
      * @param  Node|null  $node  The node.
      */
