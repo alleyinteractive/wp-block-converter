@@ -394,6 +394,7 @@ class BlockConverter
                 'br', 'cite', 'source' => null,
                 'hr' => $this->separator(),
                 'pre' => $this->preformatted($node),
+                'table' => $this->table($node),
                 default => $this->html($node),
             };
         }
@@ -574,7 +575,11 @@ class BlockConverter
      * Quick way to remove all URL arguments.
      *
      * @param  string  $url  URL.
-     * @return string A reconstructed image URL containing only the scheme, host, port, and path.
+     * @return string A reconstructed image URL containing only the scheme, host, port, and path,
+     *                or the original $url unchanged if it has no host to reconstruct one from — e.g. a
+     *                relative reference an ImageUploader is expected to resolve itself (a bare path, or a
+     *                non-http(s) scheme like a CMS's own "~/"-relative media syntax). Previously collapsed
+     *                to an empty string in that case, silently discarding the image.
      */
     public function removeImageArgs($url): string
     {
@@ -584,11 +589,11 @@ class BlockConverter
         $port = ! empty($urlParts['port']) ? ':'.$urlParts['port'] : '';
         $path = $urlParts['path'] ?? '';
 
-        // Ensure we have enough parts to construct a valid URL.
-        $sanitizedUrl = '';
-        if (! empty($scheme) && ! empty($host) && ! empty($path)) {
-            $sanitizedUrl = sprintf('%s://%s%s%s', $scheme, $host, $port, $path);
-        }
+        // Ensure we have enough parts to construct a valid URL; otherwise leave $url exactly as
+        // given, since there's nothing here to safely strip arguments from.
+        $sanitizedUrl = (! empty($scheme) && ! empty($host) && ! empty($path))
+            ? sprintf('%s://%s%s%s', $scheme, $host, $port, $path)
+            : $url;
 
         // Allow the caller to filter the reconstructed URL before it's returned.
         $filteredUrl = $this->apply($this->onSanitizedImageUrl, $sanitizedUrl, $url);
@@ -1481,6 +1486,46 @@ class BlockConverter
     }
 
     /**
+     * Create table blocks.
+     *
+     * Reuses the source `<table>`'s own markup (matching how list() and
+     * figure() work), stripped of every attribute except `colspan`/`rowspan`
+     * on a cell, since a migrated table's original width/styling attributes
+     * won't match the destination theme. `hasFixedLayout` is explicitly set
+     * to `false` (rather than left unset) so the block's declared attribute
+     * always matches its markup — the block editor defaults an unset
+     * `hasFixedLayout` to `true`, which would otherwise expect a
+     * `has-fixed-layout` class this method never adds.
+     *
+     * @param  Node  $node  The node.
+     */
+    protected function table(Node $node): ?Block
+    {
+        if (! $node instanceof Element) {
+            return null;
+        }
+
+        $this->sideloadChildImages($node);
+        self::stripNonStructuralTableAttributes($node);
+
+        // Drop the indentation/newline text nodes a pretty-printed <table>
+        // has between <thead>/<tbody>/<tr>/<td> — matching the same cleanup
+        // img() does for a <figure>'s direct children, but recursively here
+        // since a table nests several levels deep.
+        foreach ([$node, ...iterator_to_array($node->getElementsByTagName('*'))] as $element) {
+            static::removeWhitespaceOnlyChildTextNodes($element);
+        }
+
+        $content = sprintf('<figure class="wp-block-table">%s</figure>', static::getNodeHtml($node));
+
+        return new Block(
+            blockName: 'table',
+            attributes: ['hasFixedLayout' => false],
+            content: static::selfCloseVoidElements($content),
+        );
+    }
+
+    /**
      * Create ul blocks.
      *
      * @param  Node  $node  The node.
@@ -1488,5 +1533,24 @@ class BlockConverter
     protected function ul(Node $node): Block
     {
         return $this->list($node, false);
+    }
+
+    /**
+     * Strip every attribute from a `<table>` and its descendants except
+     * `colspan`/`rowspan` on a `<td>`/`<th>` (see table()).
+     *
+     * @param  Element  $table  The `<table>` element.
+     */
+    private static function stripNonStructuralTableAttributes(Element $table): void
+    {
+        foreach ([$table, ...iterator_to_array($table->getElementsByTagName('*'))] as $element) {
+            $keep = in_array(strtolower($element->nodeName), ['td', 'th'], true) ? ['colspan', 'rowspan'] : [];
+
+            foreach (iterator_to_array($element->attributes ?? []) as $attribute) {
+                if (! in_array(strtolower($attribute->nodeName), $keep, true)) {
+                    $element->removeAttribute($attribute->nodeName);
+                }
+            }
+        }
     }
 }

@@ -287,6 +287,23 @@ HTML,
 <!-- /wp:paragraph -->
 HTML,
             ],
+            'table' => [
+                <<<'HTML'
+<table class="legacy-table-styles" style="width: 100%">
+	<thead>
+		<tr class="header-row"><th style="width: 50%">Name</th><th>Role</th></tr>
+	</thead>
+	<tbody>
+		<tr><td>Row One</td><td colspan="2">Spans two columns</td></tr>
+	</tbody>
+</table>
+HTML,
+                <<<'HTML'
+<!-- wp:table {"hasFixedLayout":false} -->
+<figure class="wp-block-table"><table><thead><tr><th>Name</th><th>Role</th></tr></thead><tbody><tr><td>Row One</td><td colspan="2">Spans two columns</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+HTML,
+            ],
         ];
     }
 
