@@ -7,6 +7,7 @@
 namespace Alley\WP\BlockConverter\Tests\Shared\Concerns;
 
 use Alley\WP\BlockConverter\BlockConverter;
+use Dom\HTMLDocument;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
@@ -285,6 +286,22 @@ HTML,
 <!-- wp:paragraph -->
 <p>Line one<br>Line two</p>
 <!-- /wp:paragraph -->
+HTML,
+            ],
+            // Regression: a <p> whose only content is a bare, unlinked <img> must not
+            // be mistaken for isAnchorWrappedImage() (that name means the reverse: an
+            // <a> wrapping a single image) — it needs paragraphHasInlineImage() to route
+            // it through splitParagraphWithInlineImages() instead, or getNodeHtml()'s
+            // "empty paragraph" check (looking at the <p>'s own image-only textContent)
+            // silently empties the image out.
+            'paragraph whose only content is a bare image' => [
+                <<<'HTML'
+<p><img src="https://example.org/image.jpg" alt="An image"></p>
+HTML,
+                <<<'HTML'
+<!-- wp:image {"sizeSlug":"large"} -->
+<figure class="wp-block-image alignright size-large"><img src="https://example.org/image.jpg" alt="An image"/></figure>
+<!-- /wp:image -->
 HTML,
             ],
         ];
@@ -593,5 +610,55 @@ HTML;
 HTML,
             actual: $converted,
         );
+    }
+
+    /**
+     * Tests that table() converts a `<table>` to a real table block when called
+     * directly, stripped of every attribute except `colspan`/`rowspan` on a cell.
+     */
+    public function testTableConvertsWhenCalledDirectly(): void
+    {
+        $converter = new BlockConverter(html: '<p>Unused</p>');
+
+        $document = HTMLDocument::createFromString(
+            <<<'HTML'
+<div><table class="legacy-table-styles" style="width: 100%">
+	<thead>
+		<tr class="header-row"><th style="width: 50%">Name</th><th>Role</th></tr>
+	</thead>
+	<tbody>
+		<tr><td>Row One</td><td colspan="2">Spans two columns</td></tr>
+	</tbody>
+</table></div>
+HTML,
+            LIBXML_NOERROR,
+            'UTF-8',
+        );
+        $table = $document->getElementsByTagName('table')->item(0);
+
+        $this->assertSame(
+            expected: <<<'HTML'
+<!-- wp:table {"hasFixedLayout":false} -->
+<figure class="wp-block-table"><table><thead><tr><th>Name</th><th>Role</th></tr></thead><tbody><tr><td>Row One</td><td colspan="2">Spans two columns</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+HTML,
+            actual: (string) $converter->table($table),
+        );
+    }
+
+    /**
+     * Tests that a bare `<table>` is left as a raw HTML block by default — table() is
+     * deliberately not part of automatic tag dispatch (see its docblock), since plenty
+     * of real-world tables are presentational layout hacks, not real data.
+     */
+    public function testTableIsNotAutomaticallyConverted(): void
+    {
+        $converter = new BlockConverter(
+            html: <<<'HTML'
+<table><tr><td>Cell</td></tr></table>
+HTML,
+        );
+
+        $this->assertStringContainsString('wp:html', $converter->convert());
     }
 }

@@ -574,7 +574,8 @@ class BlockConverter
      * Quick way to remove all URL arguments.
      *
      * @param  string  $url  URL.
-     * @return string A reconstructed image URL containing only the scheme, host, port, and path.
+     * @return string A reconstructed image URL containing only the scheme, host, port, and path,
+     *                or the original $url unchanged if it has no host to reconstruct one from.
      */
     public function removeImageArgs($url): string
     {
@@ -584,16 +585,64 @@ class BlockConverter
         $port = ! empty($urlParts['port']) ? ':'.$urlParts['port'] : '';
         $path = $urlParts['path'] ?? '';
 
-        // Ensure we have enough parts to construct a valid URL.
-        $sanitizedUrl = '';
-        if (! empty($scheme) && ! empty($host) && ! empty($path)) {
-            $sanitizedUrl = sprintf('%s://%s%s%s', $scheme, $host, $port, $path);
-        }
+        // Ensure we have enough parts to construct a valid URL; otherwise leave $url exactly as
+        // given, since there's nothing here to safely strip arguments from.
+        $sanitizedUrl = (! empty($scheme) && ! empty($host) && ! empty($path))
+            ? sprintf('%s://%s%s%s', $scheme, $host, $port, $path)
+            : $url;
 
         // Allow the caller to filter the reconstructed URL before it's returned.
         $filteredUrl = $this->apply($this->onSanitizedImageUrl, $sanitizedUrl, $url);
 
         return is_string($filteredUrl) ? $filteredUrl : $sanitizedUrl;
+    }
+
+    /**
+     * Create table blocks.
+     *
+     * Reuses the source `<table>`'s own markup (matching how list() and
+     * figure() work), stripped of every attribute except `colspan`/`rowspan`
+     * on a cell, since a migrated table's original width/styling attributes
+     * won't match the destination theme. `hasFixedLayout` is explicitly set
+     * to `false` (rather than left unset) so the block's declared attribute
+     * always matches its markup.
+     *
+     * Deliberately not wired into convertNode()'s automatic tag dispatch, unlike this
+     * class's other tag handlers: plenty of real-world `<table>` markup is a legacy
+     * presentational layout hack (multi-column positioning via cells, `width`/`bgcolor`
+     * attributes doing the actual work) rather than genuine tabular data, and stripping
+     * those attributes to build a real table block would destroy the layout it depends
+     * on. There's no reliable way to tell the two apart from markup alone, so this stays
+     * an explicit, opt-in conversion — call it directly (e.g. from a macro or a
+     * `BlockConverter::macro('table', ...)` registration) once the caller has some
+     * outside signal that a specific `<table>` is real data.
+     *
+     * @param  Node  $node  The node.
+     */
+    public function table(Node $node): ?Block
+    {
+        if (! $node instanceof Element) {
+            return null;
+        }
+
+        $this->sideloadChildImages($node);
+        self::stripNonStructuralTableAttributes($node);
+
+        // Drop the indentation/newline text nodes a pretty-printed <table>
+        // has between <thead>/<tbody>/<tr>/<td> — matching the same cleanup
+        // img() does for a <figure>'s direct children, but recursively here
+        // since a table nests several levels deep.
+        foreach ([$node, ...iterator_to_array($node->getElementsByTagName('*'))] as $element) {
+            static::removeWhitespaceOnlyChildTextNodes($element);
+        }
+
+        $content = sprintf('<figure class="wp-block-table">%s</figure>', static::getNodeHtml($node));
+
+        return new Block(
+            blockName: 'table',
+            attributes: ['hasFixedLayout' => false],
+            content: static::selfCloseVoidElements($content),
+        );
     }
 
     /**
@@ -1115,14 +1164,14 @@ class BlockConverter
     }
 
     /**
-     * Check if the node's only meaningful child is an <img>, e.g. an <a>
-     * wrapping a single image.
+     * Check if $node is itself an `<a>` whose only meaningful child is an `<img>` — i.e.
+     * an anchor wrapping a single image, such as `<a href="..."><img ...></a>`.
      *
      * @param  Node|null  $node  The node.
      */
     protected function isAnchorWrappedImage(?Node $node): bool
     {
-        if (! $node) {
+        if (! $node instanceof Element || strtolower($node->nodeName) !== 'a') {
             return false;
         }
 
@@ -1488,5 +1537,24 @@ class BlockConverter
     protected function ul(Node $node): Block
     {
         return $this->list($node, false);
+    }
+
+    /**
+     * Strip every attribute from a `<table>` and its descendants except
+     * `colspan`/`rowspan` on a `<td>`/`<th>` (see table()).
+     *
+     * @param  Element  $table  The `<table>` element.
+     */
+    private static function stripNonStructuralTableAttributes(Element $table): void
+    {
+        foreach ([$table, ...iterator_to_array($table->getElementsByTagName('*'))] as $element) {
+            $keep = in_array(strtolower($element->nodeName), ['td', 'th'], true) ? ['colspan', 'rowspan'] : [];
+
+            foreach (iterator_to_array($element->attributes ?? []) as $attribute) {
+                if (! in_array(strtolower($attribute->nodeName), $keep, true)) {
+                    $element->removeAttribute($attribute->nodeName);
+                }
+            }
+        }
     }
 }
